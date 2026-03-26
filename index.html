@@ -304,6 +304,15 @@ const fetchProfiles = useCallback(async () => {
 }, []);
 
 useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
+  
+  // Auto-open create profile modal if linked from personnel page
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('action') === 'create-profile') {
+    setShowCreateProfile(true);
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}, []);
 
 // Use live profiles if available, otherwise fall back to sample data
 const profiles = liveProfiles.length > 0 ? liveProfiles : SAMPLE_PROFILES;
