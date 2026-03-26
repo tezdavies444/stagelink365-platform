@@ -285,6 +285,7 @@ const [apiError, setApiError] = useState(null);
 
 // Auth state
 const [currentUser, setCurrentUser] = useState(null);
+const [editingProfileId, setEditingProfileId] = useState(null);
 
 // Fetch profiles from Airtable API
 const fetchProfiles = useCallback(async () => {
@@ -337,15 +338,15 @@ onViewProfile={viewProfile}
 profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
 />
 )}
-{page === 'profile' && selectedProfile && <ProfilePage profile={selectedProfile} onBack={() => setPage('browse')} currentUser={currentUser} onEdit={() => setShowEditProfile(true)} />}
+{page === 'profile' && selectedProfile && <ProfilePage profile={selectedProfile} onBack={() => setPage('browse')} currentUser={currentUser} onEdit={() => { setEditingProfileId(selectedProfile.id); setShowEditProfile(true); }} />}
 {page === 'gigs' && <GigsPage onViewGig={viewGig} />}
 {page === 'pricing' && <PricingPage onCreateProfile={() => setShowCreateProfile(true)} />}
-{page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={() => setShowEditProfile(true)} />}
+{page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={(profileId) => { setEditingProfileId(profileId); setShowEditProfile(true); }} onLogin={() => setShowLogin(true)} />}
 {page === 'booker' && <BookerDashboard onViewProfile={viewProfile} setPage={setPage} />}
 {page === 'messages' && <MessagesPage />}
 {page === 'database' && <DatabaseArchitecture />}
 {showCreateProfile && <CreateProfileModal onClose={() => setShowCreateProfile(false)} onSuccess={handleProfileCreated} currentUser={currentUser} />}
-{showEditProfile && currentUser && <EditProfileModal profileId={currentUser.id || (selectedProfile && selectedProfile.id)} token={currentUser.token} onClose={() => setShowEditProfile(false)} onSaved={() => { setShowEditProfile(false); fetchProfiles(); }} />}
+{showEditProfile && currentUser && <EditProfileModal profileId={editingProfileId || currentUser.id || (selectedProfile && selectedProfile.id)} token={currentUser.token} onClose={() => { setShowEditProfile(false); setEditingProfileId(null); }} onSaved={() => { setShowEditProfile(false); setEditingProfileId(null); fetchProfiles(); }} />}
 {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLogin} />}
 {selectedGig && <GigDetailModal gig={selectedGig} onClose={() => setSelectedGig(null)} />}
 </div>
@@ -752,16 +753,50 @@ return (
 </div>
 </div>
 
-{/* Media */}
+{/* Media Links */}
+{(p.videoLink || p.showReelLink || p.audioLink) && (
 <div className="card" style={{ marginBottom: 20 }}>
 <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Media & Portfolio</h3>
-<div className="grid-2">
-<div className="media-placeholder"><i className="fa-solid fa-play"></i><span style={{ fontSize: 13 }}>Performance Video</span></div>
-<div className="media-placeholder"><i className="fa-solid fa-play"></i><span style={{ fontSize: 13 }}>Live Show Reel</span></div>
-<div className="media-placeholder" style={{ aspectRatio: '1' }}><i className="fa-solid fa-image"></i><span style={{ fontSize: 13 }}>Photo Gallery</span></div>
-<div className="media-placeholder" style={{ aspectRatio: '1' }}><i className="fa-solid fa-music"></i><span style={{ fontSize: 13 }}>Audio Demo</span></div>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+{p.videoLink && (
+<a href={p.videoLink} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--dark-lighter)', borderRadius: 10, textDecoration: 'none', color: 'var(--text)' }}>
+<div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(108,43,217,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-play" style={{ color: 'var(--primary-light)', fontSize: 16 }}></i>
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>Performance Video</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.videoLink}</div>
+</div>
+<i className="fa-solid fa-arrow-up-right-from-square" style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}></i>
+</a>
+)}
+{p.showReelLink && (
+<a href={p.showReelLink} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--dark-lighter)', borderRadius: 10, textDecoration: 'none', color: 'var(--text)' }}>
+<div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-clapperboard" style={{ color: 'var(--accent)', fontSize: 16 }}></i>
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>Live Show Reel</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.showReelLink}</div>
+</div>
+<i className="fa-solid fa-arrow-up-right-from-square" style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}></i>
+</a>
+)}
+{p.audioLink && (
+<a href={p.audioLink} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--dark-lighter)', borderRadius: 10, textDecoration: 'none', color: 'var(--text)' }}>
+<div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-music" style={{ color: 'var(--success)', fontSize: 16 }}></i>
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>Audio Demo</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.audioLink}</div>
+</div>
+<i className="fa-solid fa-arrow-up-right-from-square" style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}></i>
+</a>
+)}
 </div>
 </div>
+)}
 
 {/* Recent Venues */}
 <div className="card">
@@ -997,23 +1032,47 @@ For venues, production companies, agencies, and bookers. Advanced search, roster
 // DASHBOARD PAGE
 // ===========================
 
-function DashboardPage({ onViewProfile }) {
+function DashboardPage({ onViewProfile, currentUser, profiles, onEditProfile, onLogin }) {
 const [dashTab, setDashTab] = useState('overview');
+
+// Not logged in — show login prompt
+if (!currentUser) {
+return (
+<div style={{ padding: '80px 0', minHeight: '100vh' }}>
+<div className="container" style={{ maxWidth: 480, textAlign: 'center' }}>
+<div className="card" style={{ padding: '60px 40px' }}>
+<i className="fa-solid fa-lock" style={{ fontSize: 48, color: 'var(--primary-light)', marginBottom: 20, display: 'block' }}></i>
+<h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12 }}>Log In to Your Dashboard</h2>
+<p style={{ color: 'var(--text-muted)', marginBottom: 28, lineHeight: 1.6 }}>Access your profile, manage your settings, and track your activity.</p>
+<button className="btn btn-primary" onClick={onLogin} style={{ width: '100%', justifyContent: 'center', padding: '14px 24px', fontSize: 16 }}><i className="fa-solid fa-right-to-bracket" style={{ marginRight: 8 }}></i> Log In</button>
+<p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 16 }}>Use your magic link token or admin token to log in.</p>
+</div>
+</div>
+</div>
+);
+}
+
+const isAdmin = currentUser.role === 'admin';
+const myProfile = profiles.find(p => p.id === currentUser.id);
+
 return (
 <div style={{ padding: '32px 0', minHeight: '100vh' }}>
 <div className="container">
 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
 <div>
-<h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>Welcome back, Marcus</h1>
-<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Pro Member · Last login 2h ago</p>
+<h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>Welcome back, {currentUser.name}</h1>
+<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{isAdmin ? 'Admin' : myProfile && myProfile.tier === 'premium' ? 'Premium Member' : myProfile && myProfile.tier === 'pro' ? 'Pro Member' : 'Starter Member'}</p>
 </div>
-<button className="btn btn-accent btn-sm"><i className="fa-solid fa-crown"></i> Upgrade to Premium</button>
+<div style={{ display: 'flex', gap: 10 }}>
+{!isAdmin && myProfile && <button className="btn btn-outline" onClick={() => onEditProfile(currentUser.id)}><i className="fa-solid fa-pen"></i> Edit My Profile</button>}
+{isAdmin && <button className="btn btn-primary" onClick={() => onEditProfile(null)}><i className="fa-solid fa-plus"></i> Add Performer</button>}
+</div>
 </div>
 
 <div className="tabs" style={{ marginBottom: 24, display: 'inline-flex' }}>
-{['overview', 'messages', 'gigs', 'analytics'].map(t => (
+{(isAdmin ? ['overview', 'all-profiles'] : ['overview']).map(t => (
 <button key={t} className={`tab ${dashTab === t ? 'active' : ''}`} onClick={() => setDashTab(t)}>
-{t.charAt(0).toUpperCase() + t.slice(1)}
+{t === 'all-profiles' ? 'All Profiles' : t.charAt(0).toUpperCase() + t.slice(1)}
 </button>
 ))}
 </div>
@@ -1023,10 +1082,10 @@ return (
 {/* Stats Row */}
 <div className="grid-4" style={{ marginBottom: 24 }}>
 {[
-{ label: 'Profile Views', value: '347', change: '+12% this week', icon: 'fa-eye', color: 'var(--primary-light)' },
-{ label: 'Search Appearances', value: '1,240', change: '+8% this week', icon: 'fa-magnifying-glass', color: 'var(--accent)' },
-{ label: 'Messages', value: '5', change: '2 unread', icon: 'fa-envelope', color: 'var(--success)' },
-{ label: 'Gig Invitations', value: '3', change: '1 new today', icon: 'fa-ticket', color: '#EC4899' },
+{ label: isAdmin ? 'Total Profiles' : 'Profile Views', value: isAdmin ? profiles.length : '—', icon: isAdmin ? 'fa-users' : 'fa-eye', color: 'var(--primary-light)' },
+{ label: isAdmin ? 'Performers' : 'Search Appearances', value: isAdmin ? profiles.filter(p => p.category === 'performers' || (p.subcategories && p.subcategories.some(s => CATEGORIES.performers && CATEGORIES.performers.subs.includes(s)))).length : '—', icon: isAdmin ? 'fa-guitar' : 'fa-magnifying-glass', color: 'var(--accent)' },
+{ label: isAdmin ? 'Technical' : 'Messages', value: isAdmin ? profiles.filter(p => p.category === 'technical' || (p.subcategories && p.subcategories.some(s => CATEGORIES.technical && CATEGORIES.technical.subs.includes(s)))).length : '—', icon: isAdmin ? 'fa-sliders' : 'fa-envelope', color: 'var(--success)' },
+{ label: isAdmin ? 'Available Now' : 'Gig Invitations', value: isAdmin ? profiles.filter(p => p.available).length : '—', icon: isAdmin ? 'fa-circle-check' : 'fa-ticket', color: '#EC4899' },
 ].map((s, i) => (
 <div key={i} className="card">
 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
@@ -1036,72 +1095,124 @@ return (
 </div>
 <div style={{ fontSize: 28, fontWeight: 800 }}>{s.value}</div>
 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.label}</div>
-<div style={{ fontSize: 12, color: 'var(--success)', marginTop: 4 }}>{s.change}</div>
 </div>
 ))}
 </div>
 
-<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-{/* Recent Messages */}
+{/* Admin: All profiles list */}
+{isAdmin && (
 <div className="card">
-<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Recent Messages</h3>
-{[
-{ from: 'Rachel Foster', preview: 'Hi Marcus, I have a jazz trio gig at Hotel Valley Ho on March 22...', time: '2h ago', unread: true },
-{ from: 'Casino Arizona', preview: 'We are looking for a guitarist for our lounge series...', time: '1d ago', unread: true },
-{ from: 'Kevin Park', preview: 'Hey, want to put a quartet together for the corporate gig?', time: '2d ago', unread: false },
-].map((m, i) => (
-<div key={i} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: i < 2 ? '1px solid var(--dark-border)' : 'none', cursor: 'pointer' }}>
-<div className="avatar avatar-sm" style={{ background: m.unread ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>{m.from[0]}</div>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700 }}>All Profiles</h3>
+<span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{profiles.length} total</span>
+</div>
+{profiles.map((p, i) => (
+<div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: i < profiles.length - 1 ? '1px solid var(--dark-border)' : 'none' }}>
+<div className="avatar avatar-sm" style={{ background: p.tier === 'premium' ? 'var(--premium-gradient)' : p.tier === 'pro' ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>
+{p.initials}
+</div>
 <div style={{ flex: 1, minWidth: 0 }}>
-<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-<span style={{ fontWeight: m.unread ? 700 : 400, fontSize: 14 }}>{m.from}</span>
-<span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{m.time}</span>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+<span style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</span>
+{p.tier === 'premium' && <span className="badge badge-premium" style={{ fontSize: 10 }}>Premium</span>}
+{p.tier === 'pro' && <span className="badge badge-pro" style={{ fontSize: 10 }}>Pro</span>}
+{p.available && <span className="badge badge-available" style={{ fontSize: 10 }}><i className="fa-solid fa-circle" style={{ fontSize: 5 }}></i> Available</span>}
 </div>
-<p style={{ fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.preview}</p>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+{p.subcategories && p.subcategories.slice(0, 3).join(', ')}{p.location ? ` · ${p.location}` : ''}{p.email ? ` · ${p.email}` : ''}
 </div>
-{m.unread && <div style={{ width: 8, height: 8, background: 'var(--primary-light)', borderRadius: '50%', marginTop: 6 }}></div>}
 </div>
-))}
-</div>
-
-{/* Matching Gigs */}
-<div className="card">
-<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Gigs Matching Your Profile</h3>
-{SAMPLE_GIGS.filter(g => g.categories.some(c => ['Guitarist', 'Full Band', 'Solo Artist'].includes(c))).map((g, i) => (
-<div key={g.id} style={{ padding: '12px 0', borderBottom: i < 1 ? '1px solid var(--dark-border)' : 'none' }}>
-<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-<span style={{ fontWeight: 600, fontSize: 14 }}>{g.title}</span>
-<span style={{ color: 'var(--success)', fontWeight: 600, fontSize: 13 }}>{g.pay}</span>
-</div>
-<div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 12 }}>
-<span>{g.venue}</span>
-<span>{g.date}</span>
+<div style={{ display: 'flex', gap: 8 }}>
+<button className="btn btn-outline" onClick={() => onViewProfile(p)} style={{ padding: '6px 12px', fontSize: 12 }}><i className="fa-solid fa-eye"></i> View</button>
+<button className="btn btn-primary" onClick={() => onEditProfile(p.id)} style={{ padding: '6px 12px', fontSize: 12 }}><i className="fa-solid fa-pen"></i> Edit</button>
 </div>
 </div>
 ))}
-</div>
-</div>
-
-{/* Profile Completion */}
-<div className="card" style={{ marginTop: 20 }}>
-<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-<h3 style={{ fontSize: 16, fontWeight: 700 }}>Profile Strength</h3>
-<span style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary-light)' }}>78%</span>
-</div>
-<div className="progress-bar" style={{ marginBottom: 16 }}><div className="progress-fill" style={{ width: '78%' }}></div></div>
-<div style={{ display: 'flex', gap: 12 }}>
-{['Add demo video (+10%)', 'Complete availability calendar (+7%)', 'Add equipment list (+5%)'].map((tip, i) => (
-<div key={i} style={{ flex: 1, background: 'var(--dark-lighter)', padding: '10px 14px', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
-<i className="fa-solid fa-circle-plus" style={{ color: 'var(--primary-light)' }}></i> {tip}
-</div>
-))}
-</div>
-</div>
 </div>
 )}
-{dashTab === 'messages' && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Full messaging interface coming soon</div>}
-{dashTab === 'gigs' && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Gig management interface coming soon</div>}
-{dashTab === 'analytics' && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Full analytics dashboard coming soon</div>}
+
+{/* Performer: My Profile card */}
+{!isAdmin && myProfile && (
+<div>
+<div className="card" style={{ marginBottom: 20 }}>
+<div style={{ display: 'flex', gap: 20, alignItems: 'center', marginBottom: 20 }}>
+<div className="avatar avatar-lg" style={{ background: myProfile.tier === 'premium' ? 'var(--premium-gradient)' : myProfile.tier === 'pro' ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>
+{myProfile.initials}
+</div>
+<div style={{ flex: 1 }}>
+<h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{myProfile.name}</h2>
+<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{myProfile.subcategories ? myProfile.subcategories.join(', ') : ''}</p>
+<p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>{myProfile.location}{myProfile.state ? `, ${myProfile.state}` : ''}</p>
+</div>
+<button className="btn btn-primary" onClick={() => onEditProfile(currentUser.id)}><i className="fa-solid fa-pen"></i> Edit Profile</button>
+</div>
+<div style={{ display: 'flex', gap: 12 }}>
+<div style={{ flex: 1, background: 'var(--dark-lighter)', padding: '12px 16px', borderRadius: 8 }}>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
+<div style={{ fontSize: 14, fontWeight: 600 }}>{myProfile.available ? 'Available' : 'Not Available'}</div>
+</div>
+<div style={{ flex: 1, background: 'var(--dark-lighter)', padding: '12px 16px', borderRadius: 8 }}>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Tier</div>
+<div style={{ fontSize: 14, fontWeight: 600 }}>{myProfile.tier === 'premium' ? 'Premium' : myProfile.tier === 'pro' ? 'Pro' : 'Starter'}</div>
+</div>
+<div style={{ flex: 1, background: 'var(--dark-lighter)', padding: '12px 16px', borderRadius: 8 }}>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Experience</div>
+<div style={{ fontSize: 14, fontWeight: 600 }}>{myProfile.yearsExp ? myProfile.yearsExp + ' years' : 'Not set'}</div>
+</div>
+</div>
+</div>
+{myProfile.bio && (
+<div className="card" style={{ marginBottom: 20 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Bio</h3>
+<p style={{ color: 'var(--text-muted)', lineHeight: 1.7, fontSize: 14 }}>{myProfile.bio}</p>
+</div>
+)}
+{myProfile.calendarToken && (
+<div className="card">
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Calendar</h3>
+<a href={`${CALENDAR_BASE}/${myProfile.calendarToken}`} target="_blank" rel="noopener noreferrer" className="btn btn-accent" style={{ display: 'inline-flex' }}><i className="fa-solid fa-calendar"></i> View My Calendar</a>
+</div>
+)}
+</div>
+)}
+
+{/* Performer with no matching profile */}
+{!isAdmin && !myProfile && (
+<div className="card" style={{ padding: 40, textAlign: 'center' }}>
+<i className="fa-solid fa-user-slash" style={{ fontSize: 36, color: 'var(--text-muted)', marginBottom: 12, display: 'block', opacity: 0.5 }}></i>
+<p style={{ color: 'var(--text-muted)' }}>Your profile could not be loaded. Please contact TAD Shows for assistance.</p>
+</div>
+)}
+</div>
+)}
+
+{dashTab === 'all-profiles' && isAdmin && (
+<div>
+<div style={{ marginBottom: 16, color: 'var(--text-muted)', fontSize: 14 }}>Click Edit to update any profile. Changes save directly to Airtable.</div>
+{profiles.map((p, i) => (
+<div key={p.id} className="card" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 16 }}>
+<div className="avatar avatar-sm" style={{ background: p.tier === 'premium' ? 'var(--premium-gradient)' : p.tier === 'pro' ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>
+{p.initials}
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{p.name}</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{p.email}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{p.subcategories ? p.subcategories.join(', ') : 'No specialties set'} · {p.location || 'No location'}</div>
+</div>
+<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, minWidth: 100 }}>
+{p.tier === 'premium' && <span className="badge badge-premium" style={{ fontSize: 10 }}>Premium</span>}
+{p.tier === 'pro' && <span className="badge badge-pro" style={{ fontSize: 10 }}>Pro</span>}
+{!p.tier && <span className="badge badge-free" style={{ fontSize: 10 }}>Starter</span>}
+{p.available ? <span style={{ fontSize: 11, color: 'var(--success)' }}>Available</span> : <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Unavailable</span>}
+</div>
+<div style={{ display: 'flex', gap: 8 }}>
+<button className="btn btn-outline" onClick={() => onViewProfile(p)} style={{ padding: '8px 14px', fontSize: 12 }}><i className="fa-solid fa-eye"></i></button>
+<button className="btn btn-primary" onClick={() => onEditProfile(p.id)} style={{ padding: '8px 14px', fontSize: 12 }}><i className="fa-solid fa-pen"></i> Edit</button>
+</div>
+</div>
+))}
+</div>
+)}
 </div>
 </div>
 );
@@ -1346,7 +1457,8 @@ const [error, setError] = useState('');
 const [formData, setFormData] = useState({
   name: '', email: '', phone: '', category: '', subcategories: [], location: '', state: '',
   bio: '', rateMin: '', rateMax: '', rateType: '', yearsExp: '', travelRadius: '',
-  genres: [], skills: [], unions: [], equipment: '', recentVenues: '', available: true
+  genres: [], skills: [], unions: [], equipment: '', recentVenues: '', available: true,
+  videoLink: '', showReelLink: '', audioLink: ''
 });
 const update = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
 const toggleArrayItem = (key, item) => update(key, formData[key].includes(item) ? formData[key].filter(x => x !== item) : [...formData[key], item]);
@@ -1365,7 +1477,8 @@ useEffect(() => {
         yearsExp: p.yearsExp || '', travelRadius: p.travel ? parseInt(p.travel) || '' : '',
         genres: p.genres || [], skills: p.skills || [], unions: p.unions || [],
         equipment: (p.equipment || []).join('\n'), recentVenues: (p.recentVenues || []).join('\n'),
-        available: p.available !== false
+        available: p.available !== false,
+        videoLink: p.videoLink || '', showReelLink: p.showReelLink || '', audioLink: p.audioLink || ''
       });
     } catch (err) { setError('Could not load profile'); }
     setLoading(false);
@@ -1384,7 +1497,10 @@ const handleSave = async () => {
       genres: formData.genres, skills: formData.skills, unions: formData.unions,
       equipment: formData.equipment.split('\n').filter(Boolean),
       recentVenues: formData.recentVenues.split('\n').filter(Boolean),
-      available: formData.available
+      available: formData.available,
+      videoLink: formData.videoLink || '',
+      showReelLink: formData.showReelLink || '',
+      audioLink: formData.audioLink || ''
     };
     if (formData.rateMin) fields.rateMin = parseFloat(formData.rateMin);
     if (formData.rateMax) fields.rateMax = parseFloat(formData.rateMax);
@@ -1479,6 +1595,19 @@ return (
 </label>
 </div>
 </div>
+</div>
+</div>
+
+{/* Media Links */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-photo-film" style={{ marginRight: 6 }}></i> Media Links</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Performance Video (YouTube, Vimeo, etc.)</label>
+<input type="url" placeholder="https://youtube.com/watch?v=..." value={formData.videoLink} onChange={e => update('videoLink', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Live Show Reel</label>
+<input type="url" placeholder="https://youtube.com/watch?v=..." value={formData.showReelLink} onChange={e => update('showReelLink', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Audio Demo (SoundCloud, Spotify, etc.)</label>
+<input type="url" placeholder="https://soundcloud.com/..." value={formData.audioLink} onChange={e => update('audioLink', e.target.value)} /></div>
 </div>
 </div>
 
