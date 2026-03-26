@@ -179,6 +179,33 @@ transition: all 0.3s;
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
 // ===========================
+// API & AUTH LAYER
+// ===========================
+
+const API_BASE = '/api';
+const CALENDAR_BASE = 'https://calendar.stagelink365.com/c';
+
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+async function apiPost(path, body, authToken) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+async function apiPatch(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+// ===========================
 // DATA LAYER
 // ===========================
 
@@ -243,6 +270,7 @@ const [page, setPage] = useState('home');
 const [selectedProfile, setSelectedProfile] = useState(null);
 const [selectedGig, setSelectedGig] = useState(null);
 const [showCreateProfile, setShowCreateProfile] = useState(false);
+const [showEditProfile, setShowEditProfile] = useState(false);
 const [showLogin, setShowLogin] = useState(false);
 const [searchQuery, setSearchQuery] = useState('');
 const [filterCategory, setFilterCategory] = useState('all');
@@ -250,13 +278,54 @@ const [filterLocation, setFilterLocation] = useState('all');
 const [filterAvailability, setFilterAvailability] = useState(false);
 const [filterTier, setFilterTier] = useState('all');
 
+// Live data state
+const [liveProfiles, setLiveProfiles] = useState([]);
+const [loadingProfiles, setLoadingProfiles] = useState(true);
+const [apiError, setApiError] = useState(null);
+
+// Auth state
+const [currentUser, setCurrentUser] = useState(null);
+
+// Fetch profiles from Airtable API
+const fetchProfiles = useCallback(async () => {
+  setLoadingProfiles(true);
+  try {
+    const data = await apiGet('/profiles');
+    setLiveProfiles(data.profiles || []);
+    setApiError(null);
+  } catch (err) {
+    console.warn('API not available, using sample data:', err.message);
+    setApiError('api_unavailable');
+    setLiveProfiles([]);
+  }
+  setLoadingProfiles(false);
+}, []);
+
+useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
+
+// Use live profiles if available, otherwise fall back to sample data
+const profiles = liveProfiles.length > 0 ? liveProfiles : SAMPLE_PROFILES;
+const isLiveData = liveProfiles.length > 0;
+
 const viewProfile = (profile) => { setSelectedProfile(profile); setPage('profile'); window.scrollTo(0,0); };
 const viewGig = (gig) => { setSelectedGig(gig); };
 
+const handleLogin = (user) => { setCurrentUser(user); setShowLogin(false); setPage('dashboard'); };
+const handleLogout = () => { setCurrentUser(null); setPage('home'); };
+
+const handleProfileCreated = (result) => {
+  setShowCreateProfile(false);
+  fetchProfiles();
+  if (result && result.profile) {
+    setCurrentUser({ id: result.profile.id, name: result.profile.name, email: result.profile.email, role: 'performer', token: result.profile.token });
+  }
+  setPage('dashboard');
+};
+
 return (
 <div>
-<Navbar page={page} setPage={setPage} onLogin={() => setShowLogin(true)} onCreateProfile={() => setShowCreateProfile(true)} />
-{page === 'home' && <HomePage setPage={setPage} onCreateProfile={() => setShowCreateProfile(true)} />}
+<Navbar page={page} setPage={setPage} onLogin={() => setShowLogin(true)} onCreateProfile={() => setShowCreateProfile(true)} currentUser={currentUser} onLogout={handleLogout} />
+{page === 'home' && <HomePage setPage={setPage} onCreateProfile={() => setShowCreateProfile(true)} profiles={profiles} isLiveData={isLiveData} />}
 {page === 'browse' && (
 <BrowsePage
 searchQuery={searchQuery} setSearchQuery={setSearchQuery}
@@ -265,17 +334,19 @@ filterLocation={filterLocation} setFilterLocation={setFilterLocation}
 filterAvailability={filterAvailability} setFilterAvailability={setFilterAvailability}
 filterTier={filterTier} setFilterTier={setFilterTier}
 onViewProfile={viewProfile}
+profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
 />
 )}
-{page === 'profile' && selectedProfile && <ProfilePage profile={selectedProfile} onBack={() => setPage('browse')} />}
+{page === 'profile' && selectedProfile && <ProfilePage profile={selectedProfile} onBack={() => setPage('browse')} currentUser={currentUser} onEdit={() => setShowEditProfile(true)} />}
 {page === 'gigs' && <GigsPage onViewGig={viewGig} />}
 {page === 'pricing' && <PricingPage onCreateProfile={() => setShowCreateProfile(true)} />}
-{page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} />}
+{page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={() => setShowEditProfile(true)} />}
 {page === 'booker' && <BookerDashboard onViewProfile={viewProfile} setPage={setPage} />}
 {page === 'messages' && <MessagesPage />}
 {page === 'database' && <DatabaseArchitecture />}
-{showCreateProfile && <CreateProfileModal onClose={() => setShowCreateProfile(false)} onSuccess={() => { setShowCreateProfile(false); setPage('dashboard'); }} />}
-{showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={() => { setShowLogin(false); setPage('dashboard'); }} />}
+{showCreateProfile && <CreateProfileModal onClose={() => setShowCreateProfile(false)} onSuccess={handleProfileCreated} currentUser={currentUser} />}
+{showEditProfile && currentUser && <EditProfileModal profileId={currentUser.id || (selectedProfile && selectedProfile.id)} token={currentUser.token} onClose={() => setShowEditProfile(false)} onSaved={() => { setShowEditProfile(false); fetchProfiles(); }} />}
+{showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLogin} />}
 {selectedGig && <GigDetailModal gig={selectedGig} onClose={() => setSelectedGig(null)} />}
 </div>
 );
@@ -285,7 +356,7 @@ onViewProfile={viewProfile}
 // NAVBAR
 // ===========================
 
-function Navbar({ page, setPage, onLogin, onCreateProfile }) {
+function Navbar({ page, setPage, onLogin, onCreateProfile, currentUser, onLogout }) {
 return (
 <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15,15,26,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--dark-border)', padding: '0 24px' }}>
 <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
@@ -316,8 +387,23 @@ style={{ background: page === item.key ? 'rgba(108,43,217,0.15)' : 'transparent'
 </div>
 </div>
 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+{currentUser ? (
+<>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+<div className="avatar avatar-sm" style={{ width: 32, height: 32, fontSize: 12, background: currentUser.role === 'admin' ? 'var(--premium-gradient)' : 'var(--pro-gradient)' }}>
+{(currentUser.name || '?').split(' ').map(w => w[0]).join('').slice(0,2)}
+</div>
+<span style={{ fontSize: 13, fontWeight: 600 }}>{currentUser.name}</span>
+{currentUser.role === 'admin' && <span className="badge badge-premium" style={{ fontSize: 10 }}>Admin</span>}
+</div>
+<button className="btn btn-outline btn-sm" onClick={onLogout}>Log Out</button>
+</>
+) : (
+<>
 <button className="btn btn-outline btn-sm" onClick={onLogin}>Log In</button>
 <button className="btn btn-primary btn-sm" onClick={onCreateProfile}><i className="fa-solid fa-plus"></i> Join StageLink365</button>
+</>
+)}
 </div>
 </div>
 </nav>
@@ -328,7 +414,7 @@ style={{ background: page === item.key ? 'rgba(108,43,217,0.15)' : 'transparent'
 // HOME PAGE
 // ===========================
 
-function HomePage({ setPage, onCreateProfile }) {
+function HomePage({ setPage, onCreateProfile, profiles, isLiveData }) {
 return (
 <div>
 {/* Hero */}
@@ -357,10 +443,10 @@ Musicians, techs, performers, and industry pros — all in one network. Find wor
 </div>
 {/* Stats */}
 <div className="fade-in fade-in-delay-4" style={{ display: 'flex', gap: 60, justifyContent: 'center', marginTop: 60 }}>
-<div className="stat-box"><div className="stat-number">2,400+</div><div className="stat-label">Professionals</div></div>
+<div className="stat-box"><div className="stat-number">{isLiveData ? profiles.length : '2,400+'}</div><div className="stat-label">Professionals</div></div>
 <div className="stat-box"><div className="stat-number">180+</div><div className="stat-label">Venues</div></div>
 <div className="stat-box"><div className="stat-number">850+</div><div className="stat-label">Gigs Posted</div></div>
-<div className="stat-box"><div className="stat-number">12</div><div className="stat-label">Categories</div></div>
+<div className="stat-box"><div className="stat-number">{Object.keys(CATEGORIES).length}</div><div className="stat-label">Categories</div></div>
 </div>
 </div>
 </section>
@@ -423,7 +509,7 @@ Musicians, techs, performers, and industry pros — all in one network. Find wor
 <button className="btn btn-outline" onClick={() => setPage('browse')}>View All <i className="fa-solid fa-arrow-right"></i></button>
 </div>
 <div className="grid-3">
-{SAMPLE_PROFILES.filter(p => p.tier === 'premium' || p.tier === 'pro').slice(0, 6).map(p => (
+{profiles.filter(p => p.tier === 'premium' || p.tier === 'pro').slice(0, 6).map(p => (
 <ProfileCard key={p.id} profile={p} onClick={() => { setPage('profile'); window.scrollTo(0,0); }} onView={() => { }} setPage={setPage} />
 ))}
 </div>
@@ -513,9 +599,9 @@ return (
 // BROWSE PAGE
 // ===========================
 
-function BrowsePage({ searchQuery, setSearchQuery, filterCategory, setFilterCategory, filterLocation, setFilterLocation, filterAvailability, setFilterAvailability, filterTier, setFilterTier, onViewProfile }) {
+function BrowsePage({ searchQuery, setSearchQuery, filterCategory, setFilterCategory, filterLocation, setFilterLocation, filterAvailability, setFilterAvailability, filterTier, setFilterTier, onViewProfile, profiles, loading, isLiveData }) {
 const filtered = useMemo(() => {
-return SAMPLE_PROFILES.filter(p => {
+return profiles.filter(p => {
 if (searchQuery) {
 const q = searchQuery.toLowerCase();
 const match = p.name.toLowerCase().includes(q) || p.subcategories.some(s => s.toLowerCase().includes(q)) || p.bio.toLowerCase().includes(q) || (p.genres && p.genres.some(g => g.toLowerCase().includes(q))) || p.skills.some(s => s.toLowerCase().includes(q));
@@ -588,7 +674,7 @@ return (
 // PROFILE PAGE
 // ===========================
 
-function ProfilePage({ profile: p, onBack }) {
+function ProfilePage({ profile: p, onBack, currentUser, onEdit }) {
 const calDays = useMemo(() => {
 const days = [];
 ['S','M','T','W','T','F','S'].forEach(d => days.push({ type: 'header', label: d }));
@@ -635,6 +721,8 @@ return (
 <button className="btn btn-primary"><i className="fa-solid fa-paper-plane"></i> Contact</button>
 <button className="btn btn-outline"><i className="fa-regular fa-bookmark"></i> Save</button>
 <button className="btn btn-outline"><i className="fa-solid fa-share-nodes"></i> Share</button>
+{p.calendarToken && <a href={`${CALENDAR_BASE}/${p.calendarToken}`} target="_blank" rel="noopener noreferrer" className="btn btn-accent"><i className="fa-solid fa-calendar"></i> View Calendar</a>}
+{currentUser && (currentUser.role === 'admin' || currentUser.id === p.id) && <button className="btn btn-outline" onClick={onEdit}><i className="fa-solid fa-pen"></i> Edit Profile</button>}
 </div>
 </div>
 
@@ -721,9 +809,11 @@ return (
 )}
 </div>
 
-{/* Mini Calendar */}
+{/* Calendar Link */}
 <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--dark-border)' }}>
-<h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>March 2026 Availability</h4>
+<h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Availability Calendar</h4>
+{p.calendarToken ? (
+<div>
 <div className="cal-grid">
 {calDays.map((d, i) => (
 <div key={i} className={`cal-day ${d.type === 'header' ? 'header' : d.type === 'empty' ? 'empty' : d.status}`}>
@@ -736,7 +826,17 @@ return (
 <span><i className="fa-solid fa-square" style={{ color: 'var(--accent)', fontSize: 8 }}></i> Tentative</span>
 <span><i className="fa-solid fa-square" style={{ color: 'var(--danger)', fontSize: 8 }}></i> Booked</span>
 </div>
+<a href={`${CALENDAR_BASE}/${p.calendarToken}`} target="_blank" rel="noopener noreferrer"
+  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, padding: '10px', background: 'rgba(108,43,217,0.1)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: 'var(--primary-light)', textDecoration: 'none' }}>
+  <i className="fa-solid fa-calendar-days"></i> View Full Calendar
+</a>
 </div>
+) : (
+<div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+<i className="fa-solid fa-calendar-xmark" style={{ fontSize: 24, marginBottom: 8, opacity: 0.4, display: 'block' }}></i>
+Calendar not yet set up
+</div>
+)}
 </div>
 </div>
 </div>
@@ -1010,17 +1110,42 @@ return (
 // MODALS
 // ===========================
 
-function CreateProfileModal({ onClose, onSuccess }) {
+function CreateProfileModal({ onClose, onSuccess, currentUser }) {
 const [step, setStep] = useState(1);
-const [formData, setFormData] = useState({ name: '', email: '', category: '', subcategories: [], location: '', bio: '', rate: '' });
-const totalSteps = 4;
+const [saving, setSaving] = useState(false);
+const [saveError, setSaveError] = useState('');
+const [createdResult, setCreatedResult] = useState(null);
+const [formData, setFormData] = useState({
+  name: '', email: '', phone: '', category: '', subcategories: [], location: '', state: 'AZ',
+  bio: '', rateMin: '', rateMax: '', rateType: 'gig', yearsExp: '', travelRadius: '',
+  genres: [], skills: [], unions: [], equipment: '', recentVenues: ''
+});
 const update = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
+const toggleArrayItem = (key, item) => update(key, formData[key].includes(item) ? formData[key].filter(x => x !== item) : [...formData[key], item]);
+
+const handleCreate = async () => {
+  if (!formData.name || !formData.email) { setSaveError('Name and email are required'); return; }
+  setSaving(true); setSaveError('');
+  try {
+    const body = {
+      ...formData,
+      equipment: formData.equipment.split('\n').filter(Boolean),
+      recentVenues: formData.recentVenues.split('\n').filter(Boolean)
+    };
+    const result = await apiPost('/profile-create', body);
+    setCreatedResult(result);
+    setStep(5);
+  } catch (err) {
+    setSaveError('Failed to create profile. Please try again.');
+  }
+  setSaving(false);
+};
 
 return (
 <div className="modal-overlay" onClick={onClose}>
-<div className="modal" onClick={e => e.stopPropagation()}>
+<div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 600, maxHeight: '85vh', overflowY: 'auto' }}>
 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-<h2 style={{ fontSize: 22, fontWeight: 700 }}>Join StageLink365</h2>
+<h2 style={{ fontSize: 22, fontWeight: 700 }}>{currentUser && currentUser.role === 'admin' ? 'Add Performer' : 'Join StageLink365'}</h2>
 <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
 </div>
 {/* Progress */}
@@ -1034,14 +1159,22 @@ return (
 <div>
 <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Basic Information</h3>
 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Full Name</label><input placeholder="Your professional name" value={formData.name} onChange={e => update('name', e.target.value)} /></div>
-<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Email</label><input type="email" placeholder="you@example.com" value={formData.email} onChange={e => update('email', e.target.value)} /></div>
-<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Location</label>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Professional/Stage Name *</label><input placeholder="e.g., Marcus Johnson" value={formData.name} onChange={e => update('name', e.target.value)} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Email *</label><input type="email" placeholder="you@example.com" value={formData.email} onChange={e => update('email', e.target.value)} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Phone</label><input type="tel" placeholder="(555) 123-4567" value={formData.phone} onChange={e => update('phone', e.target.value)} /></div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 12 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>City</label>
 <select value={formData.location} onChange={e => update('location', e.target.value)}>
-<option value="">Select your city</option>
-{AZ_LOCATIONS.map(l => <option key={l} value={l}>{l}, AZ</option>)}
+<option value="">Select city</option>
+{AZ_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
 </select>
 </div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>State</label>
+<input value={formData.state} onChange={e => update('state', e.target.value)} />
+</div>
+</div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Years of Experience</label>
+<input type="number" placeholder="e.g., 10" value={formData.yearsExp} onChange={e => update('yearsExp', e.target.value)} /></div>
 </div>
 </div>
 )}
@@ -1062,13 +1195,21 @@ return (
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
 {CATEGORIES[formData.category].subs.map(s => (
 <div key={s} className={`pill ${formData.subcategories.includes(s) ? 'active' : ''}`}
-onClick={() => update('subcategories', formData.subcategories.includes(s) ? formData.subcategories.filter(x => x !== s) : [...formData.subcategories, s])}>
+onClick={() => toggleArrayItem('subcategories', s)}>
 {s}
 </div>
 ))}
 </div>
 </div>
 )}
+<div>
+<label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Genres (select all that apply)</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+{GENRES.map(g => (
+<div key={g} className={`pill ${formData.genres.includes(g) ? 'active' : ''}`} onClick={() => toggleArrayItem('genres', g)}>{g}</div>
+))}
+</div>
+</div>
 </div>
 </div>
 )}
@@ -1080,42 +1221,69 @@ onClick={() => update('subcategories', formData.subcategories.includes(s) ? form
 <div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Bio</label>
 <textarea rows={4} placeholder="Tell venues and bookers about your experience, style, and what you bring to the stage..." value={formData.bio} onChange={e => update('bio', e.target.value)} style={{ resize: 'vertical' }} />
 </div>
-<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Rate Range</label><input placeholder="e.g., $300-800/gig" value={formData.rate} onChange={e => update('rate', e.target.value)} /></div>
-<div>
-<label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Media</label>
-<div className="media-placeholder" style={{ aspectRatio: '3/1' }}><i className="fa-solid fa-cloud-arrow-up"></i><span style={{ fontSize: 13 }}>Upload videos, photos, or audio demos</span></div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Min Rate ($)</label><input type="number" placeholder="300" value={formData.rateMin} onChange={e => update('rateMin', e.target.value)} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Max Rate ($)</label><input type="number" placeholder="800" value={formData.rateMax} onChange={e => update('rateMax', e.target.value)} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Per</label>
+<select value={formData.rateType} onChange={e => update('rateType', e.target.value)}>
+<option value="gig">Per Gig</option><option value="day">Per Day</option><option value="hour">Per Hour</option>
+</select></div>
 </div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Travel Radius (miles)</label>
+<input type="number" placeholder="100" value={formData.travelRadius} onChange={e => update('travelRadius', e.target.value)} /></div>
 </div>
 </div>
 )}
 
 {step === 4 && (
+<div>
+<h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Equipment & Details</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Equipment You Provide (one per line)</label>
+<textarea rows={3} placeholder="Full guitar rig&#10;PA system for small venues&#10;Wireless in-ear monitors" value={formData.equipment} onChange={e => update('equipment', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Recent Venues/Clients (one per line)</label>
+<textarea rows={3} placeholder="Talking Stick Resort&#10;Casino Arizona&#10;Hotel Valley Ho" value={formData.recentVenues} onChange={e => update('recentVenues', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div>
+<label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Union Affiliations</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+{['AFM Local 586', 'IATSE Local 415', 'SAG-AFTRA', 'AEA', 'SDC', 'AGMA'].map(u => (
+<div key={u} className={`pill ${formData.unions.includes(u) ? 'active' : ''}`} onClick={() => toggleArrayItem('unions', u)}>{u}</div>
+))}
+</div>
+</div>
+{saveError && <div style={{ color: 'var(--danger)', fontSize: 13, padding: '8px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}><i className="fa-solid fa-circle-exclamation"></i> {saveError}</div>}
+</div>
+</div>
+)}
+
+{step === 5 && createdResult && (
 <div style={{ textAlign: 'center', padding: '20px 0' }}>
 <div style={{ width: 80, height: 80, background: 'rgba(16,185,129,0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
 <i className="fa-solid fa-check" style={{ fontSize: 36, color: 'var(--success)' }}></i>
 </div>
-<h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>You're on StageLink365!</h3>
-<p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>Your profile is live. Start getting discovered by venues, bookers, and fellow professionals across Arizona.</p>
-<div className="grid-2" style={{ maxWidth: 400, margin: '0 auto' }}>
-<div style={{ background: 'var(--dark-lighter)', padding: 16, borderRadius: 12, textAlign: 'center' }}>
-<i className="fa-solid fa-gem" style={{ color: 'var(--primary-light)', fontSize: 24, marginBottom: 8 }}></i>
-<div style={{ fontSize: 13, fontWeight: 600 }}>Upgrade to Pro</div>
-<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>$19/mo</div>
+<h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Profile Created!</h3>
+<p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{createdResult.profile.name} is now on StageLink365.</p>
+<div style={{ background: 'var(--dark-lighter)', padding: 20, borderRadius: 12, textAlign: 'left', marginBottom: 20 }}>
+<div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>
+<strong style={{ color: 'var(--text)' }}>Magic Link Token:</strong>
+<span style={{ fontFamily: 'monospace', background: 'var(--dark)', padding: '4px 8px', borderRadius: 4, marginLeft: 8, fontSize: 15, color: 'var(--accent)' }}>{createdResult.profile.token}</span>
 </div>
-<div style={{ background: 'var(--dark-lighter)', padding: 16, borderRadius: 12, textAlign: 'center' }}>
-<i className="fa-solid fa-crown" style={{ color: 'var(--accent)', fontSize: 24, marginBottom: 8 }}></i>
-<div style={{ fontSize: 13, fontWeight: 600 }}>Go Premium</div>
-<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>$49/mo</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>
+<strong style={{ color: 'var(--text)' }}>Calendar URL:</strong>
+<a href={createdResult.profile.calendarUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-light)', marginLeft: 8, wordBreak: 'break-all' }}>{createdResult.profile.calendarUrl}</a>
+</div>
+<div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 12 }}>
+<i className="fa-solid fa-triangle-exclamation"></i> Save this token — the performer will need it to log in and manage their calendar.
 </div>
 </div>
 </div>
 )}
 
 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
-{step > 1 && step < 4 ? <button className="btn btn-outline" onClick={() => setStep(step - 1)}>Back</button> : <div></div>}
-{step < 3 && <button className="btn btn-primary" onClick={() => setStep(step + 1)}>Continue</button>}
-{step === 3 && <button className="btn btn-primary" onClick={() => setStep(4)}>Create Profile</button>}
-{step === 4 && <button className="btn btn-primary" onClick={onSuccess}>Go to Dashboard</button>}
+{step > 1 && step < 5 ? <button className="btn btn-outline" onClick={() => setStep(step - 1)}>Back</button> : <div></div>}
+{step < 4 && <button className="btn btn-primary" onClick={() => setStep(step + 1)}>Continue</button>}
+{step === 4 && <button className="btn btn-primary" onClick={handleCreate} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Creating...' : 'Create Profile'}</button>}
+{step === 5 && <button className="btn btn-primary" onClick={() => onSuccess(createdResult)}>Go to Dashboard</button>}
 </div>
 </div>
 </div>
@@ -1123,6 +1291,24 @@ onClick={() => update('subcategories', formData.subcategories.includes(s) ? form
 }
 
 function LoginModal({ onClose, onSuccess }) {
+const [loginToken, setLoginToken] = useState('');
+const [loginError, setLoginError] = useState('');
+const [loading, setLoading] = useState(false);
+
+const handleLogin = async () => {
+  if (!loginToken.trim()) { setLoginError('Please enter your access token'); return; }
+  setLoading(true); setLoginError('');
+  try {
+    const data = await apiPost('/auth', { token: loginToken.trim() });
+    if (data.authenticated) {
+      onSuccess({ ...data.profile, role: data.role, token: loginToken.trim() });
+    }
+  } catch (err) {
+    setLoginError('Invalid token. Check your magic link or contact TAD Shows.');
+  }
+  setLoading(false);
+};
+
 return (
 <div className="modal-overlay" onClick={onClose}>
 <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
@@ -1131,12 +1317,197 @@ return (
 <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
 </div>
 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Email</label><input type="email" placeholder="you@example.com" /></div>
-<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Password</label><input type="password" placeholder="••••••••" /></div>
-<button className="btn btn-primary" onClick={onSuccess} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>Log In</button>
-<div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
-Don't have an account? <a href="#" style={{ color: 'var(--primary-light)' }}>Join StageLink365</a>
+<div style={{ background: 'rgba(108,43,217,0.1)', padding: 16, borderRadius: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+<i className="fa-solid fa-wand-magic-sparkles" style={{ color: 'var(--primary-light)', marginRight: 6 }}></i>
+StageLink365 uses <strong style={{ color: 'var(--text)' }}>magic link tokens</strong> instead of passwords. Enter your unique token below — you received it when your profile was created.
 </div>
+<div>
+<label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Your Access Token</label>
+<input type="text" placeholder="e.g., tRd7xKm9Qw" value={loginToken} onChange={e => setLoginToken(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ fontFamily: 'monospace', fontSize: 16, letterSpacing: 1 }} />
+</div>
+{loginError && <div style={{ color: 'var(--danger)', fontSize: 13, padding: '8px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}><i className="fa-solid fa-circle-exclamation"></i> {loginError}</div>}
+<button className="btn btn-primary" onClick={handleLogin} disabled={loading} style={{ width: '100%', justifyContent: 'center', marginTop: 8, opacity: loading ? 0.6 : 1 }}>
+{loading ? 'Verifying...' : 'Log In'}
+</button>
+<div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
+Don't have a token? Contact TAD Shows or <a href="#" style={{ color: 'var(--primary-light)' }}>create a new profile</a>.
+</div>
+</div>
+</div>
+</div>
+);
+}
+
+function EditProfileModal({ profileId, token, onClose, onSaved }) {
+const [loading, setLoading] = useState(true);
+const [saving, setSaving] = useState(false);
+const [error, setError] = useState('');
+const [formData, setFormData] = useState({
+  name: '', email: '', phone: '', category: '', subcategories: [], location: '', state: '',
+  bio: '', rateMin: '', rateMax: '', rateType: '', yearsExp: '', travelRadius: '',
+  genres: [], skills: [], unions: [], equipment: '', recentVenues: '', available: true
+});
+const update = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
+const toggleArrayItem = (key, item) => update(key, formData[key].includes(item) ? formData[key].filter(x => x !== item) : [...formData[key], item]);
+
+useEffect(() => {
+  if (!profileId) return;
+  (async () => {
+    try {
+      const data = await apiGet(`/profile?id=${profileId}`);
+      const p = data.profile;
+      setFormData({
+        name: p.name || '', email: p.email || '', phone: p.phone || '',
+        category: p.category || '', subcategories: p.subcategories || [],
+        location: p.location || '', state: p.state || '',
+        bio: p.bio || '', rateMin: '', rateMax: '', rateType: '',
+        yearsExp: p.yearsExp || '', travelRadius: p.travel ? parseInt(p.travel) || '' : '',
+        genres: p.genres || [], skills: p.skills || [], unions: p.unions || [],
+        equipment: (p.equipment || []).join('\n'), recentVenues: (p.recentVenues || []).join('\n'),
+        available: p.available !== false
+      });
+    } catch (err) { setError('Could not load profile'); }
+    setLoading(false);
+  })();
+}, [profileId]);
+
+const handleSave = async () => {
+  setSaving(true); setError('');
+  try {
+    const fields = {
+      name: formData.name, email: formData.email, phone: formData.phone,
+      category: formData.category, subcategories: formData.subcategories,
+      location: formData.location, state: formData.state,
+      bio: formData.bio, yearsExp: formData.yearsExp ? parseInt(formData.yearsExp) : undefined,
+      travelRadius: formData.travelRadius ? parseInt(formData.travelRadius) : undefined,
+      genres: formData.genres, skills: formData.skills, unions: formData.unions,
+      equipment: formData.equipment.split('\n').filter(Boolean),
+      recentVenues: formData.recentVenues.split('\n').filter(Boolean),
+      available: formData.available
+    };
+    if (formData.rateMin) fields.rateMin = parseFloat(formData.rateMin);
+    if (formData.rateMax) fields.rateMax = parseFloat(formData.rateMax);
+    if (formData.rateType) fields.rateType = formData.rateType;
+    await apiPatch('/profile', { id: profileId, fields, token });
+    onSaved();
+  } catch (err) { setError('Failed to save. Please try again.'); }
+  setSaving(false);
+};
+
+if (loading) return (
+<div className="modal-overlay"><div className="modal" style={{ textAlign: 'center', padding: 60 }}>
+<i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 32, color: 'var(--primary-light)', marginBottom: 16 }}></i>
+<p style={{ color: 'var(--text-muted)' }}>Loading profile...</p>
+</div></div>
+);
+
+return (
+<div className="modal-overlay" onClick={onClose}>
+<div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 640, maxHeight: '85vh', overflowY: 'auto' }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+<h2 style={{ fontSize: 22, fontWeight: 700 }}>Edit Profile</h2>
+<button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+{/* Basic Info */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-user" style={{ marginRight: 6 }}></i> Basic Information</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Name *</label><input value={formData.name} onChange={e => update('name', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Email *</label><input type="email" value={formData.email} onChange={e => update('email', e.target.value)} /></div>
+</div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Phone</label><input value={formData.phone} onChange={e => update('phone', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>City</label>
+<select value={formData.location} onChange={e => update('location', e.target.value)}><option value="">Select</option>{AZ_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}</select></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>State</label><input value={formData.state} onChange={e => update('state', e.target.value)} /></div>
+</div>
+</div>
+</div>
+
+{/* Category & Skills */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-tags" style={{ marginRight: 6 }}></i> Category & Skills</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Primary Category</label>
+<select value={formData.category} onChange={e => { update('category', e.target.value); }}>
+<option value="">Select</option>{Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+</select></div>
+{formData.category && CATEGORIES[formData.category] && (
+<div>
+<label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Specialties</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+{CATEGORIES[formData.category].subs.map(s => (
+<div key={s} className={`pill ${formData.subcategories.includes(s) ? 'active' : ''}`} onClick={() => toggleArrayItem('subcategories', s)} style={{ fontSize: 12 }}>{s}</div>
+))}
+</div>
+</div>
+)}
+<div>
+<label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Genres</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+{GENRES.map(g => (
+<div key={g} className={`pill ${formData.genres.includes(g) ? 'active' : ''}`} onClick={() => toggleArrayItem('genres', g)} style={{ fontSize: 12 }}>{g}</div>
+))}
+</div>
+</div>
+</div>
+</div>
+
+{/* Bio & Rates */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-pen" style={{ marginRight: 6 }}></i> Bio & Rates</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Bio</label>
+<textarea rows={4} value={formData.bio} onChange={e => update('bio', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Min Rate ($)</label><input type="number" value={formData.rateMin} onChange={e => update('rateMin', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Max Rate ($)</label><input type="number" value={formData.rateMax} onChange={e => update('rateMax', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Per</label>
+<select value={formData.rateType} onChange={e => update('rateType', e.target.value)}><option value="">-</option><option value="gig">Gig</option><option value="day">Day</option><option value="hour">Hour</option></select></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Yrs Exp</label><input type="number" value={formData.yearsExp} onChange={e => update('yearsExp', e.target.value)} /></div>
+</div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Travel Radius (miles)</label><input type="number" value={formData.travelRadius} onChange={e => update('travelRadius', e.target.value)} /></div>
+<div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, paddingBottom: 2 }}>
+<label style={{ fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+<input type="checkbox" checked={formData.available} onChange={e => update('available', e.target.checked)} style={{ width: 'auto' }} />
+<span>Currently Available for Work</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+
+{/* Equipment & Venues */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-toolbox" style={{ marginRight: 6 }}></i> Equipment & Experience</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Equipment (one per line)</label>
+<textarea rows={3} value={formData.equipment} onChange={e => update('equipment', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Recent Venues (one per line)</label>
+<textarea rows={3} value={formData.recentVenues} onChange={e => update('recentVenues', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div>
+<label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Union Affiliations</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+{['AFM Local 586', 'IATSE Local 415', 'SAG-AFTRA', 'AEA', 'SDC', 'AGMA'].map(u => (
+<div key={u} className={`pill ${formData.unions.includes(u) ? 'active' : ''}`} onClick={() => toggleArrayItem('unions', u)} style={{ fontSize: 12 }}>{u}</div>
+))}
+</div>
+</div>
+</div>
+</div>
+</div>
+
+{error && <div style={{ color: 'var(--danger)', fontSize: 13, padding: '8px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: 8, marginTop: 16 }}><i className="fa-solid fa-circle-exclamation"></i> {error}</div>}
+
+<div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--dark-border)' }}>
+<button className="btn btn-outline" onClick={onClose}>Cancel</button>
+<button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>
+{saving ? <><i className="fa-solid fa-spinner fa-spin"></i> Saving...</> : <><i className="fa-solid fa-check"></i> Save Changes</>}
+</button>
 </div>
 </div>
 </div>
