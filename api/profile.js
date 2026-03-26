@@ -117,7 +117,10 @@ function mapToAirtableFields(fields) {
     rateType: 'Rate Type',
     yearsExp: 'Years Experience',
     slug: 'Custom URL Slug',
-    available: 'Is Available'
+    available: 'Is Available',
+    videoLink: 'Video Link',
+    showReelLink: 'Show Reel Link',
+    audioLink: 'Audio Link'
   };
 
   const result = {};
@@ -211,6 +214,9 @@ function transformProfile(record) {
     equipment,
     recentVenues,
     photoUrl,
+    videoLink: f['Video Link'] || '',
+    showReelLink: f['Show Reel Link'] || '',
+    audioLink: f['Audio Link'] || '',
     calendarToken: f['Magic Link Token'] || null,
     slug: f['Custom URL Slug'] || null,
     profileViews: f['Profile Views'] || 0,
