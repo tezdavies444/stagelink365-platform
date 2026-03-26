@@ -1,4 +1,4 @@
-// POST /api/profile-create — Create a new profile in Airtable
+// POST /api/profile-create â Create a new profile in Airtable
 // Body: { name, email, phone, category, subcategories, bio, location, state, ... }
 // Optional: adminToken in Authorization header for admin creation
 
@@ -58,7 +58,7 @@ module.exports = async function handler(req, res) {
   if (isAdmin && body.accountType) {
     fields['Account Type'] = body.accountType;
   } else {
-    fields['Account Type'] = 'Performer';
+    fields['Account Type'] = 'Talent';
   }
 
   if (body.tier) {
