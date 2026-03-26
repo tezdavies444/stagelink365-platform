@@ -286,6 +286,7 @@ const [apiError, setApiError] = useState(null);
 // Auth state
 const [currentUser, setCurrentUser] = useState(null);
 const [editingProfileId, setEditingProfileId] = useState(null);
+const [calendarPopupUrl, setCalendarPopupUrl] = useState(null);
 
 // Fetch profiles from Airtable API
 const fetchProfiles = useCallback(async () => {
@@ -338,10 +339,10 @@ onViewProfile={viewProfile}
 profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
 />
 )}
-{page === 'profile' && selectedProfile && <ProfilePage profile={selectedProfile} onBack={() => setPage('browse')} currentUser={currentUser} onEdit={() => { setEditingProfileId(selectedProfile.id); setShowEditProfile(true); }} />}
+{page === 'profile' && selectedProfile && <ProfilePage profile={selectedProfile} onBack={() => setPage('browse')} currentUser={currentUser} onEdit={() => { setEditingProfileId(selectedProfile.id); setShowEditProfile(true); }} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
 {page === 'gigs' && <GigsPage onViewGig={viewGig} />}
 {page === 'pricing' && <PricingPage onCreateProfile={() => setShowCreateProfile(true)} />}
-{page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={(profileId) => { setEditingProfileId(profileId); setShowEditProfile(true); }} onLogin={() => setShowLogin(true)} />}
+{page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={(profileId) => { setEditingProfileId(profileId); setShowEditProfile(true); }} onLogin={() => setShowLogin(true)} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
 {page === 'booker' && <BookerDashboard onViewProfile={viewProfile} setPage={setPage} />}
 {page === 'messages' && <MessagesPage />}
 {page === 'database' && <DatabaseArchitecture />}
@@ -349,6 +350,7 @@ profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
 {showEditProfile && currentUser && <EditProfileModal profileId={editingProfileId || currentUser.id || (selectedProfile && selectedProfile.id)} token={currentUser.token} onClose={() => { setShowEditProfile(false); setEditingProfileId(null); }} onSaved={() => { setShowEditProfile(false); setEditingProfileId(null); fetchProfiles(); }} />}
 {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLogin} />}
 {selectedGig && <GigDetailModal gig={selectedGig} onClose={() => setSelectedGig(null)} />}
+{calendarPopupUrl && <CalendarModal url={calendarPopupUrl} onClose={() => setCalendarPopupUrl(null)} />}
 </div>
 );
 }
@@ -675,7 +677,7 @@ return (
 // PROFILE PAGE
 // ===========================
 
-function ProfilePage({ profile: p, onBack, currentUser, onEdit }) {
+function ProfilePage({ profile: p, onBack, currentUser, onEdit, onViewCalendar }) {
 const calDays = useMemo(() => {
 const days = [];
 ['S','M','T','W','T','F','S'].forEach(d => days.push({ type: 'header', label: d }));
@@ -722,7 +724,7 @@ return (
 <button className="btn btn-primary"><i className="fa-solid fa-paper-plane"></i> Contact</button>
 <button className="btn btn-outline"><i className="fa-regular fa-bookmark"></i> Save</button>
 <button className="btn btn-outline"><i className="fa-solid fa-share-nodes"></i> Share</button>
-{p.calendarToken && <a href={`${CALENDAR_BASE}/${p.calendarToken}`} target="_blank" rel="noopener noreferrer" className="btn btn-accent"><i className="fa-solid fa-calendar"></i> View Calendar</a>}
+{p.calendarToken && <button className="btn btn-accent" onClick={() => onViewCalendar(`${CALENDAR_BASE}/${p.calendarToken}`)}><i className="fa-solid fa-calendar"></i> View Calendar</button>}
 {currentUser && (currentUser.role === 'admin' || currentUser.id === p.id) && <button className="btn btn-outline" onClick={onEdit}><i className="fa-solid fa-pen"></i> Edit Profile</button>}
 </div>
 </div>
@@ -861,10 +863,10 @@ return (
 <span><i className="fa-solid fa-square" style={{ color: 'var(--accent)', fontSize: 8 }}></i> Tentative</span>
 <span><i className="fa-solid fa-square" style={{ color: 'var(--danger)', fontSize: 8 }}></i> Booked</span>
 </div>
-<a href={`${CALENDAR_BASE}/${p.calendarToken}`} target="_blank" rel="noopener noreferrer"
-  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, padding: '10px', background: 'rgba(108,43,217,0.1)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: 'var(--primary-light)', textDecoration: 'none' }}>
+<button onClick={() => onViewCalendar(`${CALENDAR_BASE}/${p.calendarToken}`)}
+  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, padding: '10px', background: 'rgba(108,43,217,0.1)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: 'var(--primary-light)', border: 'none', width: '100%', cursor: 'pointer' }}>
   <i className="fa-solid fa-calendar-days"></i> View Full Calendar
-</a>
+</button>
 </div>
 ) : (
 <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>
@@ -1032,7 +1034,7 @@ For venues, production companies, agencies, and bookers. Advanced search, roster
 // DASHBOARD PAGE
 // ===========================
 
-function DashboardPage({ onViewProfile, currentUser, profiles, onEditProfile, onLogin }) {
+function DashboardPage({ onViewProfile, currentUser, profiles, onEditProfile, onLogin, onViewCalendar }) {
 const [dashTab, setDashTab] = useState('overview');
 
 // Not logged in — show login prompt
@@ -1170,7 +1172,7 @@ return (
 {myProfile.calendarToken && (
 <div className="card">
 <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Calendar</h3>
-<a href={`${CALENDAR_BASE}/${myProfile.calendarToken}`} target="_blank" rel="noopener noreferrer" className="btn btn-accent" style={{ display: 'inline-flex' }}><i className="fa-solid fa-calendar"></i> View My Calendar</a>
+<button className="btn btn-accent" style={{ display: 'inline-flex' }} onClick={() => onViewCalendar(`${CALENDAR_BASE}/${myProfile.calendarToken}`)}><i className="fa-solid fa-calendar"></i> View My Calendar</button>
 </div>
 )}
 </div>
@@ -1444,6 +1446,26 @@ StageLink365 uses <strong style={{ color: 'var(--text)' }}>magic link tokens</st
 <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
 Don't have a token? Contact TAD Shows or <a href="#" style={{ color: 'var(--primary-light)' }}>create a new profile</a>.
 </div>
+</div>
+</div>
+</div>
+);
+}
+
+// ===========================
+// CalendarModal Component
+// ===========================
+
+function CalendarModal({ url, onClose }) {
+return (
+<div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={onClose}>
+<div style={{ background: 'var(--dark-card)', borderRadius: 16, width: '100%', maxWidth: 900, height: '85vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--dark-border)', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--dark-border)' }}>
+<h3 style={{ fontSize: 16, fontWeight: 700 }}><i className="fa-solid fa-calendar" style={{ marginRight: 8, color: 'var(--accent)' }}></i>Availability Calendar</h3>
+<button onClick={onClose} style={{ background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', color: 'var(--text)', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+<div style={{ flex: 1, padding: 0 }}>
+<iframe src={url} style={{ width: '100%', height: '100%', border: 'none', borderRadius: '0 0 16px 16px' }} title="Availability Calendar" />
 </div>
 </div>
 </div>
