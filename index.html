@@ -1231,7 +1231,7 @@ const [saveError, setSaveError] = useState('');
 const [createdResult, setCreatedResult] = useState(null);
 const [formData, setFormData] = useState({
   name: '', email: '', phone: '', category: '', subcategories: [], location: '', state: 'AZ',
-  bio: '', rateMin: '', rateMax: '', rateType: 'gig', yearsExp: '', travelRadius: '',
+  bio: '', rateMin: '', rateMax: '', rateType: '', yearsExp: '', travelRadius: '',
   genres: [], skills: [], unions: [], equipment: '', recentVenues: ''
 });
 const update = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
@@ -1340,7 +1340,7 @@ onClick={() => toggleArrayItem('subcategories', s)}>
 <div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Max Rate ($)</label><input type="number" placeholder="800" value={formData.rateMax} onChange={e => update('rateMax', e.target.value)} /></div>
 <div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Per</label>
 <select value={formData.rateType} onChange={e => update('rateType', e.target.value)}>
-<option value="gig">Per Gig</option><option value="day">Per Day</option><option value="hour">Per Hour</option>
+<option value="">-</option><option value="Per Gig">Per Gig</option><option value="Per Day">Per Day</option><option value="Per Hour">Per Hour</option><option value="Per Week">Per Week</option><option value="Negotiable">Negotiable</option>
 </select></div>
 </div>
 <div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Travel Radius (miles)</label>
@@ -1605,7 +1605,7 @@ return (
 <div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Min Rate ($)</label><input type="number" value={formData.rateMin} onChange={e => update('rateMin', e.target.value)} /></div>
 <div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Max Rate ($)</label><input type="number" value={formData.rateMax} onChange={e => update('rateMax', e.target.value)} /></div>
 <div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Per</label>
-<select value={formData.rateType} onChange={e => update('rateType', e.target.value)}><option value="">-</option><option value="gig">Gig</option><option value="day">Day</option><option value="hour">Hour</option></select></div>
+<select value={formData.rateType} onChange={e => update('rateType', e.target.value)}><option value="">-</option><option value="Per Gig">Per Gig</option><option value="Per Day">Per Day</option><option value="Per Hour">Per Hour</option><option value="Per Week">Per Week</option><option value="Negotiable">Negotiable</option></select></div>
 <div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Yrs Exp</label><input type="number" value={formData.yearsExp} onChange={e => update('yearsExp', e.target.value)} /></div>
 </div>
 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
