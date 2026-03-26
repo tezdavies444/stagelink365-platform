@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
     // Authenticate: require either admin token or performer's magic link token
     const adminToken = process.env.ADMIN_TOKEN;
     const authHeader = req.headers.authorization;
-    const isAdmin = adminToken && authHeader === `Bearer ${adminToken}`;
+    const isAdmin = adminToken && (authHeader === `Bearer ${adminToken}` || token === adminToken);
 
     if (!isAdmin && token) {
       // Verify magic link token matches the profile
