@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>StageLink365 — Connect. Perform. Get Booked.</title>
+<title>StageLink365 â Connect. Perform. Get Booked.</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
@@ -213,17 +213,22 @@ const CATEGORIES = {
 'performers': {
 label: 'Performers',
 icon: 'fa-microphone-lines',
-subs: ['Vocalist', 'Guitarist', 'Bassist', 'Drummer', 'Keyboardist', 'Saxophonist', 'Trumpeter', 'Violinist', 'DJ', 'Comedian', 'Magician', 'Dancer', 'Variety Act', 'Tribute Artist', 'Emcee/Host', 'Full Band', 'Duo', 'Solo Artist', 'Harpist', 'Cellist', 'Flutist', 'Percussionist']
+subs: ['Vocalist', 'Guitarist', 'Bassist', 'Drummer', 'Keyboardist', 'Saxophonist', 'Trumpeter', 'Violinist', 'Pianist', 'Harpist', 'DJ', 'Comedian', 'Magician', 'Dancer', 'Emcee/Host', 'Circus/Variety', 'Tribute Act', 'Full Band', 'Duo', 'Solo Artist', 'Cover Band', 'Acoustic Act']
+},
+'musicians': {
+label: 'Musicians',
+icon: 'fa-music',
+subs: ['Vocalist', 'Guitarist', 'Bassist', 'Drummer', 'Keyboardist', 'Saxophonist', 'Trumpeter', 'Violinist', 'Pianist', 'Harpist', 'Musical Director (MD)', 'Solo Artist', 'Duo', 'Full Band', 'Cover Band', 'Acoustic Act']
 },
 'technical': {
 label: 'Technical & Production',
 icon: 'fa-sliders',
-subs: ['Sound Engineer (FOH)', 'Sound Engineer (Monitors)', 'Lighting Designer', 'Lighting Operator', 'Video/LED Tech', 'Stagehand', 'Rigger', 'Backline Tech', 'Instrument Tech', 'Stage Manager', 'Production Manager', 'Technical Director', 'AV Technician', 'Broadcast Engineer']
+subs: ['Sound Engineer (FOH)', 'Sound Engineer (Monitors)', 'Lighting Designer', 'Lighting Operator', 'Video/LED Tech', 'Stagehand', 'Rigger', 'Backline Tech', 'Guitar Tech', 'Drum Tech', 'Stage Manager', 'Production Manager', 'Technical Director', 'AV Technician']
 },
 'creative': {
 label: 'Creative & Support',
 icon: 'fa-palette',
-subs: ['Musical Director', 'Choreographer', 'Arranger', 'Composer', 'Producer', 'Director', 'Makeup Artist', 'Hair Stylist', 'Wardrobe/Costume', 'Photographer', 'Videographer', 'Graphic Designer', 'Set Designer']
+subs: ['Musical Director', 'Choreographer', 'Director', 'Makeup Artist', 'Hair Stylist', 'Wardrobe/Costume', 'Photographer', 'Videographer', 'Graphic Designer', 'Set Designer', 'Props Master', 'Music Arranger', 'Copyist', 'Vocal Coach']
 },
 'business': {
 label: 'Business & Management',
@@ -255,10 +260,10 @@ const SAMPLE_PROFILES = [
 
 const SAMPLE_GIGS = [
 { id: 1, title: 'Jazz Trio for Resort Lobby', venue: 'Hotel Valley Ho', location: 'Scottsdale', date: 'Mar 22-23, 2026', pay: '$600-900/night', categories: ['Guitarist', 'Bassist', 'Drummer'], description: 'Looking for a jazz trio for our weekend lobby series. Sophisticated, elegant repertoire. 6pm-9pm both nights.', postedBy: 'Rachel Foster', urgent: false },
-{ id: 2, title: 'FOH Engineer — Festival', venue: 'Tempe Town Lake', location: 'Tempe', date: 'Apr 4-5, 2026', pay: '$800/day', categories: ['Sound Engineer (FOH)'], description: 'Need experienced FOH engineer for outdoor music festival. Multiple stages. Must be comfortable with Yamaha CL/QL series.', postedBy: 'Rachel Foster', urgent: true },
-{ id: 3, title: 'Corporate Band — Gala Event', venue: 'Talking Stick Resort', location: 'Scottsdale', date: 'Mar 28, 2026', pay: '$3000-5000 (full band)', categories: ['Full Band', 'Vocalist', 'DJ'], description: 'Annual corporate gala needs a 5-7 piece band for 3 hours. Dance music, Top 40, some jazz standards for dinner. Pro level only.', postedBy: 'Rachel Foster', urgent: false },
-{ id: 4, title: 'Lighting Designer — Theater Run', venue: 'Phoenix Theatre Company', location: 'Phoenix', date: 'Apr 10 - May 15, 2026', pay: '$600/week', categories: ['Lighting Designer'], description: 'Seeking LD for upcoming spring production. 2 weeks of tech, 5 weeks of shows. grandMA experience preferred.', postedBy: 'Phoenix Theatre Company', urgent: false },
-{ id: 5, title: 'Comedian — Casino Lounge', venue: 'Casino Arizona', location: 'Scottsdale', date: 'Every Friday in April', pay: '$400/show', categories: ['Comedian'], description: 'Clean comedy for casino lounge. 45-minute set. Looking for reliable weekly act for April.', postedBy: 'Casino Arizona Entertainment', urgent: false },
+{ id: 2, title: 'FOH Engineer â Festival', venue: 'Tempe Town Lake', location: 'Tempe', date: 'Apr 4-5, 2026', pay: '$800/day', categories: ['Sound Engineer (FOH)'], description: 'Need experienced FOH engineer for outdoor music festival. Multiple stages. Must be comfortable with Yamaha CL/QL series.', postedBy: 'Rachel Foster', urgent: true },
+{ id: 3, title: 'Corporate Band â Gala Event', venue: 'Talking Stick Resort', location: 'Scottsdale', date: 'Mar 28, 2026', pay: '$3000-5000 (full band)', categories: ['Full Band', 'Vocalist', 'DJ'], description: 'Annual corporate gala needs a 5-7 piece band for 3 hours. Dance music, Top 40, some jazz standards for dinner. Pro level only.', postedBy: 'Rachel Foster', urgent: false },
+{ id: 4, title: 'Lighting Designer â Theater Run', venue: 'Phoenix Theatre Company', location: 'Phoenix', date: 'Apr 10 - May 15, 2026', pay: '$600/week', categories: ['Lighting Designer'], description: 'Seeking LD for upcoming spring production. 2 weeks of tech, 5 weeks of shows. grandMA experience preferred.', postedBy: 'Phoenix Theatre Company', urgent: false },
+{ id: 5, title: 'Comedian â Casino Lounge', venue: 'Casino Arizona', location: 'Scottsdale', date: 'Every Friday in April', pay: '$400/show', categories: ['Comedian'], description: 'Clean comedy for casino lounge. 45-minute set. Looking for reliable weekly act for April.', postedBy: 'Casino Arizona Entertainment', urgent: false },
 ];
 
 // ===========================
@@ -443,11 +448,11 @@ The Entertainment Industry,{' '}
 <span style={{ background: 'var(--pro-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Connected.</span>
 </h1>
 <p className="fade-in fade-in-delay-2" style={{ fontSize: 20, color: 'var(--text-muted)', maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.6 }}>
-Musicians, techs, performers, and industry pros — all in one network. Find work. Find talent. Build your career.
+Musicians, techs, performers, and industry pros â all in one network. Find work. Find talent. Build your career.
 </p>
 <div className="fade-in fade-in-delay-3" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
 <button className="btn btn-primary btn-lg" onClick={onCreateProfile} style={{ animation: 'glow 3s infinite' }}>
-<i className="fa-solid fa-rocket"></i> Create Your Profile — Free
+<i className="fa-solid fa-rocket"></i> Create Your Profile â Free
 </button>
 <button className="btn btn-outline btn-lg" onClick={() => setPage('browse')}>
 <i className="fa-solid fa-search"></i> Browse Talent
@@ -550,7 +555,7 @@ Join thousands of entertainment professionals building their careers on StageLin
 </div>
 <span style={{ fontWeight: 700 }}>Stage<span style={{ color: 'var(--primary-light)' }}>Link365</span></span>
 </div>
-<p style={{ color: 'var(--text-muted)', fontSize: 13 }}>© 2026 StageLink365. Connecting the entertainment industry.</p>
+<p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Â© 2026 StageLink365. Connecting the entertainment industry.</p>
 </div>
 </footer>
 </div>
@@ -721,7 +726,7 @@ return (
 {p.tier === 'premium' && <span className="badge badge-premium"><i className="fa-solid fa-crown"></i> Premium</span>}
 {p.tier === 'pro' && <span className="badge badge-pro"><i className="fa-solid fa-gem"></i> Pro</span>}
 </div>
-<p style={{ color: 'var(--text-muted)', marginBottom: 8 }}><i className="fa-solid fa-location-dot"></i> {p.location}, {p.state} · Will travel {p.travel}</p>
+<p style={{ color: 'var(--text-muted)', marginBottom: 8 }}><i className="fa-solid fa-location-dot"></i> {p.location}, {p.state} Â· Will travel {p.travel}</p>
 <div style={{ display: 'flex', gap: 24, fontSize: 14, color: 'var(--text-muted)' }}>
 <span><Stars rating={p.rating} /> <strong style={{ color: 'var(--text)' }}>{p.rating}</strong> ({p.reviews} reviews)</span>
 <span><strong style={{ color: 'var(--text)' }}>{p.gigs}</strong> gigs completed</span>
@@ -1046,7 +1051,7 @@ For venues, production companies, agencies, and bookers. Advanced search, roster
 function DashboardPage({ onViewProfile, currentUser, profiles, onEditProfile, onLogin, onViewCalendar }) {
 const [dashTab, setDashTab] = useState('overview');
 
-// Not logged in — show login prompt
+// Not logged in â show login prompt
 if (!currentUser) {
 return (
 <div style={{ padding: '80px 0', minHeight: '100vh' }}>
@@ -1093,10 +1098,10 @@ return (
 {/* Stats Row */}
 <div className="grid-4" style={{ marginBottom: 24 }}>
 {[
-{ label: isAdmin ? 'Total Profiles' : 'Profile Views', value: isAdmin ? profiles.length : '—', icon: isAdmin ? 'fa-users' : 'fa-eye', color: 'var(--primary-light)' },
-{ label: isAdmin ? 'Performers' : 'Search Appearances', value: isAdmin ? profiles.filter(p => p.category === 'performers' || (p.subcategories && p.subcategories.some(s => CATEGORIES.performers && CATEGORIES.performers.subs.includes(s)))).length : '—', icon: isAdmin ? 'fa-guitar' : 'fa-magnifying-glass', color: 'var(--accent)' },
-{ label: isAdmin ? 'Technical' : 'Messages', value: isAdmin ? profiles.filter(p => p.category === 'technical' || (p.subcategories && p.subcategories.some(s => CATEGORIES.technical && CATEGORIES.technical.subs.includes(s)))).length : '—', icon: isAdmin ? 'fa-sliders' : 'fa-envelope', color: 'var(--success)' },
-{ label: isAdmin ? 'Available Now' : 'Gig Invitations', value: isAdmin ? profiles.filter(p => p.available).length : '—', icon: isAdmin ? 'fa-circle-check' : 'fa-ticket', color: '#EC4899' },
+{ label: isAdmin ? 'Total Profiles' : 'Profile Views', value: isAdmin ? profiles.length : 'â', icon: isAdmin ? 'fa-users' : 'fa-eye', color: 'var(--primary-light)' },
+{ label: isAdmin ? 'Performers' : 'Search Appearances', value: isAdmin ? profiles.filter(p => p.category === 'performers' || (p.subcategories && p.subcategories.some(s => CATEGORIES.performers && CATEGORIES.performers.subs.includes(s)))).length : 'â', icon: isAdmin ? 'fa-guitar' : 'fa-magnifying-glass', color: 'var(--accent)' },
+{ label: isAdmin ? 'Technical' : 'Messages', value: isAdmin ? profiles.filter(p => p.category === 'technical' || (p.subcategories && p.subcategories.some(s => CATEGORIES.technical && CATEGORIES.technical.subs.includes(s)))).length : 'â', icon: isAdmin ? 'fa-sliders' : 'fa-envelope', color: 'var(--success)' },
+{ label: isAdmin ? 'Available Now' : 'Gig Invitations', value: isAdmin ? profiles.filter(p => p.available).length : 'â', icon: isAdmin ? 'fa-circle-check' : 'fa-ticket', color: '#EC4899' },
 ].map((s, i) => (
 <div key={i} className="card">
 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
@@ -1130,7 +1135,7 @@ return (
 {p.available && <span className="badge badge-available" style={{ fontSize: 10 }}><i className="fa-solid fa-circle" style={{ fontSize: 5 }}></i> Available</span>}
 </div>
 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-{p.subcategories && p.subcategories.slice(0, 3).join(', ')}{p.location ? ` · ${p.location}` : ''}{p.email ? ` · ${p.email}` : ''}
+{p.subcategories && p.subcategories.slice(0, 3).join(', ')}{p.location ? ` Â· ${p.location}` : ''}{p.email ? ` Â· ${p.email}` : ''}
 </div>
 </div>
 <div style={{ display: 'flex', gap: 8 }}>
@@ -1208,7 +1213,7 @@ return (
 <div style={{ flex: 1, minWidth: 0 }}>
 <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{p.name}</div>
 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{p.email}</div>
-<div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{p.subcategories ? p.subcategories.join(', ') : 'No specialties set'} · {p.location || 'No location'}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{p.subcategories ? p.subcategories.join(', ') : 'No specialties set'} Â· {p.location || 'No location'}</div>
 </div>
 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, minWidth: 100 }}>
 {p.tier === 'premium' && <span className="badge badge-premium" style={{ fontSize: 10 }}>Premium</span>}
@@ -1396,7 +1401,7 @@ onClick={() => toggleArrayItem('subcategories', s)}>
 <a href={createdResult.profile.calendarUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-light)', marginLeft: 8, wordBreak: 'break-all' }}>{createdResult.profile.calendarUrl}</a>
 </div>
 <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 12 }}>
-<i className="fa-solid fa-triangle-exclamation"></i> Save this token — the performer will need it to log in and manage their calendar.
+<i className="fa-solid fa-triangle-exclamation"></i> Save this token â the performer will need it to log in and manage their calendar.
 </div>
 </div>
 </div>
@@ -1442,7 +1447,7 @@ return (
 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 <div style={{ background: 'rgba(108,43,217,0.1)', padding: 16, borderRadius: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
 <i className="fa-solid fa-wand-magic-sparkles" style={{ color: 'var(--primary-light)', marginRight: 6 }}></i>
-StageLink365 uses <strong style={{ color: 'var(--text)' }}>magic link tokens</strong> instead of passwords. Enter your unique token below — you received it when your profile was created.
+StageLink365 uses <strong style={{ color: 'var(--text)' }}>magic link tokens</strong> instead of passwords. Enter your unique token below â you received it when your profile was created.
 </div>
 <div>
 <label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Your Access Token</label>
@@ -1748,7 +1753,7 @@ return (
 <h1 style={{ fontSize: 28, fontWeight: 800 }}>Booker Hub</h1>
 <span className="badge badge-premium"><i className="fa-solid fa-building"></i> Venue Account</span>
 </div>
-<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Talking Stick Resort & Casino · Rachel Foster</p>
+<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Talking Stick Resort & Casino Â· Rachel Foster</p>
 </div>
 <div style={{ display: 'flex', gap: 10 }}>
 <button className="btn btn-primary" onClick={() => setShowPostGig(true)}><i className="fa-solid fa-plus"></i> Post a Gig</button>
@@ -1792,8 +1797,8 @@ return (
 {[
 { name: 'Marcus Johnson', gig: 'Jazz Trio for Resort Lobby', time: '1h ago', match: 96 },
 { name: 'Nina Patel', gig: 'Jazz Trio for Resort Lobby', time: '3h ago', match: 92 },
-{ name: 'Diego Ramirez', gig: 'Corporate Band — Gala Event', time: '5h ago', match: 88 },
-{ name: 'Tom Barrett', gig: 'Lighting Designer — Theater Run', time: '1d ago', match: 78 },
+{ name: 'Diego Ramirez', gig: 'Corporate Band â Gala Event', time: '5h ago', match: 88 },
+{ name: 'Tom Barrett', gig: 'Lighting Designer â Theater Run', time: '1d ago', match: 78 },
 ].map((a, i) => (
 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--dark-border)' : 'none' }}>
 <div className="avatar avatar-sm">{a.name.split(' ').map(n=>n[0]).join('')}</div>
@@ -1821,7 +1826,7 @@ return (
 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--dark-border)' : 'none' }}>
 <div>
 <div style={{ fontWeight: 600, fontSize: 14 }}>{e.title}</div>
-<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{e.date} · {e.time}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{e.date} Â· {e.time}</div>
 </div>
 <span className="badge" style={{ background: `${e.statusColor}20`, color: e.statusColor }}>{e.status}</span>
 </div>
@@ -1889,7 +1894,7 @@ return (
 <h4 style={{ fontWeight: 700 }}>{g.title}</h4>
 {g.urgent && <span className="badge" style={{ background: 'rgba(239,68,68,0.2)', color: 'var(--danger)' }}>Urgent</span>}
 </div>
-<div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{g.venue} · {g.date}</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{g.venue} Â· {g.date}</div>
 </div>
 <div style={{ textAlign: 'center', minWidth: 80 }}>
 <div style={{ fontWeight: 700, color: 'var(--primary-light)' }}>{Math.floor(Math.random()*8)+2}</div>
@@ -1925,7 +1930,7 @@ return (
 </div>
 <div>
 <h4 style={{ fontWeight: 700, fontSize: 15 }}>{v.name}</h4>
-<span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{v.type} · {v.location}</span>
+<span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{v.type} Â· {v.location}</span>
 </div>
 </div>
 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
@@ -2022,13 +2027,13 @@ return (
 // ===========================
 
 const SAMPLE_CONVERSATIONS = [
-{ id: 'c1', with: 'Rachel Foster', initials: 'RF', role: 'Talent Buyer · Talking Stick Resort', unread: 2, online: true, lastTime: '10m ago',
+{ id: 'c1', with: 'Rachel Foster', initials: 'RF', role: 'Talent Buyer Â· Talking Stick Resort', unread: 2, online: true, lastTime: '10m ago',
 messages: [
 { from: 'Rachel Foster', text: 'Hi Marcus! I have a jazz trio slot open at the resort lobby for March 22-23. Are you available?', time: '2:15 PM', date: 'Today' },
 { from: 'Rachel Foster', text: 'Pay is $800/night, 6-9pm. Looking for guitar/vocal lead with bass and drums. You have a rhythm section?', time: '2:16 PM', date: 'Today' },
-{ from: 'me', text: 'Hey Rachel! Great to hear from you. Yes, I am available both nights. I can bring my regular trio — Dave on bass and Tony on drums.', time: '2:30 PM', date: 'Today' },
+{ from: 'me', text: 'Hey Rachel! Great to hear from you. Yes, I am available both nights. I can bring my regular trio â Dave on bass and Tony on drums.', time: '2:30 PM', date: 'Today' },
 { from: 'Rachel Foster', text: 'Perfect. Can you do a mix of jazz standards and bossa nova? The lobby crowd is upscale resort guests, so elegant and mellow.', time: '2:32 PM', date: 'Today' },
-{ from: 'me', text: 'Absolutely — that is our sweet spot. We have a full book of standards, Jobim, and light contemporary jazz. Want me to send a set list?', time: '2:45 PM', date: 'Today' },
+{ from: 'me', text: 'Absolutely â that is our sweet spot. We have a full book of standards, Jobim, and light contemporary jazz. Want me to send a set list?', time: '2:45 PM', date: 'Today' },
 { from: 'Rachel Foster', text: 'Yes please! Also, the resort can provide a small PA if needed, or you can bring your own. Whichever you prefer.', time: '3:01 PM', date: 'Today' },
 ]
 },
@@ -2043,7 +2048,7 @@ messages: [
 messages: [
 { from: 'Kevin Park', text: 'Hey Marcus, want to put a quartet together for the corporate gig at Scottsdale Resort on the 28th?', time: '9:00 AM', date: 'Mar 10' },
 { from: 'me', text: 'What is the format? Who else are you thinking?', time: '10:15 AM', date: 'Mar 10' },
-{ from: 'Kevin Park', text: 'Keys, guitar, bass, drums. Cocktail hour into dinner — mostly standards and light pop/jazz. I have a bass player. Just need you and a drummer.', time: '10:20 AM', date: 'Mar 10' },
+{ from: 'Kevin Park', text: 'Keys, guitar, bass, drums. Cocktail hour into dinner â mostly standards and light pop/jazz. I have a bass player. Just need you and a drummer.', time: '10:20 AM', date: 'Mar 10' },
 { from: 'me', text: 'I am in. I can bring Tony on drums. What is the pay?', time: '11:00 AM', date: 'Mar 10' },
 { from: 'Kevin Park', text: '$600 each. 5pm-9pm with a break. I will send the advance sheet.', time: '11:05 AM', date: 'Mar 10' },
 ]
@@ -2051,13 +2056,13 @@ messages: [
 { id: 'c4', with: 'Jen Williams', initials: 'JW', role: 'DJ / Emcee', unread: 0, online: false, lastTime: '5d ago',
 messages: [
 { from: 'Jen Williams', text: 'Marcus! I have a corporate gala that needs a live element during my DJ set. Would you be down for a 30-min guitar feature? I will mix under you.', time: '3:00 PM', date: 'Mar 7' },
-{ from: 'me', text: 'That sounds awesome — like a live remix thing? I am totally down.', time: '3:30 PM', date: 'Mar 7' },
+{ from: 'me', text: 'That sounds awesome â like a live remix thing? I am totally down.', time: '3:30 PM', date: 'Mar 7' },
 ]
 },
-{ id: 'c5', with: 'Lisa Chang', initials: 'LC', role: 'Events Manager · Hotel Valley Ho', unread: 0, online: false, lastTime: '1w ago',
+{ id: 'c5', with: 'Lisa Chang', initials: 'LC', role: 'Events Manager Â· Hotel Valley Ho', unread: 0, online: false, lastTime: '1w ago',
 messages: [
 { from: 'Lisa Chang', text: 'Marcus, thank you for the wonderful performance at the pool party last weekend. Our guests loved it! We want to book you for our summer series.', time: '10:00 AM', date: 'Mar 5' },
-{ from: 'me', text: 'Thank you Lisa! I had a great time. Would love to discuss the summer series — what dates are you looking at?', time: '12:00 PM', date: 'Mar 5' },
+{ from: 'me', text: 'Thank you Lisa! I had a great time. Would love to discuss the summer series â what dates are you looking at?', time: '12:00 PM', date: 'Mar 5' },
 ]
 }
 ];
@@ -2124,7 +2129,7 @@ style={{ display: 'flex', gap: 12, padding: '14px 16px', cursor: 'pointer', bord
 <div className="avatar avatar-sm">{activeConvo.initials}</div>
 <div>
 <div style={{ fontWeight: 700, fontSize: 15 }}>{activeConvo.with}</div>
-<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{activeConvo.role} {activeConvo.online && <span style={{ color: 'var(--success)' }}>· Online</span>}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{activeConvo.role} {activeConvo.online && <span style={{ color: 'var(--success)' }}>Â· Online</span>}</div>
 </div>
 </div>
 <div style={{ display: 'flex', gap: 8 }}>
@@ -2305,7 +2310,7 @@ return (
 <div className="card" style={{ marginBottom: 20, background: 'linear-gradient(135deg, var(--dark-card), rgba(108,43,217,0.05))' }}>
 <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 8 }}>
 <i className="fa-solid fa-diagram-project" style={{ color: 'var(--primary-light)', fontSize: 20 }}></i>
-<h3 style={{ fontWeight: 700 }}>14 Tables · 150+ Fields · Full Relational Model</h3>
+<h3 style={{ fontWeight: 700 }}>14 Tables Â· 150+ Fields Â· Full Relational Model</h3>
 </div>
 <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>This schema supports user accounts, profiles, categories, venues, gig postings, applications, messaging, reviews, availability, subscriptions, and booker rosters. Designed for PostgreSQL with UUID primary keys and proper foreign key constraints.</p>
 </div>
@@ -2357,7 +2362,7 @@ return (
 <span style={{ color: 'var(--text-muted)' }}>{f.type}</span>
 <span>
 {f.pk && <span className="badge" style={{ background: 'rgba(245,158,11,0.2)', color: 'var(--accent)', fontSize: 9 }}>PK</span>}
-{f.fk && <span className="badge" style={{ background: 'rgba(108,43,217,0.2)', color: 'var(--primary-light)', fontSize: 9 }}>FK → {f.fk}</span>}
+{f.fk && <span className="badge" style={{ background: 'rgba(108,43,217,0.2)', color: 'var(--primary-light)', fontSize: 9 }}>FK â {f.fk}</span>}
 {f.unique && <span className="badge" style={{ background: 'rgba(16,185,129,0.2)', color: 'var(--success)', fontSize: 9 }}>UQ</span>}
 </span>
 </div>
