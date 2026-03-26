@@ -1,1 +1,2487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StageLink365 â Connect. Perform. Get Booked.</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+--primary: #6C2BD9;
+--primary-light: #8B5CF6;
+--primary-dark: #5B21B6;
+--accent: #F59E0B;
+--accent-light: #FBBF24;
+--dark: #0F0F1A;
+--dark-card: #1A1A2E;
+--dark-lighter: #252540;
+--dark-border: #2D2D4A;
+--text: #E2E2F0;
+--text-muted: #9494B8;
+--success: #10B981;
+--danger: #EF4444;
+--pro-gradient: linear-gradient(135deg, #6C2BD9, #8B5CF6);
+--premium-gradient: linear-gradient(135deg, #F59E0B, #F97316);
+--hero-gradient: linear-gradient(135deg, #0F0F1A 0%, #1A1A3E 50%, #2D1B69 100%);
+}
+body {
+font-family: 'Inter', -apple-system, sans-serif;
+background: var(--dark);
+color: var(--text);
+line-height: 1.6;
+overflow-x: hidden;
+}
+a { color: var(--primary-light); text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea {
+font-family: inherit;
+background: var(--dark-lighter);
+border: 1px solid var(--dark-border);
+color: var(--text);
+padding: 10px 14px;
+border-radius: 8px;
+font-size: 14px;
+outline: none;
+transition: border-color 0.2s;
+width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--primary-light); }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+/* Animations */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 20px rgba(108,43,217,0.3); } 50% { box-shadow: 0 0 40px rgba(108,43,217,0.6); } }
+.fade-in { animation: fadeInUp 0.6s ease-out both; }
+.fade-in-delay-1 { animation-delay: 0.1s; }
+.fade-in-delay-2 { animation-delay: 0.2s; }
+.fade-in-delay-3 { animation-delay: 0.3s; }
+.fade-in-delay-4 { animation-delay: 0.4s; }
+/* Buttons */
+.btn {
+display: inline-flex; align-items: center; gap: 8px;
+padding: 12px 24px; border-radius: 10px; font-weight: 600;
+font-size: 14px; border: none; transition: all 0.3s;
+}
+.btn-primary { background: var(--pro-gradient); color: #fff; }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(108,43,217,0.4); }
+.btn-accent { background: var(--premium-gradient); color: #000; }
+.btn-accent:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245,158,11,0.4); }
+.btn-outline { background: transparent; border: 2px solid var(--dark-border); color: var(--text); }
+.btn-outline:hover { border-color: var(--primary-light); color: var(--primary-light); }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn-lg { padding: 16px 36px; font-size: 16px; }
+/* Cards */
+.card {
+background: var(--dark-card);
+border: 1px solid var(--dark-border);
+border-radius: 16px;
+padding: 24px;
+transition: all 0.3s;
+}
+.card:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+/* Badge */
+.badge {
+display: inline-flex; align-items: center; gap: 4px;
+padding: 4px 10px; border-radius: 20px; font-size: 11px;
+font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.badge-pro { background: rgba(108,43,217,0.2); color: var(--primary-light); }
+.badge-premium { background: rgba(245,158,11,0.2); color: var(--accent); }
+.badge-free { background: rgba(148,148,184,0.2); color: var(--text-muted); }
+.badge-verified { background: rgba(16,185,129,0.2); color: var(--success); }
+.badge-available { background: rgba(16,185,129,0.2); color: var(--success); }
+.badge-category { background: rgba(108,43,217,0.15); color: var(--primary-light); border: 1px solid rgba(108,43,217,0.3); }
+/* Star Rating */
+.stars { color: var(--accent); font-size: 13px; }
+.stars .empty { color: var(--dark-border); }
+/* Avatar */
+.avatar {
+width: 48px; height: 48px; border-radius: 50%;
+background: var(--pro-gradient); display: flex; align-items: center;
+justify-content: center; font-weight: 700; font-size: 18px; color: #fff;
+flex-shrink: 0;
+}
+.avatar-lg { width: 120px; height: 120px; font-size: 42px; border-radius: 20px; }
+.avatar-sm { width: 36px; height: 36px; font-size: 14px; }
+/* Grid */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+@media (max-width: 900px) {
+.grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--dark); }
+::-webkit-scrollbar-thumb { background: var(--dark-lighter); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dark-border); }
+/* Tag input */
+.tag { display: inline-flex; align-items: center; gap: 4px; background: var(--dark-lighter); border: 1px solid var(--dark-border); border-radius: 6px; padding: 3px 8px; font-size: 12px; color: var(--text-muted); }
+.tag-remove { cursor: pointer; color: var(--text-muted); font-size: 14px; }
+.tag-remove:hover { color: var(--danger); }
+/* Stat boxes */
+.stat-box { text-align: center; }
+.stat-number { font-size: 32px; font-weight: 800; background: var(--pro-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+/* Progress bar */
+.progress-bar { height: 6px; background: var(--dark-lighter); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--pro-gradient); border-radius: 3px; transition: width 0.5s ease; }
+/* Toggle */
+.toggle { width: 44px; height: 24px; background: var(--dark-lighter); border-radius: 12px; position: relative; cursor: pointer; transition: background 0.3s; border: 1px solid var(--dark-border); }
+.toggle.active { background: var(--primary); border-color: var(--primary); }
+.toggle::after { content: ''; position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: transform 0.3s; }
+.toggle.active::after { transform: translateX(20px); }
+/* Tabs */
+.tabs { display: flex; gap: 4px; background: var(--dark-lighter); padding: 4px; border-radius: 12px; }
+.tab { padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-muted); border: none; background: transparent; cursor: pointer; transition: all 0.2s; }
+.tab.active { background: var(--primary); color: #fff; }
+.tab:hover:not(.active) { color: var(--text); }
+/* Media placeholder */
+.media-placeholder {
+aspect-ratio: 16/9; background: var(--dark-lighter); border-radius: 12px;
+display: flex; align-items: center; justify-content: center;
+flex-direction: column; gap: 8px; color: var(--text-muted);
+border: 2px dashed var(--dark-border); cursor: pointer;
+transition: all 0.3s;
+}
+.media-placeholder:hover { border-color: var(--primary-light); color: var(--primary-light); }
+.media-placeholder i { font-size: 32px; }
+/* Notification dot */
+.notif-dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; position: absolute; top: -2px; right: -2px; }
+/* Search bar */
+.search-container { position: relative; }
+.search-container input { padding-left: 42px; }
+.search-container i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+/* Pill filter */
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 13px; background: var(--dark-lighter); border: 1px solid var(--dark-border); color: var(--text-muted); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.pill:hover, .pill.active { border-color: var(--primary-light); color: var(--primary-light); background: rgba(108,43,217,0.1); }
+/* Modal overlay */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+.modal { background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 20px; max-width: 600px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 32px; }
+/* Availability calendar mini */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-day { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; }
+.cal-day.available { background: rgba(16,185,129,0.2); color: var(--success); }
+.cal-day.booked { background: rgba(239,68,68,0.2); color: var(--danger); }
+.cal-day.maybe { background: rgba(245,158,11,0.2); color: var(--accent); }
+.cal-day.empty { background: transparent; color: var(--dark-border); }
+.cal-day.header { background: transparent; color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
+// ===========================
+// API & AUTH LAYER
+// ===========================
+
+const API_BASE = '/api';
+const CALENDAR_BASE = 'https://calendar.stagelink365.com/c';
+
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+async function apiPost(path, body, authToken) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+async function apiPatch(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+// ===========================
+// DATA LAYER
+// ===========================
+
+const CATEGORIES = {
+'performers': {
+label: 'Performers',
+icon: 'fa-microphone-lines',
+subs: ['Vocalist', 'Guitarist', 'Bassist', 'Drummer', 'Keyboardist', 'Saxophonist', 'Trumpeter', 'Violinist', 'Pianist', 'Harpist', 'DJ', 'Comedian', 'Magician', 'Dancer', 'Emcee/Host', 'Circus/Variety', 'Tribute Act', 'Full Band', 'Duo', 'Solo Artist', 'Cover Band', 'Acoustic Act']
+},
+'musicians': {
+label: 'Musicians',
+icon: 'fa-music',
+subs: ['Vocalist', 'Guitarist', 'Bassist', 'Drummer', 'Keyboardist', 'Saxophonist', 'Trumpeter', 'Violinist', 'Pianist', 'Harpist', 'Musical Director (MD)', 'Solo Artist', 'Duo', 'Full Band', 'Cover Band', 'Acoustic Act']
+},
+'technical': {
+label: 'Technical & Production',
+icon: 'fa-sliders',
+subs: ['Sound Engineer (FOH)', 'Sound Engineer (Monitors)', 'Lighting Designer', 'Lighting Operator', 'Video/LED Tech', 'Stagehand', 'Rigger', 'Backline Tech', 'Guitar Tech', 'Drum Tech', 'Stage Manager', 'Production Manager', 'Technical Director', 'AV Technician']
+},
+'creative': {
+label: 'Creative & Support',
+icon: 'fa-palette',
+subs: ['Musical Director', 'Choreographer', 'Director', 'Makeup Artist', 'Hair Stylist', 'Wardrobe/Costume', 'Photographer', 'Videographer', 'Graphic Designer', 'Set Designer', 'Props Master', 'Music Arranger', 'Copyist', 'Vocal Coach']
+},
+'business': {
+label: 'Business & Management',
+icon: 'fa-briefcase',
+subs: ['Agent', 'Manager', 'Promoter', 'Venue Booker', 'Event Planner', 'Tour Manager', 'Road Manager', 'Marketing/PR', 'Talent Buyer']
+}
+};
+
+const GENRES = ['Rock', 'Pop', 'Jazz', 'Blues', 'Country', 'R&B/Soul', 'Hip-Hop', 'EDM', 'Classical', 'Latin', 'Reggae', 'Folk', 'Metal', 'Funk', 'Gospel', 'World', 'Top 40', 'Original', 'Theater', 'Corporate'];
+
+const AZ_LOCATIONS = ['Phoenix', 'Scottsdale', 'Tempe', 'Mesa', 'Chandler', 'Gilbert', 'Glendale', 'Peoria', 'Tucson', 'Sedona', 'Flagstaff', 'Prescott', 'Yuma', 'Lake Havasu City', 'Sierra Vista', 'Casa Grande', 'Surprise', 'Goodyear', 'Avondale', 'Maricopa'];
+
+const VENUES_AZ = ['Talking Stick Resort', 'Casino Arizona', 'Wild Horse Pass', 'Orpheum Theatre', 'Celebrity Theatre', 'Crescent Ballroom', 'The Van Buren', 'Marquee Theatre', 'Rialto Theatre (Tucson)', 'Musical Instrument Museum', 'Arizona Federal Theatre', 'Comerica Theatre', 'The Pressroom', 'Club Red', 'Livewire', "Charley's", 'Last Exit Live', 'Rhythm Room', 'Hotel Valley Ho', 'The Scottsdale Resort'];
+
+const SAMPLE_PROFILES = [
+{ id: 1, name: 'Marcus Johnson', initials: 'MJ', category: 'performers', subcategories: ['Guitarist', 'Vocalist', 'Solo Artist'], genres: ['Jazz', 'Blues', 'R&B/Soul'], location: 'Scottsdale', state: 'AZ', tier: 'premium', verified: true, available: true, rating: 4.9, reviews: 47, gigs: 312, yearsExp: 18, bio: 'Professional jazz and blues guitarist with 18 years of experience. Regular performer at top Scottsdale venues and resorts. Available for corporate events, private parties, and venue residencies.', rate: '$500-1500', equipment: ['Full guitar rig', 'PA system for small venues', 'Wireless in-ear monitors'], unions: ['AFM Local 586'], travel: '100 miles', recentVenues: ['Talking Stick Resort', 'Hotel Valley Ho', 'The Scottsdale Resort'], skills: ['Sight reading', 'Session work', 'Live looping', 'Arranging'] },
+{ id: 2, name: 'Sarah Chen', initials: 'SC', category: 'technical', subcategories: ['Sound Engineer (FOH)', 'Sound Engineer (Monitors)', 'Production Manager'], genres: [], location: 'Phoenix', state: 'AZ', tier: 'pro', verified: true, available: true, rating: 4.8, reviews: 33, gigs: 520, yearsExp: 12, bio: 'FOH and monitor engineer with experience in venues from 200 to 20,000 capacity. Specialize in live music mixing for rock, country, and corporate events. Own a full Meyer Sound PA.', rate: '$400-800/day', equipment: ['Meyer Sound PA (up to 2000 cap)', 'Yamaha CL5', 'Full RF rack'], unions: ['IATSE Local 415'], travel: '250 miles', recentVenues: ['Arizona Federal Theatre', 'The Van Buren', 'Celebrity Theatre'], skills: ['System design', 'RF coordination', 'Digital consoles', 'Festival mixing'] },
+{ id: 3, name: 'Diego Ramirez', initials: 'DR', category: 'performers', subcategories: ['Trumpeter', 'Full Band'], genres: ['Latin', 'Jazz', 'Top 40'], location: 'Tempe', state: 'AZ', tier: 'pro', verified: false, available: true, rating: 4.7, reviews: 21, gigs: 185, yearsExp: 10, bio: 'Lead trumpet player and bandleader of Fuego Latin Band. We bring high-energy Latin, jazz, and Top 40 music to any event. 7-piece band available for festivals, weddings, corporate, and club dates.', rate: '$2000-5000 (full band)', equipment: ['Full backline', 'Stage lighting package'], unions: ['AFM Local 586'], travel: '150 miles', recentVenues: ['Crescent Ballroom', 'Casino Arizona', 'Musical Instrument Museum'], skills: ['Bandleader', 'Latin arrangements', 'Bilingual emcee', 'Horn section'] },
+{ id: 4, name: 'Jen Williams', initials: 'JW', category: 'performers', subcategories: ['DJ', 'Emcee/Host'], genres: ['EDM', 'Top 40', 'Hip-Hop'], location: 'Scottsdale', state: 'AZ', tier: 'premium', verified: true, available: false, rating: 4.9, reviews: 89, gigs: 730, yearsExp: 14, bio: 'Premier DJ and emcee in the Phoenix metro area. Specialist in high-end corporate events, weddings, and nightlife. Full production with intelligent lighting, video, and live remixing.', rate: '$800-3000', equipment: ['Pioneer CDJ-3000 setup', 'Full intelligent lighting rig', 'LED video panels'], unions: [], travel: '200 miles', recentVenues: ['Talking Stick Resort', 'W Scottsdale', 'The Scottsdale Resort'], skills: ['Live remixing', 'Video DJ', 'MC/Emcee', 'Event production'] },
+{ id: 5, name: 'Tom Barrett', initials: 'TB', category: 'technical', subcategories: ['Lighting Designer', 'Lighting Operator', 'Video/LED Tech'], genres: [], location: 'Mesa', state: 'AZ', tier: 'free', verified: false, available: true, rating: 4.5, reviews: 12, gigs: 95, yearsExp: 6, bio: 'Lighting designer and programmer specializing in live music and theatrical productions. Experienced with grandMA2/3, Hog 4, and ETC platforms.', rate: '$300-600/day', equipment: ['grandMA2 console', 'MA-Net network', 'Laptop with Capture'], unions: [], travel: '100 miles', recentVenues: ['Marquee Theatre', 'Orpheum Theatre', 'Club Red'], skills: ['grandMA programming', 'Busking', 'Pre-visualization', 'Festival rigs'] },
+{ id: 6, name: 'Alicia Morales', initials: 'AM', category: 'creative', subcategories: ['Choreographer', 'Dancer', 'Director'], genres: ['Theater', 'Pop', 'Latin'], location: 'Phoenix', state: 'AZ', tier: 'pro', verified: true, available: true, rating: 4.8, reviews: 28, gigs: 142, yearsExp: 15, bio: 'Professional choreographer and dancer with Broadway touring credits. Available for show development, corporate entertainment, music videos, and dance instruction.', rate: '$500-2000/project', equipment: [], unions: ['SDC', 'AEA'], travel: '500 miles', recentVenues: ['Orpheum Theatre', 'Phoenix Theatre Company', 'Arizona Broadway Theatre'], skills: ['Jazz', 'Contemporary', 'Latin', 'Show direction', 'Casting'] },
+{ id: 7, name: 'Kevin Park', initials: 'KP', category: 'performers', subcategories: ['Keyboardist', 'Musical Director', 'Vocalist'], genres: ['Pop', 'R&B/Soul', 'Gospel', 'Corporate'], location: 'Chandler', state: 'AZ', tier: 'pro', verified: true, available: true, rating: 4.6, reviews: 19, gigs: 267, yearsExp: 11, bio: 'Keys player and musical director. Experienced with putting together bands for touring artists, corporate events, and worship. Strong sight-reader with studio credits.', rate: '$350-800', equipment: ['Nord Stage 3', 'Hammond XK-5', 'Full keyboard rig'], unions: ['AFM Local 586'], travel: '200 miles', recentVenues: ['Celebrity Theatre', 'Talking Stick Resort', 'Various churches/worship'], skills: ['Musical direction', 'Sight reading', 'Arranging', 'Session keys', 'BGVs'] },
+{ id: 8, name: 'Rachel Foster', initials: 'RF', category: 'business', subcategories: ['Event Planner', 'Talent Buyer', 'Promoter'], genres: [], location: 'Scottsdale', state: 'AZ', tier: 'premium', verified: true, available: true, rating: 5.0, reviews: 54, gigs: 890, yearsExp: 20, bio: 'Senior event producer and talent buyer. 20 years booking entertainment for resorts, casinos, corporate clients, and festivals throughout Arizona. Looking for reliable, professional talent.', rate: 'Varies by project', equipment: [], unions: [], travel: 'Statewide', recentVenues: ['Talking Stick Resort', 'Wild Horse Pass', 'Arizona Federal Theatre'], skills: ['Contract negotiation', 'Budget management', 'Vendor relations', 'Large-scale events'] },
+{ id: 9, name: 'Mike Torres', initials: 'MT', category: 'performers', subcategories: ['Comedian'], genres: [], location: 'Tucson', state: 'AZ', tier: 'free', verified: false, available: true, rating: 4.3, reviews: 8, gigs: 62, yearsExp: 4, bio: 'Stand-up comedian available for clubs, corporate events, and private parties. Clean or adult material. 30 or 60 minute sets. MC/hosting available.', rate: '$200-800', equipment: ['Wireless mic'], unions: [], travel: '200 miles', recentVenues: ['Rialto Theatre (Tucson)', 'Laffs Comedy Caffe', 'House of Comedy'], skills: ['Stand-up (clean/adult)', 'MC/Host', 'Improv', 'Corporate humor'] },
+{ id: 10, name: 'Nina Patel', initials: 'NP', category: 'performers', subcategories: ['Vocalist', 'Duo', 'Solo Artist'], genres: ['Jazz', 'Pop', 'Corporate', 'Folk'], location: 'Sedona', state: 'AZ', tier: 'pro', verified: true, available: true, rating: 4.9, reviews: 36, gigs: 210, yearsExp: 9, bio: 'Jazz and pop vocalist based in Sedona. Elegant, sophisticated entertainment perfect for resorts, wine bars, corporate receptions, and private events. Guitar/vocal duo or with backing tracks.', rate: '$400-1200', equipment: ['Bose L1 PA', 'Guitar', 'Backing track system'], unions: ['AFM Local 586'], travel: '150 miles', recentVenues: ['Enchantment Resort', 'L\'Auberge de Sedona', 'Tlaquepaque Arts Village'], skills: ['Jazz standards', 'Bossa nova', 'Pop covers', 'Acoustic duo'] },
+{ id: 11, name: 'James Whitfield', initials: 'JW', category: 'technical', subcategories: ['Stage Manager', 'Production Manager', 'Technical Director'], genres: [], location: 'Phoenix', state: 'AZ', tier: 'pro', verified: true, available: false, rating: 4.7, reviews: 41, gigs: 380, yearsExp: 16, bio: 'Veteran stage and production manager with extensive theater, concert, and festival experience. IATSE member with safety certifications. Available for long-term and short-term engagements.', rate: '$450-900/day', equipment: ['Production kit', 'Comms system'], unions: ['IATSE Local 415'], travel: '500 miles', recentVenues: ['Arizona Federal Theatre', 'Orpheum Theatre', 'Arizona State Fair'], skills: ['Advance production', 'Labor calls', 'Safety compliance', 'Union liaison'] },
+{ id: 12, name: 'Crystal Reyes', initials: 'CR', category: 'creative', subcategories: ['Makeup Artist', 'Hair Stylist'], genres: [], location: 'Scottsdale', state: 'AZ', tier: 'free', verified: false, available: true, rating: 4.6, reviews: 15, gigs: 110, yearsExp: 7, bio: 'Professional makeup and hair artist specializing in performance, stage, and event looks. Film, theater, and live event experience. Bridal and fashion also available.', rate: '$150-500', equipment: ['Full professional kit', 'Airbrush system'], unions: [], travel: '75 miles', recentVenues: ['Phoenix Theatre Company', 'Various film sets', 'Fashion shows'], skills: ['Stage makeup', 'SFX basics', 'Airbrush', 'Period styles', 'Quick changes'] },
+];
+
+const SAMPLE_GIGS = [
+{ id: 1, title: 'Jazz Trio for Resort Lobby', venue: 'Hotel Valley Ho', location: 'Scottsdale', date: 'Mar 22-23, 2026', pay: '$600-900/night', categories: ['Guitarist', 'Bassist', 'Drummer'], description: 'Looking for a jazz trio for our weekend lobby series. Sophisticated, elegant repertoire. 6pm-9pm both nights.', postedBy: 'Rachel Foster', urgent: false },
+{ id: 2, title: 'FOH Engineer â Festival', venue: 'Tempe Town Lake', location: 'Tempe', date: 'Apr 4-5, 2026', pay: '$800/day', categories: ['Sound Engineer (FOH)'], description: 'Need experienced FOH engineer for outdoor music festival. Multiple stages. Must be comfortable with Yamaha CL/QL series.', postedBy: 'Rachel Foster', urgent: true },
+{ id: 3, title: 'Corporate Band â Gala Event', venue: 'Talking Stick Resort', location: 'Scottsdale', date: 'Mar 28, 2026', pay: '$3000-5000 (full band)', categories: ['Full Band', 'Vocalist', 'DJ'], description: 'Annual corporate gala needs a 5-7 piece band for 3 hours. Dance music, Top 40, some jazz standards for dinner. Pro level only.', postedBy: 'Rachel Foster', urgent: false },
+{ id: 4, title: 'Lighting Designer â Theater Run', venue: 'Phoenix Theatre Company', location: 'Phoenix', date: 'Apr 10 - May 15, 2026', pay: '$600/week', categories: ['Lighting Designer'], description: 'Seeking LD for upcoming spring production. 2 weeks of tech, 5 weeks of shows. grandMA experience preferred.', postedBy: 'Phoenix Theatre Company', urgent: false },
+{ id: 5, title: 'Comedian â Casino Lounge', venue: 'Casino Arizona', location: 'Scottsdale', date: 'Every Friday in April', pay: '$400/show', categories: ['Comedian'], description: 'Clean comedy for casino lounge. 45-minute set. Looking for reliable weekly act for April.', postedBy: 'Casino Arizona Entertainment', urgent: false },
+];
+
+// ===========================
+// APP COMPONENT
+// ===========================
+
+function App() {
+const [page, setPage] = useState('home');
+const [selectedProfile, setSelectedProfile] = useState(null);
+const [selectedGig, setSelectedGig] = useState(null);
+const [showCreateProfile, setShowCreateProfile] = useState(false);
+const [showEditProfile, setShowEditProfile] = useState(false);
+const [showLogin, setShowLogin] = useState(false);
+const [searchQuery, setSearchQuery] = useState('');
+const [filterCategory, setFilterCategory] = useState('all');
+const [filterLocation, setFilterLocation] = useState('all');
+const [filterAvailability, setFilterAvailability] = useState(false);
+const [filterTier, setFilterTier] = useState('all');
+
+// Live data state
+const [liveProfiles, setLiveProfiles] = useState([]);
+const [loadingProfiles, setLoadingProfiles] = useState(true);
+const [apiError, setApiError] = useState(null);
+
+// Auth state
+const [currentUser, setCurrentUser] = useState(null);
+const [editingProfileId, setEditingProfileId] = useState(null);
+const [calendarPopupUrl, setCalendarPopupUrl] = useState(null);
+
+// Fetch profiles from Airtable API
+const fetchProfiles = useCallback(async () => {
+  setLoadingProfiles(true);
+  try {
+    const data = await apiGet('/profiles');
+    setLiveProfiles(data.profiles || []);
+    setApiError(null);
+  } catch (err) {
+    console.warn('API not available, using sample data:', err.message);
+    setApiError('api_unavailable');
+    setLiveProfiles([]);
+  }
+  setLoadingProfiles(false);
+}, []);
+
+useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
+  
+  // Auto-open create profile modal if linked from personnel page
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('action') === 'create-profile') {
+    setShowCreateProfile(true);
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}, []);
+
+// Use live profiles if available, otherwise fall back to sample data
+const profiles = liveProfiles.length > 0 ? liveProfiles : SAMPLE_PROFILES;
+const isLiveData = liveProfiles.length > 0;
+
+const viewProfile = (profile) => { setSelectedProfile(profile); setPage('profile'); window.scrollTo(0,0); };
+const viewGig = (gig) => { setSelectedGig(gig); };
+
+const handleLogin = (user) => { setCurrentUser(user); setShowLogin(false); setPage('dashboard'); };
+const handleLogout = () => { setCurrentUser(null); setPage('home'); };
+
+const handleProfileCreated = (result) => {
+  setShowCreateProfile(false);
+  fetchProfiles();
+  if (result && result.profile) {
+    setCurrentUser({ id: result.profile.id, name: result.profile.name, email: result.profile.email, role: 'performer', token: result.profile.token });
+  }
+  setPage('dashboard');
+};
+
+return (
+<div>
+<Navbar page={page} setPage={setPage} onLogin={() => setShowLogin(true)} onCreateProfile={() => setShowCreateProfile(true)} currentUser={currentUser} onLogout={handleLogout} />
+{page === 'home' && <HomePage setPage={setPage} onCreateProfile={() => setShowCreateProfile(true)} profiles={profiles} isLiveData={isLiveData} />}
+{page === 'browse' && (
+<BrowsePage
+searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+filterCategory={filterCategory} setFilterCategory={setFilterCategory}
+filterLocation={filterLocation} setFilterLocation={setFilterLocation}
+filterAvailability={filterAvailability} setFilterAvailability={setFilterAvailability}
+filterTier={filterTier} setFilterTier={setFilterTier}
+onViewProfile={viewProfile}
+profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
+/>
+)}
+{page === 'profile' && selectedProfile && <ProfilePage profile={selectedProfile} onBack={() => setPage('browse')} currentUser={currentUser} onEdit={() => { setEditingProfileId(selectedProfile.id); setShowEditProfile(true); }} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
+{page === 'gigs' && <GigsPage onViewGig={viewGig} />}
+{page === 'pricing' && <PricingPage onCreateProfile={() => setShowCreateProfile(true)} />}
+{page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={(profileId) => { setEditingProfileId(profileId); setShowEditProfile(true); }} onLogin={() => setShowLogin(true)} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
+{page === 'booker' && <BookerDashboard onViewProfile={viewProfile} setPage={setPage} />}
+{page === 'messages' && <MessagesPage />}
+{page === 'database' && <DatabaseArchitecture />}
+{showCreateProfile && <CreateProfileModal onClose={() => setShowCreateProfile(false)} onSuccess={handleProfileCreated} currentUser={currentUser} />}
+{showEditProfile && currentUser && <EditProfileModal profileId={editingProfileId || currentUser.id || (selectedProfile && selectedProfile.id)} token={currentUser.token} onClose={() => { setShowEditProfile(false); setEditingProfileId(null); }} onSaved={() => { setShowEditProfile(false); setEditingProfileId(null); fetchProfiles(); }} />}
+{showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLogin} />}
+{selectedGig && <GigDetailModal gig={selectedGig} onClose={() => setSelectedGig(null)} />}
+{calendarPopupUrl && <CalendarModal url={calendarPopupUrl} onClose={() => setCalendarPopupUrl(null)} />}
+</div>
+);
+}
+
+// ===========================
+// NAVBAR
+// ===========================
+
+function Navbar({ page, setPage, onLogin, onCreateProfile, currentUser, onLogout }) {
+return (
+<nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15,15,26,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--dark-border)', padding: '0 24px' }}>
+<div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+<div onClick={() => setPage('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+<div style={{ width: 36, height: 36, background: 'var(--pro-gradient)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+<i className="fa-solid fa-link" style={{ color: '#fff', fontSize: 16 }}></i>
+</div>
+<span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.5px' }}>
+Stage<span style={{ color: 'var(--primary-light)' }}>Link365</span>
+</span>
+</div>
+<div style={{ display: 'flex', gap: 4 }}>
+{[
+{ key: 'browse', label: 'Browse Talent', icon: 'fa-search' },
+{ key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
+{ key: 'pricing', label: 'Pricing', icon: 'fa-crown' },
+{ key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+{ key: 'booker', label: 'Booker Hub', icon: 'fa-building' },
+{ key: 'messages', label: 'Messages', icon: 'fa-envelope' },
+{ key: 'database', label: 'DB Schema', icon: 'fa-database' },
+].map(item => (
+<button key={item.key} onClick={() => setPage(item.key)}
+style={{ background: page === item.key ? 'rgba(108,43,217,0.15)' : 'transparent', color: page === item.key ? 'var(--primary-light)' : 'var(--text-muted)', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'all 0.2s' }}>
+<i className={`fa-solid ${item.icon}`} style={{ fontSize: 12 }}></i> {item.label}
+</button>
+))}
+</div>
+</div>
+<div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+{currentUser ? (
+<>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+<div className="avatar avatar-sm" style={{ width: 32, height: 32, fontSize: 12, background: currentUser.role === 'admin' ? 'var(--premium-gradient)' : 'var(--pro-gradient)' }}>
+{(currentUser.name || '?').split(' ').map(w => w[0]).join('').slice(0,2)}
+</div>
+<span style={{ fontSize: 13, fontWeight: 600 }}>{currentUser.name}</span>
+{currentUser.role === 'admin' && <span className="badge badge-premium" style={{ fontSize: 10 }}>Admin</span>}
+</div>
+<button className="btn btn-outline btn-sm" onClick={onLogout}>Log Out</button>
+</>
+) : (
+<>
+<button className="btn btn-outline btn-sm" onClick={onLogin}>Log In</button>
+<button className="btn btn-primary btn-sm" onClick={onCreateProfile}><i className="fa-solid fa-plus"></i> Join StageLink365</button>
+</>
+)}
+</div>
+</div>
+</nav>
+);
+}
+
+// ===========================
+// HOME PAGE
+// ===========================
+
+function HomePage({ setPage, onCreateProfile, profiles, isLiveData }) {
+return (
+<div>
+{/* Hero */}
+<section style={{ background: 'var(--hero-gradient)', padding: '100px 0 80px', position: 'relative', overflow: 'hidden' }}>
+<div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 70% 30%, rgba(108,43,217,0.15) 0%, transparent 60%)' }}></div>
+<div className="container" style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+<div className="fade-in" style={{ marginBottom: 16 }}>
+<span className="badge badge-pro" style={{ fontSize: 13, padding: '6px 16px' }}>
+<i className="fa-solid fa-bolt"></i> Now Live in Arizona
+</span>
+</div>
+<h1 className="fade-in fade-in-delay-1" style={{ fontFamily: "'Playfair Display', serif", fontSize: 64, fontWeight: 900, lineHeight: 1.1, marginBottom: 20, maxWidth: 800, margin: '0 auto 20px' }}>
+The Entertainment Industry,{' '}
+<span style={{ background: 'var(--pro-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Connected.</span>
+</h1>
+<p className="fade-in fade-in-delay-2" style={{ fontSize: 20, color: 'var(--text-muted)', maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.6 }}>
+Musicians, techs, performers, and industry pros â all in one network. Find work. Find talent. Build your career.
+</p>
+<div className="fade-in fade-in-delay-3" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+<button className="btn btn-primary btn-lg" onClick={onCreateProfile} style={{ animation: 'glow 3s infinite' }}>
+<i className="fa-solid fa-rocket"></i> Create Your Profile â Free
+</button>
+<button className="btn btn-outline btn-lg" onClick={() => setPage('browse')}>
+<i className="fa-solid fa-search"></i> Browse Talent
+</button>
+</div>
+{/* Stats */}
+<div className="fade-in fade-in-delay-4" style={{ display: 'flex', gap: 60, justifyContent: 'center', marginTop: 60 }}>
+<div className="stat-box"><div className="stat-number">{isLiveData ? profiles.length : '2,400+'}</div><div className="stat-label">Professionals</div></div>
+<div className="stat-box"><div className="stat-number">180+</div><div className="stat-label">Venues</div></div>
+<div className="stat-box"><div className="stat-number">850+</div><div className="stat-label">Gigs Posted</div></div>
+<div className="stat-box"><div className="stat-number">{Object.keys(CATEGORIES).length}</div><div className="stat-label">Categories</div></div>
+</div>
+</div>
+</section>
+
+{/* How It Works */}
+<section style={{ padding: '80px 0' }}>
+<div className="container">
+<h2 style={{ textAlign: 'center', fontSize: 36, fontWeight: 800, marginBottom: 12 }}>How StageLink365 Works</h2>
+<p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 50, fontSize: 17 }}>Three steps to connecting with the entertainment industry</p>
+<div className="grid-3">
+{[
+{ icon: 'fa-user-plus', title: 'Create Your Profile', desc: 'Build your professional portfolio with media, skills, availability, and rates. Show the industry what you bring to the stage.' },
+{ icon: 'fa-magnifying-glass', title: 'Get Discovered', desc: 'Venues, bookers, and fellow pros search by category, location, and availability. Premium members get featured placement.' },
+{ icon: 'fa-handshake', title: 'Get Booked', desc: 'Connect directly, respond to gig postings, and build your network. More visibility means more opportunities.' }
+].map((step, i) => (
+<div key={i} className="card fade-in" style={{ textAlign: 'center', animationDelay: `${i * 0.15}s` }}>
+<div style={{ width: 64, height: 64, background: 'rgba(108,43,217,0.15)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+<i className={`fa-solid ${step.icon}`} style={{ fontSize: 24, color: 'var(--primary-light)' }}></i>
+</div>
+<h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>{step.title}</h3>
+<p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.7 }}>{step.desc}</p>
+</div>
+))}
+</div>
+</div>
+</section>
+
+{/* Categories */}
+<section style={{ padding: '60px 0', background: 'var(--dark-card)' }}>
+<div className="container">
+<h2 style={{ textAlign: 'center', fontSize: 36, fontWeight: 800, marginBottom: 12 }}>Every Role in Entertainment</h2>
+<p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 50, fontSize: 17 }}>From center stage to behind the scenes</p>
+<div className="grid-4">
+{Object.entries(CATEGORIES).map(([key, cat]) => (
+<div key={key} className="card" onClick={() => setPage('browse')} style={{ cursor: 'pointer' }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+<div style={{ width: 44, height: 44, background: 'rgba(108,43,217,0.15)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+<i className={`fa-solid ${cat.icon}`} style={{ color: 'var(--primary-light)' }}></i>
+</div>
+<h3 style={{ fontSize: 16, fontWeight: 700 }}>{cat.label}</h3>
+</div>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+{cat.subs.slice(0, 6).map(s => <span key={s} className="badge badge-category">{s}</span>)}
+{cat.subs.length > 6 && <span className="badge badge-free">+{cat.subs.length - 6} more</span>}
+</div>
+</div>
+))}
+</div>
+</div>
+</section>
+
+{/* Featured Profiles */}
+<section style={{ padding: '80px 0' }}>
+<div className="container">
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+<div>
+<h2 style={{ fontSize: 36, fontWeight: 800, marginBottom: 8 }}>Featured Professionals</h2>
+<p style={{ color: 'var(--text-muted)', fontSize: 15 }}>Top-rated talent in Arizona</p>
+</div>
+<button className="btn btn-outline" onClick={() => setPage('browse')}>View All <i className="fa-solid fa-arrow-right"></i></button>
+</div>
+<div className="grid-3">
+{profiles.filter(p => p.tier === 'premium' || p.tier === 'pro').slice(0, 6).map(p => (
+<ProfileCard key={p.id} profile={p} onClick={() => { setPage('profile'); window.scrollTo(0,0); }} onView={() => { }} setPage={setPage} />
+))}
+</div>
+</div>
+</section>
+
+{/* CTA */}
+<section style={{ padding: '80px 0', background: 'var(--hero-gradient)' }}>
+<div className="container" style={{ textAlign: 'center' }}>
+<h2 style={{ fontSize: 42, fontWeight: 800, marginBottom: 16 }}>Ready to Get Connected?</h2>
+<p style={{ color: 'var(--text-muted)', fontSize: 18, marginBottom: 32, maxWidth: 500, margin: '0 auto 32px' }}>
+Join thousands of entertainment professionals building their careers on StageLink365.
+</p>
+<button className="btn btn-accent btn-lg" onClick={onCreateProfile}>
+<i className="fa-solid fa-star"></i> Create Your Free Profile
+</button>
+</div>
+</section>
+
+{/* Footer */}
+<footer style={{ padding: '40px 0', borderTop: '1px solid var(--dark-border)' }}>
+<div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+<div style={{ width: 28, height: 28, background: 'var(--pro-gradient)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+<i className="fa-solid fa-link" style={{ color: '#fff', fontSize: 12 }}></i>
+</div>
+<span style={{ fontWeight: 700 }}>Stage<span style={{ color: 'var(--primary-light)' }}>Link365</span></span>
+</div>
+<p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Â© 2026 StageLink365. Connecting the entertainment industry.</p>
+</div>
+</footer>
+</div>
+);
+}
+
+// ===========================
+// PROFILE CARD
+// ===========================
+
+function ProfileCard({ profile: p, onClick }) {
+return (
+<div className="card" onClick={() => onClick(p)} style={{ cursor: 'pointer', position: 'relative' }}>
+{p.tier === 'premium' && <div style={{ position: 'absolute', top: 12, right: 12 }}><span className="badge badge-premium"><i className="fa-solid fa-crown"></i> Featured</span></div>}
+<div style={{ display: 'flex', gap: 14, marginBottom: 14 }}>
+<div className="avatar" style={{ background: p.tier === 'premium' ? 'var(--premium-gradient)' : p.tier === 'pro' ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>
+{p.initials}
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700 }}>{p.name}</h3>
+{p.verified && <i className="fa-solid fa-circle-check" style={{ color: 'var(--success)', fontSize: 14 }}></i>}
+</div>
+<p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{p.location}, {p.state}</p>
+</div>
+</div>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
+{p.subcategories.slice(0, 3).map(s => <span key={s} className="badge badge-category">{s}</span>)}
+</div>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+{p.bio}
+</p>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid var(--dark-border)' }}>
+<div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-muted)' }}>
+<span><Stars rating={p.rating} /> {p.rating}</span>
+<span>{p.gigs} gigs</span>
+</div>
+{p.available ? <span className="badge badge-available"><i className="fa-solid fa-circle" style={{ fontSize: 6 }}></i> Available</span> : <span className="badge badge-free">Booked</span>}
+</div>
+</div>
+);
+}
+
+function Stars({ rating }) {
+const full = Math.floor(rating);
+const half = rating % 1 >= 0.5 ? 1 : 0;
+const empty = 5 - full - half;
+return (
+<span className="stars">
+{[...Array(full)].map((_, i) => <i key={`f${i}`} className="fa-solid fa-star"></i>)}
+{half > 0 && <i className="fa-solid fa-star-half-stroke"></i>}
+{[...Array(empty)].map((_, i) => <i key={`e${i}`} className="fa-regular fa-star empty"></i>)}
+</span>
+);
+}
+
+// ===========================
+// BROWSE PAGE
+// ===========================
+
+function BrowsePage({ searchQuery, setSearchQuery, filterCategory, setFilterCategory, filterLocation, setFilterLocation, filterAvailability, setFilterAvailability, filterTier, setFilterTier, onViewProfile, profiles, loading, isLiveData }) {
+const filtered = useMemo(() => {
+return profiles.filter(p => {
+if (searchQuery) {
+const q = searchQuery.toLowerCase();
+const match = p.name.toLowerCase().includes(q) || p.subcategories.some(s => s.toLowerCase().includes(q)) || p.bio.toLowerCase().includes(q) || (p.genres && p.genres.some(g => g.toLowerCase().includes(q))) || p.skills.some(s => s.toLowerCase().includes(q));
+if (!match) return false;
+}
+if (filterCategory !== 'all' && p.category !== filterCategory) return false;
+if (filterLocation !== 'all' && p.location !== filterLocation) return false;
+if (filterAvailability && !p.available) return false;
+if (filterTier !== 'all' && p.tier !== filterTier) return false;
+return true;
+}).sort((a, b) => {
+if (a.tier === 'premium' && b.tier !== 'premium') return -1;
+if (b.tier === 'premium' && a.tier !== 'premium') return 1;
+if (a.tier === 'pro' && b.tier === 'free') return -1;
+if (b.tier === 'pro' && a.tier === 'free') return 1;
+return b.rating - a.rating;
+});
+}, [searchQuery, filterCategory, filterLocation, filterAvailability, filterTier]);
+
+return (
+<div style={{ padding: '32px 0', minHeight: '100vh' }}>
+<div className="container">
+<div style={{ marginBottom: 32 }}>
+<h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 8 }}>Browse Talent</h1>
+<p style={{ color: 'var(--text-muted)' }}>Discover entertainment professionals in Arizona</p>
+</div>
+{/* Search & Filters */}
+<div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+<div className="search-container" style={{ flex: 1, minWidth: 250 }}>
+<i className="fa-solid fa-search"></i>
+<input placeholder="Search by name, skill, genre..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+</div>
+<select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ width: 'auto', minWidth: 180 }}>
+<option value="all">All Categories</option>
+{Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+</select>
+<select value={filterLocation} onChange={e => setFilterLocation(e.target.value)} style={{ width: 'auto', minWidth: 160 }}>
+<option value="all">All Locations</option>
+{AZ_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+</select>
+<select value={filterTier} onChange={e => setFilterTier(e.target.value)} style={{ width: 'auto', minWidth: 140 }}>
+<option value="all">All Tiers</option>
+<option value="premium">Premium</option>
+<option value="pro">Pro</option>
+<option value="free">Free</option>
+</select>
+<div onClick={() => setFilterAvailability(!filterAvailability)} className={`pill ${filterAvailability ? 'active' : ''}`}>
+<i className="fa-solid fa-circle" style={{ fontSize: 7 }}></i> Available Now
+</div>
+</div>
+<p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>{filtered.length} professional{filtered.length !== 1 ? 's' : ''} found</p>
+<div className="grid-3">
+{filtered.map(p => (
+<ProfileCard key={p.id} profile={p} onClick={() => onViewProfile(p)} />
+))}
+</div>
+{filtered.length === 0 && (
+<div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+<i className="fa-solid fa-search" style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}></i>
+<p style={{ fontSize: 18 }}>No professionals match your search.</p>
+<p style={{ fontSize: 14 }}>Try adjusting your filters or search terms.</p>
+</div>
+)}
+</div>
+</div>
+);
+}
+
+// ===========================
+// PROFILE PAGE
+// ===========================
+
+function ProfilePage({ profile: p, onBack, currentUser, onEdit, onViewCalendar }) {
+const calDays = useMemo(() => {
+const days = [];
+['S','M','T','W','T','F','S'].forEach(d => days.push({ type: 'header', label: d }));
+for (let i = 0; i < 2; i++) days.push({ type: 'empty' });
+for (let i = 1; i <= 31; i++) {
+const r = Math.random();
+days.push({ type: 'day', label: i, status: r > 0.7 ? 'booked' : r > 0.55 ? 'maybe' : 'available' });
+}
+return days;
+}, []);
+
+return (
+<div style={{ padding: '32px 0', minHeight: '100vh' }}>
+<div className="container">
+<button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+<i className="fa-solid fa-arrow-left"></i> Back to Browse
+</button>
+
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+{/* Main Content */}
+<div>
+{/* Header */}
+<div className="card" style={{ marginBottom: 20 }}>
+<div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
+<div className="avatar avatar-lg" style={{ background: p.tier === 'premium' ? 'var(--premium-gradient)' : p.tier === 'pro' ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>
+{p.initials}
+</div>
+<div style={{ flex: 1 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+<h1 style={{ fontSize: 28, fontWeight: 800 }}>{p.name}</h1>
+{p.verified && <span className="badge badge-verified"><i className="fa-solid fa-circle-check"></i> Verified</span>}
+{p.tier === 'premium' && <span className="badge badge-premium"><i className="fa-solid fa-crown"></i> Premium</span>}
+{p.tier === 'pro' && <span className="badge badge-pro"><i className="fa-solid fa-gem"></i> Pro</span>}
+</div>
+<p style={{ color: 'var(--text-muted)', marginBottom: 8 }}><i className="fa-solid fa-location-dot"></i> {p.location}, {p.state} Â· Will travel {p.travel}</p>
+<div style={{ display: 'flex', gap: 24, fontSize: 14, color: 'var(--text-muted)' }}>
+<span><Stars rating={p.rating} /> <strong style={{ color: 'var(--text)' }}>{p.rating}</strong> ({p.reviews} reviews)</span>
+<span><strong style={{ color: 'var(--text)' }}>{p.gigs}</strong> gigs completed</span>
+<span><strong style={{ color: 'var(--text)' }}>{p.yearsExp}</strong> years experience</span>
+</div>
+</div>
+</div>
+<div style={{ display: 'flex', gap: 10 }}>
+<button className="btn btn-primary"><i className="fa-solid fa-paper-plane"></i> Contact</button>
+<button className="btn btn-outline"><i className="fa-regular fa-bookmark"></i> Save</button>
+<button className="btn btn-outline"><i className="fa-solid fa-share-nodes"></i> Share</button>
+{p.calendarToken && <button className="btn btn-accent" onClick={() => onViewCalendar(`${CALENDAR_BASE}/${p.calendarToken}`)}><i className="fa-solid fa-calendar"></i> View Calendar</button>}
+{currentUser && (currentUser.role === 'admin' || currentUser.id === p.id) && <button className="btn btn-outline" onClick={onEdit}><i className="fa-solid fa-pen"></i> Edit Profile</button>}
+</div>
+</div>
+
+{/* Bio */}
+<div className="card" style={{ marginBottom: 20 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>About</h3>
+<p style={{ color: 'var(--text-muted)', lineHeight: 1.8 }}>{p.bio}</p>
+</div>
+
+{/* Categories & Skills */}
+<div className="card" style={{ marginBottom: 20 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Specialties</h3>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+{p.subcategories.map(s => <span key={s} className="badge badge-category" style={{ fontSize: 12, padding: '6px 12px' }}>{s}</span>)}
+</div>
+{p.genres && p.genres.length > 0 && (
+<>
+<h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--text-muted)' }}>Genres</h4>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+{p.genres.map(g => <span key={g} className="badge badge-free">{g}</span>)}
+</div>
+</>
+)}
+<h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--text-muted)' }}>Skills</h4>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+{p.skills.map(s => <span key={s} className="badge badge-free">{s}</span>)}
+</div>
+</div>
+
+{/* Media Links */}
+{(p.videoLink || p.showReelLink || p.audioLink) && (
+<div className="card" style={{ marginBottom: 20 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Media & Portfolio</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+{p.videoLink && (
+<a href={p.videoLink} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--dark-lighter)', borderRadius: 10, textDecoration: 'none', color: 'var(--text)' }}>
+<div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(108,43,217,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-play" style={{ color: 'var(--primary-light)', fontSize: 16 }}></i>
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>Performance Video</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.videoLink}</div>
+</div>
+<i className="fa-solid fa-arrow-up-right-from-square" style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}></i>
+</a>
+)}
+{p.showReelLink && (
+<a href={p.showReelLink} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--dark-lighter)', borderRadius: 10, textDecoration: 'none', color: 'var(--text)' }}>
+<div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-clapperboard" style={{ color: 'var(--accent)', fontSize: 16 }}></i>
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>Live Show Reel</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.showReelLink}</div>
+</div>
+<i className="fa-solid fa-arrow-up-right-from-square" style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}></i>
+</a>
+)}
+{p.audioLink && (
+<a href={p.audioLink} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--dark-lighter)', borderRadius: 10, textDecoration: 'none', color: 'var(--text)' }}>
+<div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-music" style={{ color: 'var(--success)', fontSize: 16 }}></i>
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>Audio Demo</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.audioLink}</div>
+</div>
+<i className="fa-solid fa-arrow-up-right-from-square" style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}></i>
+</a>
+)}
+</div>
+</div>
+)}
+
+{/* Recent Venues */}
+<div className="card">
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Recent Venues & Clients</h3>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+{p.recentVenues.map(v => (
+<div key={v} style={{ background: 'var(--dark-lighter)', padding: '8px 16px', borderRadius: 8, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+<i className="fa-solid fa-building" style={{ color: 'var(--text-muted)', fontSize: 11 }}></i> {v}
+</div>
+))}
+</div>
+</div>
+</div>
+
+{/* Sidebar */}
+<div>
+<div className="card" style={{ marginBottom: 20, position: 'sticky', top: 80 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Quick Info</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+<span style={{ color: 'var(--text-muted)' }}>Rate</span>
+<span style={{ fontWeight: 600 }}>{p.rate}</span>
+</div>
+<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+<span style={{ color: 'var(--text-muted)' }}>Availability</span>
+{p.available ? <span className="badge badge-available"><i className="fa-solid fa-circle" style={{ fontSize: 6 }}></i> Available</span> : <span className="badge badge-free">Currently Booked</span>}
+</div>
+<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+<span style={{ color: 'var(--text-muted)' }}>Travel</span>
+<span>{p.travel}</span>
+</div>
+{p.unions.length > 0 && (
+<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+<span style={{ color: 'var(--text-muted)' }}>Unions</span>
+<span>{p.unions.join(', ')}</span>
+</div>
+)}
+{p.equipment.length > 0 && (
+<div>
+<span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Equipment</span>
+<div style={{ marginTop: 6 }}>
+{p.equipment.map(e => <div key={e} style={{ fontSize: 13, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6 }}><i className="fa-solid fa-check" style={{ color: 'var(--success)', fontSize: 10 }}></i> {e}</div>)}
+</div>
+</div>
+)}
+</div>
+
+{/* Calendar Link */}
+<div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--dark-border)' }}>
+<h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Availability Calendar</h4>
+{p.calendarToken ? (
+<div>
+<div className="cal-grid">
+{calDays.map((d, i) => (
+<div key={i} className={`cal-day ${d.type === 'header' ? 'header' : d.type === 'empty' ? 'empty' : d.status}`}>
+{d.label || ''}
+</div>
+))}
+</div>
+<div style={{ display: 'flex', gap: 12, marginTop: 10, fontSize: 11, color: 'var(--text-muted)' }}>
+<span><i className="fa-solid fa-square" style={{ color: 'var(--success)', fontSize: 8 }}></i> Available</span>
+<span><i className="fa-solid fa-square" style={{ color: 'var(--accent)', fontSize: 8 }}></i> Tentative</span>
+<span><i className="fa-solid fa-square" style={{ color: 'var(--danger)', fontSize: 8 }}></i> Booked</span>
+</div>
+<button onClick={() => onViewCalendar(`${CALENDAR_BASE}/${p.calendarToken}`)}
+  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, padding: '10px', background: 'rgba(108,43,217,0.1)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: 'var(--primary-light)', border: 'none', width: '100%', cursor: 'pointer' }}>
+  <i className="fa-solid fa-calendar-days"></i> View Full Calendar
+</button>
+</div>
+) : (
+<div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+<i className="fa-solid fa-calendar-xmark" style={{ fontSize: 24, marginBottom: 8, opacity: 0.4, display: 'block' }}></i>
+Calendar not yet set up
+</div>
+)}
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+);
+}
+
+// ===========================
+// GIGS PAGE
+// ===========================
+
+function GigsPage({ onViewGig }) {
+const [gigFilter, setGigFilter] = useState('all');
+const filtered = gigFilter === 'all' ? SAMPLE_GIGS : SAMPLE_GIGS.filter(g => g.categories.some(c => {
+if (gigFilter === 'performers') return CATEGORIES.performers.subs.includes(c);
+if (gigFilter === 'technical') return CATEGORIES.technical.subs.includes(c);
+return true;
+}));
+
+return (
+<div style={{ padding: '32px 0', minHeight: '100vh' }}>
+<div className="container">
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+<div>
+<h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 8 }}>Gig Board</h1>
+<p style={{ color: 'var(--text-muted)' }}>Current opportunities in Arizona</p>
+</div>
+<button className="btn btn-primary"><i className="fa-solid fa-plus"></i> Post a Gig</button>
+</div>
+<div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+{['all', 'performers', 'technical'].map(f => (
+<div key={f} className={`pill ${gigFilter === f ? 'active' : ''}`} onClick={() => setGigFilter(f)}>
+{f === 'all' ? 'All Gigs' : f === 'performers' ? 'Performers' : 'Technical'}
+</div>
+))}
+</div>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+{filtered.map(g => (
+<div key={g.id} className="card" onClick={() => onViewGig(g)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+<div style={{ flex: 1 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+<h3 style={{ fontSize: 17, fontWeight: 700 }}>{g.title}</h3>
+{g.urgent && <span className="badge" style={{ background: 'rgba(239,68,68,0.2)', color: 'var(--danger)' }}><i className="fa-solid fa-bolt"></i> Urgent</span>}
+</div>
+<div style={{ display: 'flex', gap: 16, fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>
+<span><i className="fa-solid fa-building"></i> {g.venue}</span>
+<span><i className="fa-solid fa-location-dot"></i> {g.location}</span>
+<span><i className="fa-solid fa-calendar"></i> {g.date}</span>
+</div>
+<div style={{ display: 'flex', gap: 4 }}>
+{g.categories.map(c => <span key={c} className="badge badge-category">{c}</span>)}
+</div>
+</div>
+<div style={{ textAlign: 'right', minWidth: 120 }}>
+<div style={{ fontSize: 18, fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>{g.pay}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Posted by {g.postedBy}</div>
+</div>
+</div>
+))}
+</div>
+</div>
+</div>
+);
+}
+
+// ===========================
+// PRICING PAGE
+// ===========================
+
+function PricingPage({ onCreateProfile }) {
+return (
+<div style={{ padding: '60px 0', minHeight: '100vh' }}>
+<div className="container">
+<div style={{ textAlign: 'center', marginBottom: 50 }}>
+<h1 style={{ fontSize: 42, fontWeight: 800, marginBottom: 12 }}>Elevate Your Profile</h1>
+<p style={{ color: 'var(--text-muted)', fontSize: 18 }}>Choose the plan that matches your ambition</p>
+</div>
+<div className="grid-3">
+{/* Free */}
+<div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+<div style={{ marginBottom: 24 }}>
+<h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Starter</h3>
+<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Get discovered</p>
+</div>
+<div style={{ marginBottom: 24 }}>
+<span style={{ fontSize: 48, fontWeight: 800 }}>Free</span>
+</div>
+<div style={{ flex: 1, marginBottom: 24 }}>
+{['Basic profile page', '2 video uploads', '5 photos', 'Appear in search results', 'Respond to gig postings', 'Basic availability status'].map((f, i) => (
+<div key={i} style={{ padding: '8px 0', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--dark-border)' }}>
+<i className="fa-solid fa-check" style={{ color: 'var(--success)', fontSize: 12 }}></i> {f}
+</div>
+))}
+</div>
+<button className="btn btn-outline" onClick={onCreateProfile} style={{ width: '100%', justifyContent: 'center' }}>Get Started</button>
+</div>
+{/* Pro */}
+<div className="card" style={{ display: 'flex', flexDirection: 'column', border: '2px solid var(--primary)', position: 'relative' }}>
+<div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)' }}>
+<span className="badge badge-pro" style={{ fontSize: 12, padding: '6px 16px' }}>Most Popular</span>
+</div>
+<div style={{ marginBottom: 24 }}>
+<h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Pro</h3>
+<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Serious professionals</p>
+</div>
+<div style={{ marginBottom: 24 }}>
+<span style={{ fontSize: 48, fontWeight: 800 }}>$19</span>
+<span style={{ color: 'var(--text-muted)', fontSize: 14 }}>/month</span>
+</div>
+<div style={{ flex: 1, marginBottom: 24 }}>
+{['Everything in Starter', 'Unlimited media uploads', 'Priority search placement', 'Full availability calendar', 'Profile analytics & views', '"Available Now" alerts', 'Verified badge eligible', 'Direct messaging', 'Custom portfolio URL'].map((f, i) => (
+<div key={i} style={{ padding: '8px 0', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--dark-border)' }}>
+<i className="fa-solid fa-check" style={{ color: 'var(--primary-light)', fontSize: 12 }}></i> {f}
+</div>
+))}
+</div>
+<button className="btn btn-primary" onClick={onCreateProfile} style={{ width: '100%', justifyContent: 'center' }}>Go Pro</button>
+</div>
+{/* Premium */}
+<div className="card" style={{ display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, rgba(245,158,11,0.08) 0%, var(--dark-card) 50%)' }}>
+<div style={{ marginBottom: 24 }}>
+<h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Premium <i className="fa-solid fa-crown" style={{ color: 'var(--accent)' }}></i></h3>
+<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Maximum visibility</p>
+</div>
+<div style={{ marginBottom: 24 }}>
+<span style={{ fontSize: 48, fontWeight: 800 }}>$49</span>
+<span style={{ color: 'var(--text-muted)', fontSize: 14 }}>/month</span>
+</div>
+<div style={{ flex: 1, marginBottom: 24 }}>
+{['Everything in Pro', 'Featured homepage placement', 'Top of all search results', 'Algorithm-boosted recommendations', 'Premium gig access', 'Leads pushed to you', 'Priority support', 'Annual profile highlight', 'Featured in newsletters', 'Booker recommendation badge'].map((f, i) => (
+<div key={i} style={{ padding: '8px 0', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--dark-border)' }}>
+<i className="fa-solid fa-check" style={{ color: 'var(--accent)', fontSize: 12 }}></i> {f}
+</div>
+))}
+</div>
+<button className="btn btn-accent" onClick={onCreateProfile} style={{ width: '100%', justifyContent: 'center' }}>Go Premium</button>
+</div>
+</div>
+
+{/* Business tier */}
+<div className="card" style={{ marginTop: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, var(--dark-card), rgba(108,43,217,0.1))' }}>
+<div>
+<h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Business & Venue Plans</h3>
+<p style={{ color: 'var(--text-muted)', maxWidth: 600 }}>
+For venues, production companies, agencies, and bookers. Advanced search, roster management, bulk messaging, and integration with booking platforms. Custom pricing based on needs.
+</p>
+</div>
+<button className="btn btn-outline btn-lg">Contact Sales</button>
+</div>
+</div>
+</div>
+);
+}
+
+// ===========================
+// DASHBOARD PAGE
+// ===========================
+
+function DashboardPage({ onViewProfile, currentUser, profiles, onEditProfile, onLogin, onViewCalendar }) {
+const [dashTab, setDashTab] = useState('overview');
+
+// Not logged in â show login prompt
+if (!currentUser) {
+return (
+<div style={{ padding: '80px 0', minHeight: '100vh' }}>
+<div className="container" style={{ maxWidth: 480, textAlign: 'center' }}>
+<div className="card" style={{ padding: '60px 40px' }}>
+<i className="fa-solid fa-lock" style={{ fontSize: 48, color: 'var(--primary-light)', marginBottom: 20, display: 'block' }}></i>
+<h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12 }}>Log In to Your Dashboard</h2>
+<p style={{ color: 'var(--text-muted)', marginBottom: 28, lineHeight: 1.6 }}>Access your profile, manage your settings, and track your activity.</p>
+<button className="btn btn-primary" onClick={onLogin} style={{ width: '100%', justifyContent: 'center', padding: '14px 24px', fontSize: 16 }}><i className="fa-solid fa-right-to-bracket" style={{ marginRight: 8 }}></i> Log In</button>
+<p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 16 }}>Use your magic link token or admin token to log in.</p>
+</div>
+</div>
+</div>
+);
+}
+
+const isAdmin = currentUser.role === 'admin';
+const myProfile = profiles.find(p => p.id === currentUser.id);
+
+return (
+<div style={{ padding: '32px 0', minHeight: '100vh' }}>
+<div className="container">
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+<div>
+<h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>Welcome back, {currentUser.name}</h1>
+<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{isAdmin ? 'Admin' : myProfile && myProfile.tier === 'premium' ? 'Premium Member' : myProfile && myProfile.tier === 'pro' ? 'Pro Member' : 'Starter Member'}</p>
+</div>
+<div style={{ display: 'flex', gap: 10 }}>
+{!isAdmin && myProfile && <button className="btn btn-outline" onClick={() => onEditProfile(currentUser.id)}><i className="fa-solid fa-pen"></i> Edit My Profile</button>}
+{isAdmin && <button className="btn btn-primary" onClick={() => onEditProfile(null)}><i className="fa-solid fa-plus"></i> Add Performer</button>}
+</div>
+</div>
+
+<div className="tabs" style={{ marginBottom: 24, display: 'inline-flex' }}>
+{(isAdmin ? ['overview', 'all-profiles'] : ['overview']).map(t => (
+<button key={t} className={`tab ${dashTab === t ? 'active' : ''}`} onClick={() => setDashTab(t)}>
+{t === 'all-profiles' ? 'All Profiles' : t.charAt(0).toUpperCase() + t.slice(1)}
+</button>
+))}
+</div>
+
+{dashTab === 'overview' && (
+<div>
+{/* Stats Row */}
+<div className="grid-4" style={{ marginBottom: 24 }}>
+{[
+{ label: isAdmin ? 'Total Profiles' : 'Profile Views', value: isAdmin ? profiles.length : 'â', icon: isAdmin ? 'fa-users' : 'fa-eye', color: 'var(--primary-light)' },
+{ label: isAdmin ? 'Performers' : 'Search Appearances', value: isAdmin ? profiles.filter(p => p.category === 'performers' || (p.subcategories && p.subcategories.some(s => CATEGORIES.performers && CATEGORIES.performers.subs.includes(s)))).length : 'â', icon: isAdmin ? 'fa-guitar' : 'fa-magnifying-glass', color: 'var(--accent)' },
+{ label: isAdmin ? 'Technical' : 'Messages', value: isAdmin ? profiles.filter(p => p.category === 'technical' || (p.subcategories && p.subcategories.some(s => CATEGORIES.technical && CATEGORIES.technical.subs.includes(s)))).length : 'â', icon: isAdmin ? 'fa-sliders' : 'fa-envelope', color: 'var(--success)' },
+{ label: isAdmin ? 'Available Now' : 'Gig Invitations', value: isAdmin ? profiles.filter(p => p.available).length : 'â', icon: isAdmin ? 'fa-circle-check' : 'fa-ticket', color: '#EC4899' },
+].map((s, i) => (
+<div key={i} className="card">
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+<div style={{ width: 40, height: 40, background: `${s.color}20`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+<i className={`fa-solid ${s.icon}`} style={{ color: s.color }}></i>
+</div>
+</div>
+<div style={{ fontSize: 28, fontWeight: 800 }}>{s.value}</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.label}</div>
+</div>
+))}
+</div>
+
+{/* Admin: All profiles list */}
+{isAdmin && (
+<div className="card">
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700 }}>All Profiles</h3>
+<span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{profiles.length} total</span>
+</div>
+{profiles.map((p, i) => (
+<div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: i < profiles.length - 1 ? '1px solid var(--dark-border)' : 'none' }}>
+<div className="avatar avatar-sm" style={{ background: p.tier === 'premium' ? 'var(--premium-gradient)' : p.tier === 'pro' ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>
+{p.initials}
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+<span style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</span>
+{p.tier === 'premium' && <span className="badge badge-premium" style={{ fontSize: 10 }}>Premium</span>}
+{p.tier === 'pro' && <span className="badge badge-pro" style={{ fontSize: 10 }}>Pro</span>}
+{p.available && <span className="badge badge-available" style={{ fontSize: 10 }}><i className="fa-solid fa-circle" style={{ fontSize: 5 }}></i> Available</span>}
+</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+{p.subcategories && p.subcategories.slice(0, 3).join(', ')}{p.location ? ` Â· ${p.location}` : ''}{p.email ? ` Â· ${p.email}` : ''}
+</div>
+</div>
+<div style={{ display: 'flex', gap: 8 }}>
+<button className="btn btn-outline" onClick={() => onViewProfile(p)} style={{ padding: '6px 12px', fontSize: 12 }}><i className="fa-solid fa-eye"></i> View</button>
+<button className="btn btn-primary" onClick={() => onEditProfile(p.id)} style={{ padding: '6px 12px', fontSize: 12 }}><i className="fa-solid fa-pen"></i> Edit</button>
+</div>
+</div>
+))}
+</div>
+)}
+
+{/* Performer: My Profile card */}
+{!isAdmin && myProfile && (
+<div>
+<div className="card" style={{ marginBottom: 20 }}>
+<div style={{ display: 'flex', gap: 20, alignItems: 'center', marginBottom: 20 }}>
+<div className="avatar avatar-lg" style={{ background: myProfile.tier === 'premium' ? 'var(--premium-gradient)' : myProfile.tier === 'pro' ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>
+{myProfile.initials}
+</div>
+<div style={{ flex: 1 }}>
+<h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{myProfile.name}</h2>
+<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{myProfile.subcategories ? myProfile.subcategories.join(', ') : ''}</p>
+<p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>{myProfile.location}{myProfile.state ? `, ${myProfile.state}` : ''}</p>
+</div>
+<button className="btn btn-primary" onClick={() => onEditProfile(currentUser.id)}><i className="fa-solid fa-pen"></i> Edit Profile</button>
+</div>
+<div style={{ display: 'flex', gap: 12 }}>
+<div style={{ flex: 1, background: 'var(--dark-lighter)', padding: '12px 16px', borderRadius: 8 }}>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
+<div style={{ fontSize: 14, fontWeight: 600 }}>{myProfile.available ? 'Available' : 'Not Available'}</div>
+</div>
+<div style={{ flex: 1, background: 'var(--dark-lighter)', padding: '12px 16px', borderRadius: 8 }}>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Tier</div>
+<div style={{ fontSize: 14, fontWeight: 600 }}>{myProfile.tier === 'premium' ? 'Premium' : myProfile.tier === 'pro' ? 'Pro' : 'Starter'}</div>
+</div>
+<div style={{ flex: 1, background: 'var(--dark-lighter)', padding: '12px 16px', borderRadius: 8 }}>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Experience</div>
+<div style={{ fontSize: 14, fontWeight: 600 }}>{myProfile.yearsExp ? myProfile.yearsExp + ' years' : 'Not set'}</div>
+</div>
+</div>
+</div>
+{myProfile.bio && (
+<div className="card" style={{ marginBottom: 20 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Bio</h3>
+<p style={{ color: 'var(--text-muted)', lineHeight: 1.7, fontSize: 14 }}>{myProfile.bio}</p>
+</div>
+)}
+{myProfile.calendarToken && (
+<div className="card">
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Calendar</h3>
+<button className="btn btn-accent" style={{ display: 'inline-flex' }} onClick={() => onViewCalendar(`${CALENDAR_BASE}/${myProfile.calendarToken}`)}><i className="fa-solid fa-calendar"></i> View My Calendar</button>
+</div>
+)}
+</div>
+)}
+
+{/* Performer with no matching profile */}
+{!isAdmin && !myProfile && (
+<div className="card" style={{ padding: 40, textAlign: 'center' }}>
+<i className="fa-solid fa-user-slash" style={{ fontSize: 36, color: 'var(--text-muted)', marginBottom: 12, display: 'block', opacity: 0.5 }}></i>
+<p style={{ color: 'var(--text-muted)' }}>Your profile could not be loaded. Please contact TAD Shows for assistance.</p>
+</div>
+)}
+</div>
+)}
+
+{dashTab === 'all-profiles' && isAdmin && (
+<div>
+<div style={{ marginBottom: 16, color: 'var(--text-muted)', fontSize: 14 }}>Click Edit to update any profile. Changes save directly to Airtable.</div>
+{profiles.map((p, i) => (
+<div key={p.id} className="card" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 16 }}>
+<div className="avatar avatar-sm" style={{ background: p.tier === 'premium' ? 'var(--premium-gradient)' : p.tier === 'pro' ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>
+{p.initials}
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{p.name}</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{p.email}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{p.subcategories ? p.subcategories.join(', ') : 'No specialties set'} Â· {p.location || 'No location'}</div>
+</div>
+<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, minWidth: 100 }}>
+{p.tier === 'premium' && <span className="badge badge-premium" style={{ fontSize: 10 }}>Premium</span>}
+{p.tier === 'pro' && <span className="badge badge-pro" style={{ fontSize: 10 }}>Pro</span>}
+{!p.tier && <span className="badge badge-free" style={{ fontSize: 10 }}>Starter</span>}
+{p.available ? <span style={{ fontSize: 11, color: 'var(--success)' }}>Available</span> : <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Unavailable</span>}
+</div>
+<div style={{ display: 'flex', gap: 8 }}>
+<button className="btn btn-outline" onClick={() => onViewProfile(p)} style={{ padding: '8px 14px', fontSize: 12 }}><i className="fa-solid fa-eye"></i></button>
+<button className="btn btn-primary" onClick={() => onEditProfile(p.id)} style={{ padding: '8px 14px', fontSize: 12 }}><i className="fa-solid fa-pen"></i> Edit</button>
+</div>
+</div>
+))}
+</div>
+)}
+</div>
+</div>
+);
+}
+
+// ===========================
+// MODALS
+// ===========================
+
+function CreateProfileModal({ onClose, onSuccess, currentUser }) {
+const [step, setStep] = useState(1);
+const [saving, setSaving] = useState(false);
+const [saveError, setSaveError] = useState('');
+const [createdResult, setCreatedResult] = useState(null);
+const [formData, setFormData] = useState({
+  name: '', email: '', phone: '', category: '', subcategories: [], location: '', state: 'AZ',
+  bio: '', rateMin: '', rateMax: '', rateType: '', yearsExp: '', travelRadius: '',
+  genres: [], skills: [], unions: [], equipment: '', recentVenues: ''
+});
+const update = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
+const toggleArrayItem = (key, item) => update(key, formData[key].includes(item) ? formData[key].filter(x => x !== item) : [...formData[key], item]);
+
+const handleCreate = async () => {
+  if (!formData.name || !formData.email) { setSaveError('Name and email are required'); return; }
+  setSaving(true); setSaveError('');
+  try {
+    const body = {
+      ...formData,
+      equipment: formData.equipment.split('\n').filter(Boolean),
+      recentVenues: formData.recentVenues.split('\n').filter(Boolean)
+    };
+    const result = await apiPost('/profile-create', body);
+    setCreatedResult(result);
+    setStep(5);
+  } catch (err) {
+    setSaveError('Failed to create profile. Please try again.');
+  }
+  setSaving(false);
+};
+
+return (
+<div className="modal-overlay" onClick={onClose}>
+<div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 600, maxHeight: '85vh', overflowY: 'auto' }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+<h2 style={{ fontSize: 22, fontWeight: 700 }}>{currentUser && currentUser.role === 'admin' ? 'Add Performer' : 'Join StageLink365'}</h2>
+<button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+{/* Progress */}
+<div style={{ display: 'flex', gap: 4, marginBottom: 32 }}>
+{[1,2,3,4].map(s => (
+<div key={s} style={{ flex: 1, height: 4, borderRadius: 2, background: s <= step ? 'var(--primary-light)' : 'var(--dark-lighter)' }}></div>
+))}
+</div>
+
+{step === 1 && (
+<div>
+<h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Basic Information</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Professional/Stage Name *</label><input placeholder="e.g., Marcus Johnson" value={formData.name} onChange={e => update('name', e.target.value)} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Email *</label><input type="email" placeholder="you@example.com" value={formData.email} onChange={e => update('email', e.target.value)} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Phone</label><input type="tel" placeholder="(555) 123-4567" value={formData.phone} onChange={e => update('phone', e.target.value)} /></div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 12 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>City</label>
+<select value={formData.location} onChange={e => update('location', e.target.value)}>
+<option value="">Select city</option>
+{AZ_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+</select>
+</div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>State</label>
+<input value={formData.state} onChange={e => update('state', e.target.value)} />
+</div>
+</div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Years of Experience</label>
+<input type="number" placeholder="e.g., 10" value={formData.yearsExp} onChange={e => update('yearsExp', e.target.value)} /></div>
+</div>
+</div>
+)}
+
+{step === 2 && (
+<div>
+<h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Your Profession</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Primary Category</label>
+<select value={formData.category} onChange={e => { update('category', e.target.value); update('subcategories', []); }}>
+<option value="">Select a category</option>
+{Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+</select>
+</div>
+{formData.category && (
+<div>
+<label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Specialties (select all that apply)</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+{CATEGORIES[formData.category].subs.map(s => (
+<div key={s} className={`pill ${formData.subcategories.includes(s) ? 'active' : ''}`}
+onClick={() => toggleArrayItem('subcategories', s)}>
+{s}
+</div>
+))}
+</div>
+</div>
+)}
+<div>
+<label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Genres (select all that apply)</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+{GENRES.map(g => (
+<div key={g} className={`pill ${formData.genres.includes(g) ? 'active' : ''}`} onClick={() => toggleArrayItem('genres', g)}>{g}</div>
+))}
+</div>
+</div>
+</div>
+</div>
+)}
+
+{step === 3 && (
+<div>
+<h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>About You</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Bio</label>
+<textarea rows={4} placeholder="Tell venues and bookers about your experience, style, and what you bring to the stage..." value={formData.bio} onChange={e => update('bio', e.target.value)} style={{ resize: 'vertical' }} />
+</div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Min Rate ($)</label><input type="number" placeholder="300" value={formData.rateMin} onChange={e => update('rateMin', e.target.value)} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Max Rate ($)</label><input type="number" placeholder="800" value={formData.rateMax} onChange={e => update('rateMax', e.target.value)} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Per</label>
+<select value={formData.rateType} onChange={e => update('rateType', e.target.value)}>
+<option value="">-</option><option value="Per Gig">Per Gig</option><option value="Per Day">Per Day</option><option value="Per Hour">Per Hour</option><option value="Per Week">Per Week</option><option value="Negotiable">Negotiable</option>
+</select></div>
+</div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Travel Radius (miles)</label>
+<input type="number" placeholder="100" value={formData.travelRadius} onChange={e => update('travelRadius', e.target.value)} /></div>
+</div>
+</div>
+)}
+
+{step === 4 && (
+<div>
+<h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Equipment & Details</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Equipment You Provide (one per line)</label>
+<textarea rows={3} placeholder="Full guitar rig&#10;PA system for small venues&#10;Wireless in-ear monitors" value={formData.equipment} onChange={e => update('equipment', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Recent Venues/Clients (one per line)</label>
+<textarea rows={3} placeholder="Talking Stick Resort&#10;Casino Arizona&#10;Hotel Valley Ho" value={formData.recentVenues} onChange={e => update('recentVenues', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div>
+<label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Union Affiliations</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+{['AFM Local 586', 'IATSE Local 415', 'SAG-AFTRA', 'AEA', 'SDC', 'AGMA'].map(u => (
+<div key={u} className={`pill ${formData.unions.includes(u) ? 'active' : ''}`} onClick={() => toggleArrayItem('unions', u)}>{u}</div>
+))}
+</div>
+</div>
+{saveError && <div style={{ color: 'var(--danger)', fontSize: 13, padding: '8px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}><i className="fa-solid fa-circle-exclamation"></i> {saveError}</div>}
+</div>
+</div>
+)}
+
+{step === 5 && createdResult && (
+<div style={{ textAlign: 'center', padding: '20px 0' }}>
+<div style={{ width: 80, height: 80, background: 'rgba(16,185,129,0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+<i className="fa-solid fa-check" style={{ fontSize: 36, color: 'var(--success)' }}></i>
+</div>
+<h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Profile Created!</h3>
+<p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{createdResult.profile.name} is now on StageLink365.</p>
+<div style={{ background: 'var(--dark-lighter)', padding: 20, borderRadius: 12, textAlign: 'left', marginBottom: 20 }}>
+<div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>
+<strong style={{ color: 'var(--text)' }}>Magic Link Token:</strong>
+<span style={{ fontFamily: 'monospace', background: 'var(--dark)', padding: '4px 8px', borderRadius: 4, marginLeft: 8, fontSize: 15, color: 'var(--accent)' }}>{createdResult.profile.token}</span>
+</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>
+<strong style={{ color: 'var(--text)' }}>Calendar URL:</strong>
+<a href={createdResult.profile.calendarUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-light)', marginLeft: 8, wordBreak: 'break-all' }}>{createdResult.profile.calendarUrl}</a>
+</div>
+<div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 12 }}>
+<i className="fa-solid fa-triangle-exclamation"></i> Save this token â the performer will need it to log in and manage their calendar.
+</div>
+</div>
+</div>
+)}
+
+<div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
+{step > 1 && step < 5 ? <button className="btn btn-outline" onClick={() => setStep(step - 1)}>Back</button> : <div></div>}
+{step < 4 && <button className="btn btn-primary" onClick={() => setStep(step + 1)}>Continue</button>}
+{step === 4 && <button className="btn btn-primary" onClick={handleCreate} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Creating...' : 'Create Profile'}</button>}
+{step === 5 && <button className="btn btn-primary" onClick={() => onSuccess(createdResult)}>Go to Dashboard</button>}
+</div>
+</div>
+</div>
+);
+}
+
+function LoginModal({ onClose, onSuccess }) {
+const [loginToken, setLoginToken] = useState('');
+const [loginError, setLoginError] = useState('');
+const [loading, setLoading] = useState(false);
+
+const handleLogin = async () => {
+  if (!loginToken.trim()) { setLoginError('Please enter your access token'); return; }
+  setLoading(true); setLoginError('');
+  try {
+    const data = await apiPost('/auth', { token: loginToken.trim() });
+    if (data.authenticated) {
+      onSuccess({ ...data.profile, role: data.role, token: loginToken.trim() });
+    }
+  } catch (err) {
+    setLoginError('Invalid token. Check your magic link or contact TAD Shows.');
+  }
+  setLoading(false);
+};
+
+return (
+<div className="modal-overlay" onClick={onClose}>
+<div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+<h2 style={{ fontSize: 22, fontWeight: 700 }}>Log In to StageLink365</h2>
+<button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+<div style={{ background: 'rgba(108,43,217,0.1)', padding: 16, borderRadius: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+<i className="fa-solid fa-wand-magic-sparkles" style={{ color: 'var(--primary-light)', marginRight: 6 }}></i>
+StageLink365 uses <strong style={{ color: 'var(--text)' }}>magic link tokens</strong> instead of passwords. Enter your unique token below â you received it when your profile was created.
+</div>
+<div>
+<label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Your Access Token</label>
+<input type="text" placeholder="e.g., tRd7xKm9Qw" value={loginToken} onChange={e => setLoginToken(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ fontFamily: 'monospace', fontSize: 16, letterSpacing: 1 }} />
+</div>
+{loginError && <div style={{ color: 'var(--danger)', fontSize: 13, padding: '8px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}><i className="fa-solid fa-circle-exclamation"></i> {loginError}</div>}
+<button className="btn btn-primary" onClick={handleLogin} disabled={loading} style={{ width: '100%', justifyContent: 'center', marginTop: 8, opacity: loading ? 0.6 : 1 }}>
+{loading ? 'Verifying...' : 'Log In'}
+</button>
+<div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
+Don't have a token? Contact TAD Shows or <a href="#" style={{ color: 'var(--primary-light)' }}>create a new profile</a>.
+</div>
+</div>
+</div>
+</div>
+);
+}
+
+// ===========================
+// CalendarModal Component
+// ===========================
+
+function CalendarModal({ url, onClose }) {
+return (
+<div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={onClose}>
+<div style={{ background: 'var(--dark-card)', borderRadius: 16, width: '100%', maxWidth: 900, height: '85vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--dark-border)', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--dark-border)' }}>
+<h3 style={{ fontSize: 16, fontWeight: 700 }}><i className="fa-solid fa-calendar" style={{ marginRight: 8, color: 'var(--accent)' }}></i>Availability Calendar</h3>
+<button onClick={onClose} style={{ background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', color: 'var(--text)', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+<div style={{ flex: 1, padding: 0 }}>
+<iframe src={url} style={{ width: '100%', height: '100%', border: 'none', borderRadius: '0 0 16px 16px' }} title="Availability Calendar" />
+</div>
+</div>
+</div>
+);
+}
+
+function EditProfileModal({ profileId, token, onClose, onSaved }) {
+const [loading, setLoading] = useState(true);
+const [saving, setSaving] = useState(false);
+const [error, setError] = useState('');
+const [formData, setFormData] = useState({
+  name: '', email: '', phone: '', category: '', subcategories: [], location: '', state: '',
+  bio: '', rateMin: '', rateMax: '', rateType: '', yearsExp: '', travelRadius: '',
+  genres: [], skills: [], unions: [], equipment: '', recentVenues: '', available: true,
+  videoLink: '', showReelLink: '', audioLink: ''
+});
+const update = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
+const toggleArrayItem = (key, item) => update(key, formData[key].includes(item) ? formData[key].filter(x => x !== item) : [...formData[key], item]);
+
+useEffect(() => {
+  if (!profileId) return;
+  (async () => {
+    try {
+      const data = await apiGet(`/profile?id=${profileId}`);
+      const p = data.profile;
+      setFormData({
+        name: p.name || '', email: p.email || '', phone: p.phone || '',
+        category: p.category || '', subcategories: p.subcategories || [],
+        location: p.location || '', state: p.state || '',
+        bio: p.bio || '', rateMin: p.rateMin || '', rateMax: p.rateMax || '', rateType: p.rateType || '',
+        yearsExp: p.yearsExp || '', travelRadius: p.travelRadius || '',
+        genres: p.genres || [], skills: p.skills || [], unions: p.unions || [],
+        equipment: (p.equipment || []).join('\n'), recentVenues: (p.recentVenues || []).join('\n'),
+        available: p.available !== false,
+        videoLink: p.videoLink || '', showReelLink: p.showReelLink || '', audioLink: p.audioLink || ''
+      });
+    } catch (err) { setError('Could not load profile'); }
+    setLoading(false);
+  })();
+}, [profileId]);
+
+const handleSave = async () => {
+  setSaving(true); setError('');
+  try {
+    const fields = {
+      name: formData.name, email: formData.email, phone: formData.phone,
+      category: formData.category, subcategories: formData.subcategories,
+      location: formData.location, state: formData.state,
+      bio: formData.bio, yearsExp: formData.yearsExp ? parseInt(formData.yearsExp) : undefined,
+      travelRadius: formData.travelRadius ? parseInt(formData.travelRadius) : undefined,
+      genres: formData.genres, skills: formData.skills, unions: formData.unions,
+      equipment: formData.equipment.split('\n').filter(Boolean),
+      recentVenues: formData.recentVenues.split('\n').filter(Boolean),
+      available: formData.available,
+      videoLink: formData.videoLink || '',
+      showReelLink: formData.showReelLink || '',
+      audioLink: formData.audioLink || ''
+    };
+    if (formData.rateMin) fields.rateMin = parseFloat(formData.rateMin);
+    if (formData.rateMax) fields.rateMax = parseFloat(formData.rateMax);
+    if (formData.rateType) fields.rateType = formData.rateType;
+    await apiPatch('/profile', { id: profileId, fields, token });
+    onSaved();
+  } catch (err) { setError('Failed to save. Please try again.'); }
+  setSaving(false);
+};
+
+if (loading) return (
+<div className="modal-overlay"><div className="modal" style={{ textAlign: 'center', padding: 60 }}>
+<i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 32, color: 'var(--primary-light)', marginBottom: 16 }}></i>
+<p style={{ color: 'var(--text-muted)' }}>Loading profile...</p>
+</div></div>
+);
+
+return (
+<div className="modal-overlay" onClick={onClose}>
+<div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 640, maxHeight: '85vh', overflowY: 'auto' }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+<h2 style={{ fontSize: 22, fontWeight: 700 }}>Edit Profile</h2>
+<button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+{/* Basic Info */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-user" style={{ marginRight: 6 }}></i> Basic Information</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Name *</label><input value={formData.name} onChange={e => update('name', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Email *</label><input type="email" value={formData.email} onChange={e => update('email', e.target.value)} /></div>
+</div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Phone</label><input value={formData.phone} onChange={e => update('phone', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>City</label>
+<select value={formData.location} onChange={e => update('location', e.target.value)}><option value="">Select</option>{AZ_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}</select></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>State</label><input value={formData.state} onChange={e => update('state', e.target.value)} /></div>
+</div>
+</div>
+</div>
+
+{/* Category & Skills */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-tags" style={{ marginRight: 6 }}></i> Category & Skills</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Primary Category</label>
+<select value={formData.category} onChange={e => { update('category', e.target.value); }}>
+<option value="">Select</option>{Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+</select></div>
+{formData.category && CATEGORIES[formData.category] && (
+<div>
+<label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Specialties</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+{CATEGORIES[formData.category].subs.map(s => (
+<div key={s} className={`pill ${formData.subcategories.includes(s) ? 'active' : ''}`} onClick={() => toggleArrayItem('subcategories', s)} style={{ fontSize: 12 }}>{s}</div>
+))}
+</div>
+</div>
+)}
+<div>
+<label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Genres</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+{GENRES.map(g => (
+<div key={g} className={`pill ${formData.genres.includes(g) ? 'active' : ''}`} onClick={() => toggleArrayItem('genres', g)} style={{ fontSize: 12 }}>{g}</div>
+))}
+</div>
+</div>
+</div>
+</div>
+
+{/* Bio & Rates */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-pen" style={{ marginRight: 6 }}></i> Bio & Rates</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Bio</label>
+<textarea rows={4} value={formData.bio} onChange={e => update('bio', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Min Rate ($)</label><input type="number" value={formData.rateMin} onChange={e => update('rateMin', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Max Rate ($)</label><input type="number" value={formData.rateMax} onChange={e => update('rateMax', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Per</label>
+<select value={formData.rateType} onChange={e => update('rateType', e.target.value)}><option value="">-</option><option value="Per Gig">Per Gig</option><option value="Per Day">Per Day</option><option value="Per Hour">Per Hour</option><option value="Per Week">Per Week</option><option value="Negotiable">Negotiable</option></select></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Yrs Exp</label><input type="number" value={formData.yearsExp} onChange={e => update('yearsExp', e.target.value)} /></div>
+</div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Travel Radius (miles)</label><input type="number" value={formData.travelRadius} onChange={e => update('travelRadius', e.target.value)} /></div>
+<div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, paddingBottom: 2 }}>
+<label style={{ fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+<input type="checkbox" checked={formData.available} onChange={e => update('available', e.target.checked)} style={{ width: 'auto' }} />
+<span>Currently Available for Work</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+
+{/* Media Links */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-photo-film" style={{ marginRight: 6 }}></i> Media Links</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Performance Video (YouTube, Vimeo, etc.)</label>
+<input type="url" placeholder="https://youtube.com/watch?v=..." value={formData.videoLink} onChange={e => update('videoLink', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Live Show Reel</label>
+<input type="url" placeholder="https://youtube.com/watch?v=..." value={formData.showReelLink} onChange={e => update('showReelLink', e.target.value)} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Audio Demo (SoundCloud, Spotify, etc.)</label>
+<input type="url" placeholder="https://soundcloud.com/..." value={formData.audioLink} onChange={e => update('audioLink', e.target.value)} /></div>
+</div>
+</div>
+
+{/* Equipment & Venues */}
+<div>
+<h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-toolbox" style={{ marginRight: 6 }}></i> Equipment & Experience</h3>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Equipment (one per line)</label>
+<textarea rows={3} value={formData.equipment} onChange={e => update('equipment', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Recent Venues (one per line)</label>
+<textarea rows={3} value={formData.recentVenues} onChange={e => update('recentVenues', e.target.value)} style={{ resize: 'vertical' }} /></div>
+<div>
+<label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Union Affiliations</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+{['AFM Local 586', 'IATSE Local 415', 'SAG-AFTRA', 'AEA', 'SDC', 'AGMA'].map(u => (
+<div key={u} className={`pill ${formData.unions.includes(u) ? 'active' : ''}`} onClick={() => toggleArrayItem('unions', u)} style={{ fontSize: 12 }}>{u}</div>
+))}
+</div>
+</div>
+</div>
+</div>
+</div>
+
+{error && <div style={{ color: 'var(--danger)', fontSize: 13, padding: '8px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: 8, marginTop: 16 }}><i className="fa-solid fa-circle-exclamation"></i> {error}</div>}
+
+<div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--dark-border)' }}>
+<button className="btn btn-outline" onClick={onClose}>Cancel</button>
+<button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>
+{saving ? <><i className="fa-solid fa-spinner fa-spin"></i> Saving...</> : <><i className="fa-solid fa-check"></i> Save Changes</>}
+</button>
+</div>
+</div>
+</div>
+);
+}
+
+function GigDetailModal({ gig, onClose }) {
+return (
+<div className="modal-overlay" onClick={onClose}>
+<div className="modal" onClick={e => e.stopPropagation()}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+<h2 style={{ fontSize: 20, fontWeight: 700 }}>{gig.title}</h2>
+{gig.urgent && <span className="badge" style={{ background: 'rgba(239,68,68,0.2)', color: 'var(--danger)' }}><i className="fa-solid fa-bolt"></i> Urgent</span>}
+</div>
+<button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+<div style={{ display: 'flex', gap: 16, fontSize: 14, color: 'var(--text-muted)', marginBottom: 16 }}>
+<span><i className="fa-solid fa-building"></i> {gig.venue}</span>
+<span><i className="fa-solid fa-location-dot"></i> {gig.location}</span>
+<span><i className="fa-solid fa-calendar"></i> {gig.date}</span>
+</div>
+<div style={{ fontSize: 24, fontWeight: 700, color: 'var(--success)', marginBottom: 16 }}>{gig.pay}</div>
+<p style={{ color: 'var(--text-muted)', lineHeight: 1.8, marginBottom: 16 }}>{gig.description}</p>
+<div style={{ marginBottom: 20 }}>
+<h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Looking For</h4>
+<div style={{ display: 'flex', gap: 6 }}>{gig.categories.map(c => <span key={c} className="badge badge-category">{c}</span>)}</div>
+</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Posted by <strong style={{ color: 'var(--text)' }}>{gig.postedBy}</strong></div>
+<div style={{ display: 'flex', gap: 10 }}>
+<button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}><i className="fa-solid fa-paper-plane"></i> Apply for this Gig</button>
+<button className="btn btn-outline"><i className="fa-regular fa-bookmark"></i></button>
+</div>
+</div>
+</div>
+);
+}
+
+// ===========================
+// RENDER
+// ===========================
+
+// ===========================
+// BOOKER / VENUE DASHBOARD
+// ===========================
+
+const SAMPLE_VENUES = [
+{ id: 'v1', name: 'Talking Stick Resort & Casino', type: 'Casino/Resort', location: 'Scottsdale', capacity: '1200 (showroom), 300 (lounge)', contact: 'Rachel Foster', email: 'entertainment@talkingstick.com', eventsPerMonth: 24, budget: '$2k-15k/event' },
+{ id: 'v2', name: 'The Van Buren', type: 'Concert Venue', location: 'Phoenix', capacity: '1,800', contact: 'Mike Sullivan', email: 'booking@thevanburenphx.com', eventsPerMonth: 18, budget: '$5k-50k/show' },
+{ id: 'v3', name: 'Hotel Valley Ho', type: 'Resort/Hotel', location: 'Scottsdale', capacity: '200 (lounge), 500 (events)', contact: 'Lisa Chang', email: 'events@hotelvalleyho.com', eventsPerMonth: 12, budget: '$500-5k/event' },
+{ id: 'v4', name: 'Celebrity Theatre', type: 'Theater', location: 'Phoenix', capacity: '2,650', contact: 'Tom Bradley', email: 'talent@celebritytheatre.com', eventsPerMonth: 8, budget: '$10k-100k/show' },
+{ id: 'v5', name: 'Casino Arizona', type: 'Casino', location: 'Scottsdale', capacity: '500 (showroom), 150 (lounge)', contact: 'Sandra Ruiz', email: 'entertainment@casinoaz.com', eventsPerMonth: 20, budget: '$1k-10k/event' }
+];
+
+const ROSTER_ENTRIES = [
+{ profileId: 1, name: 'Marcus Johnson', category: 'Guitarist / Vocalist', rating: 4.9, lastBooked: 'Feb 28, 2026', timesBooked: 14, status: 'favorite', notes: 'Excellent for jazz lounge nights. Always professional.' },
+{ profileId: 10, name: 'Nina Patel', category: 'Vocalist / Solo Artist', rating: 4.9, lastBooked: 'Mar 5, 2026', timesBooked: 8, status: 'favorite', notes: 'Perfect for resort lobby and wine events.' },
+{ profileId: 3, name: 'Diego Ramirez', category: 'Trumpeter / Full Band', rating: 4.7, lastBooked: 'Feb 14, 2026', timesBooked: 6, status: 'active', notes: 'Great energy. Latin band is crowd favorite.' },
+{ profileId: 4, name: 'Jen Williams', category: 'DJ / Emcee', rating: 4.9, lastBooked: 'Mar 8, 2026', timesBooked: 22, status: 'favorite', notes: 'Go-to DJ for all corporate galas and NYE.' },
+{ profileId: 2, name: 'Sarah Chen', category: 'Sound Engineer', rating: 4.8, lastBooked: 'Mar 1, 2026', timesBooked: 18, status: 'active', notes: 'Best FOH engineer in the valley. Owns great PA.' },
+{ profileId: 7, name: 'Kevin Park', category: 'Keys / Musical Director', rating: 4.6, lastBooked: 'Jan 20, 2026', timesBooked: 3, status: 'active', notes: 'Good keys player, reliable for pickup gigs.' },
+];
+
+function BookerDashboard({ onViewProfile, setPage }) {
+const [bookerTab, setBookerTab] = useState('overview');
+const [rosterFilter, setRosterFilter] = useState('all');
+const [showPostGig, setShowPostGig] = useState(false);
+
+const filteredRoster = rosterFilter === 'all' ? ROSTER_ENTRIES : ROSTER_ENTRIES.filter(r => r.status === rosterFilter);
+
+return (
+<div style={{ padding: '32px 0', minHeight: '100vh' }}>
+<div className="container">
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+<div>
+<div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+<h1 style={{ fontSize: 28, fontWeight: 800 }}>Booker Hub</h1>
+<span className="badge badge-premium"><i className="fa-solid fa-building"></i> Venue Account</span>
+</div>
+<p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Talking Stick Resort & Casino Â· Rachel Foster</p>
+</div>
+<div style={{ display: 'flex', gap: 10 }}>
+<button className="btn btn-primary" onClick={() => setShowPostGig(true)}><i className="fa-solid fa-plus"></i> Post a Gig</button>
+<button className="btn btn-outline" onClick={() => setPage('browse')}><i className="fa-solid fa-search"></i> Find Talent</button>
+</div>
+</div>
+
+<div className="tabs" style={{ marginBottom: 24, display: 'inline-flex' }}>
+{['overview','roster','my-gigs','venues','analytics'].map(t => (
+<button key={t} className={`tab ${bookerTab === t ? 'active' : ''}`} onClick={() => setBookerTab(t)}>
+{t === 'my-gigs' ? 'My Gigs' : t.charAt(0).toUpperCase() + t.slice(1)}
+</button>
+))}
+</div>
+
+{/* OVERVIEW TAB */}
+{bookerTab === 'overview' && (
+<div>
+<div className="grid-4" style={{ marginBottom: 24 }}>
+{[
+{ label: 'Active Gigs', value: '7', icon: 'fa-clipboard-list', color: 'var(--primary-light)', sub: '3 need responses' },
+{ label: 'Roster Size', value: '42', icon: 'fa-users', color: 'var(--accent)', sub: '6 favorites' },
+{ label: 'Applications', value: '18', icon: 'fa-inbox', color: 'var(--success)', sub: '5 new today' },
+{ label: 'Events This Month', value: '12', icon: 'fa-calendar-check', color: '#EC4899', sub: '4 still need talent' },
+].map((s, i) => (
+<div key={i} className="card">
+<div style={{ width: 40, height: 40, background: `${s.color}20`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+<i className={`fa-solid ${s.icon}`} style={{ color: s.color }}></i>
+</div>
+<div style={{ fontSize: 28, fontWeight: 800 }}>{s.value}</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.label}</div>
+<div style={{ fontSize: 12, color: 'var(--success)', marginTop: 4 }}>{s.sub}</div>
+</div>
+))}
+</div>
+
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+{/* Recent Applications */}
+<div className="card">
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Recent Applications</h3>
+{[
+{ name: 'Marcus Johnson', gig: 'Jazz Trio for Resort Lobby', time: '1h ago', match: 96 },
+{ name: 'Nina Patel', gig: 'Jazz Trio for Resort Lobby', time: '3h ago', match: 92 },
+{ name: 'Diego Ramirez', gig: 'Corporate Band â Gala Event', time: '5h ago', match: 88 },
+{ name: 'Tom Barrett', gig: 'Lighting Designer â Theater Run', time: '1d ago', match: 78 },
+].map((a, i) => (
+<div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--dark-border)' : 'none' }}>
+<div className="avatar avatar-sm">{a.name.split(' ').map(n=>n[0]).join('')}</div>
+<div style={{ flex: 1 }}>
+<div style={{ fontWeight: 600, fontSize: 14 }}>{a.name}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{a.gig}</div>
+</div>
+<div style={{ textAlign: 'right' }}>
+<div style={{ fontSize: 13, fontWeight: 700, color: a.match >= 90 ? 'var(--success)' : 'var(--accent)' }}>{a.match}% match</div>
+<div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{a.time}</div>
+</div>
+</div>
+))}
+</div>
+
+{/* Upcoming Events */}
+<div className="card">
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Upcoming Events</h3>
+{[
+{ title: 'Friday Jazz Lounge', date: 'Mar 13', time: '6-9pm', status: 'Talent Confirmed', statusColor: 'var(--success)' },
+{ title: 'Corporate Mixer', date: 'Mar 15', time: '5-10pm', status: 'Need DJ', statusColor: 'var(--danger)' },
+{ title: 'Saturday Night Live Band', date: 'Mar 14', time: '8pm-12am', status: 'Talent Confirmed', statusColor: 'var(--success)' },
+{ title: 'Spring Gala Dinner', date: 'Mar 28', time: '6-11pm', status: 'Reviewing Apps', statusColor: 'var(--accent)' },
+].map((e, i) => (
+<div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--dark-border)' : 'none' }}>
+<div>
+<div style={{ fontWeight: 600, fontSize: 14 }}>{e.title}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{e.date} Â· {e.time}</div>
+</div>
+<span className="badge" style={{ background: `${e.statusColor}20`, color: e.statusColor }}>{e.status}</span>
+</div>
+))}
+</div>
+</div>
+</div>
+)}
+
+{/* ROSTER TAB */}
+{bookerTab === 'roster' && (
+<div>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+<div style={{ display: 'flex', gap: 8 }}>
+{['all','favorite','active'].map(f => (
+<div key={f} className={`pill ${rosterFilter === f ? 'active' : ''}`} onClick={() => setRosterFilter(f)}>
+{f === 'favorite' && <i className="fa-solid fa-star" style={{ fontSize: 10 }}></i>}
+{f.charAt(0).toUpperCase() + f.slice(1)} ({f === 'all' ? ROSTER_ENTRIES.length : ROSTER_ENTRIES.filter(r => r.status === f).length})
+</div>
+))}
+</div>
+<button className="btn btn-outline btn-sm"><i className="fa-solid fa-file-export"></i> Export Roster</button>
+</div>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+{filteredRoster.map((r, i) => (
+<div key={i} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', padding: '16px 24px' }}>
+<div className="avatar">{r.name.split(' ').map(n=>n[0]).join('')}</div>
+<div style={{ flex: 1 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+<span style={{ fontWeight: 700 }}>{r.name}</span>
+{r.status === 'favorite' && <i className="fa-solid fa-star" style={{ color: 'var(--accent)', fontSize: 12 }}></i>}
+</div>
+<span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{r.category}</span>
+</div>
+<div style={{ textAlign: 'center', minWidth: 70 }}>
+<div style={{ fontWeight: 700 }}>{r.timesBooked}</div>
+<div style={{ fontSize: 11, color: 'var(--text-muted)' }}>bookings</div>
+</div>
+<div style={{ textAlign: 'center', minWidth: 80 }}>
+<div style={{ fontWeight: 600 }}><Stars rating={r.rating} /> {r.rating}</div>
+</div>
+<div style={{ minWidth: 120, fontSize: 12, color: 'var(--text-muted)' }}>Last: {r.lastBooked}</div>
+<div style={{ minWidth: 200, fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>{r.notes}</div>
+<div style={{ display: 'flex', gap: 6 }}>
+<button className="btn btn-primary btn-sm" style={{ padding: '6px 12px' }}><i className="fa-solid fa-paper-plane"></i></button>
+<button className="btn btn-outline btn-sm" style={{ padding: '6px 12px' }}><i className="fa-solid fa-calendar-plus"></i></button>
+</div>
+</div>
+))}
+</div>
+</div>
+)}
+
+{/* MY GIGS TAB */}
+{bookerTab === 'my-gigs' && (
+<div>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+<h3 style={{ fontSize: 18, fontWeight: 700 }}>Posted Gigs</h3>
+<button className="btn btn-primary btn-sm" onClick={() => setShowPostGig(true)}><i className="fa-solid fa-plus"></i> New Gig</button>
+</div>
+{SAMPLE_GIGS.map((g, i) => (
+<div key={g.id} className="card" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 20 }}>
+<div style={{ flex: 1 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+<h4 style={{ fontWeight: 700 }}>{g.title}</h4>
+{g.urgent && <span className="badge" style={{ background: 'rgba(239,68,68,0.2)', color: 'var(--danger)' }}>Urgent</span>}
+</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{g.venue} Â· {g.date}</div>
+</div>
+<div style={{ textAlign: 'center', minWidth: 80 }}>
+<div style={{ fontWeight: 700, color: 'var(--primary-light)' }}>{Math.floor(Math.random()*8)+2}</div>
+<div style={{ fontSize: 11, color: 'var(--text-muted)' }}>applicants</div>
+</div>
+<div style={{ textAlign: 'center', minWidth: 80 }}>
+<span className="badge" style={{ background: i < 2 ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: i < 2 ? 'var(--success)' : 'var(--accent)' }}>
+{i < 2 ? 'Active' : 'Draft'}
+</span>
+</div>
+<div style={{ display: 'flex', gap: 6 }}>
+<button className="btn btn-outline btn-sm"><i className="fa-solid fa-pen"></i> Edit</button>
+<button className="btn btn-outline btn-sm"><i className="fa-solid fa-eye"></i> View</button>
+</div>
+</div>
+))}
+</div>
+)}
+
+{/* VENUES TAB */}
+{bookerTab === 'venues' && (
+<div>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+<h3 style={{ fontSize: 18, fontWeight: 700 }}>My Venues</h3>
+<button className="btn btn-primary btn-sm"><i className="fa-solid fa-plus"></i> Add Venue</button>
+</div>
+<div className="grid-2">
+{SAMPLE_VENUES.map(v => (
+<div key={v.id} className="card">
+<div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+<div style={{ width: 48, height: 48, background: 'var(--premium-gradient)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+<i className="fa-solid fa-building" style={{ color: '#fff' }}></i>
+</div>
+<div>
+<h4 style={{ fontWeight: 700, fontSize: 15 }}>{v.name}</h4>
+<span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{v.type} Â· {v.location}</span>
+</div>
+</div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
+<div><span style={{ color: 'var(--text-muted)' }}>Capacity:</span> <strong>{v.capacity}</strong></div>
+<div><span style={{ color: 'var(--text-muted)' }}>Events/mo:</span> <strong>{v.eventsPerMonth}</strong></div>
+<div><span style={{ color: 'var(--text-muted)' }}>Budget:</span> <strong>{v.budget}</strong></div>
+<div><span style={{ color: 'var(--text-muted)' }}>Contact:</span> <strong>{v.contact}</strong></div>
+</div>
+</div>
+))}
+</div>
+</div>
+)}
+
+{/* ANALYTICS TAB */}
+{bookerTab === 'analytics' && (
+<div>
+<div className="grid-3" style={{ marginBottom: 24 }}>
+{[
+{ label: 'Avg. Response Time', value: '2.4h', trend: '-18% faster', icon: 'fa-clock' },
+{ label: 'Talent Retention Rate', value: '87%', trend: '+5% this quarter', icon: 'fa-heart' },
+{ label: 'Avg. Cost Per Event', value: '$2,840', trend: 'On budget', icon: 'fa-dollar-sign' },
+].map((s, i) => (
+<div key={i} className="card" style={{ textAlign: 'center' }}>
+<i className={`fa-solid ${s.icon}`} style={{ color: 'var(--primary-light)', fontSize: 24, marginBottom: 12 }}></i>
+<div style={{ fontSize: 32, fontWeight: 800 }}>{s.value}</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>{s.label}</div>
+<div style={{ fontSize: 12, color: 'var(--success)' }}>{s.trend}</div>
+</div>
+))}
+</div>
+<div className="card">
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Booking Activity (Last 6 Months)</h3>
+<div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 200, padding: '0 20px' }}>
+{[
+{ month: 'Oct', gigs: 18 }, { month: 'Nov', gigs: 22 }, { month: 'Dec', gigs: 35 },
+{ month: 'Jan', gigs: 15 }, { month: 'Feb', gigs: 20 }, { month: 'Mar', gigs: 12 },
+].map((m, i) => (
+<div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+<span style={{ fontSize: 12, fontWeight: 600 }}>{m.gigs}</span>
+<div style={{ width: '100%', height: `${(m.gigs / 35) * 160}px`, background: 'var(--pro-gradient)', borderRadius: 8, minHeight: 20 }}></div>
+<span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{m.month}</span>
+</div>
+))}
+</div>
+</div>
+</div>
+)}
+
+{/* Post Gig Modal */}
+{showPostGig && (
+<div className="modal-overlay" onClick={() => setShowPostGig(false)}>
+<div className="modal" onClick={e => e.stopPropagation()}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+<h2 style={{ fontSize: 22, fontWeight: 700 }}>Post a New Gig</h2>
+<button onClick={() => setShowPostGig(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Gig Title</label><input placeholder="e.g., Jazz Trio for Weekend Lounge" /></div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Venue</label>
+<select><option>Talking Stick Resort</option>{SAMPLE_VENUES.map(v => <option key={v.id}>{v.name}</option>)}</select>
+</div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Date(s)</label><input type="text" placeholder="Mar 22-23, 2026" /></div>
+</div>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Pay Range</label><input placeholder="$500-1000/night" /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Category Needed</label>
+<select><option>Select...</option>{Object.values(CATEGORIES).flatMap(c => c.subs).map(s => <option key={s}>{s}</option>)}</select>
+</div>
+</div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Description</label>
+<textarea rows={3} placeholder="Describe the gig, expectations, equipment needs..." style={{ resize: 'vertical' }}></textarea>
+</div>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+<input type="checkbox" id="urgent" style={{ width: 'auto' }} />
+<label htmlFor="urgent" style={{ fontSize: 13, color: 'var(--text-muted)' }}>Mark as Urgent</label>
+</div>
+<div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+<button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Post Gig</button>
+<button className="btn btn-outline" onClick={() => setShowPostGig(false)}>Cancel</button>
+</div>
+</div>
+</div>
+</div>
+)}
+</div>
+</div>
+);
+}
+
+// ===========================
+// MESSAGING SYSTEM
+// ===========================
+
+const SAMPLE_CONVERSATIONS = [
+{ id: 'c1', with: 'Rachel Foster', initials: 'RF', role: 'Talent Buyer Â· Talking Stick Resort', unread: 2, online: true, lastTime: '10m ago',
+messages: [
+{ from: 'Rachel Foster', text: 'Hi Marcus! I have a jazz trio slot open at the resort lobby for March 22-23. Are you available?', time: '2:15 PM', date: 'Today' },
+{ from: 'Rachel Foster', text: 'Pay is $800/night, 6-9pm. Looking for guitar/vocal lead with bass and drums. You have a rhythm section?', time: '2:16 PM', date: 'Today' },
+{ from: 'me', text: 'Hey Rachel! Great to hear from you. Yes, I am available both nights. I can bring my regular trio â Dave on bass and Tony on drums.', time: '2:30 PM', date: 'Today' },
+{ from: 'Rachel Foster', text: 'Perfect. Can you do a mix of jazz standards and bossa nova? The lobby crowd is upscale resort guests, so elegant and mellow.', time: '2:32 PM', date: 'Today' },
+{ from: 'me', text: 'Absolutely â that is our sweet spot. We have a full book of standards, Jobim, and light contemporary jazz. Want me to send a set list?', time: '2:45 PM', date: 'Today' },
+{ from: 'Rachel Foster', text: 'Yes please! Also, the resort can provide a small PA if needed, or you can bring your own. Whichever you prefer.', time: '3:01 PM', date: 'Today' },
+]
+},
+{ id: 'c2', with: 'Casino Arizona Entertainment', initials: 'CA', role: 'Entertainment Dept.', unread: 1, online: false, lastTime: '1d ago',
+messages: [
+{ from: 'Casino Arizona Entertainment', text: 'Hello Marcus, we are looking for a guitarist for our weekend lounge series starting in April. Would you be interested in a regular Friday slot?', time: '11:00 AM', date: 'Yesterday' },
+{ from: 'me', text: 'Hi! Definitely interested. Can you share more details on the time, format, and compensation?', time: '1:30 PM', date: 'Yesterday' },
+{ from: 'Casino Arizona Entertainment', text: 'Sure! Fridays 7-10pm, solo guitar/vocal in the Cholla Lounge. We pay $500/night, guaranteed 4 Fridays per month through June. Sound good?', time: '4:15 PM', date: 'Yesterday' },
+]
+},
+{ id: 'c3', with: 'Kevin Park', initials: 'KP', role: 'Keyboardist / Musical Director', unread: 0, online: true, lastTime: '2d ago',
+messages: [
+{ from: 'Kevin Park', text: 'Hey Marcus, want to put a quartet together for the corporate gig at Scottsdale Resort on the 28th?', time: '9:00 AM', date: 'Mar 10' },
+{ from: 'me', text: 'What is the format? Who else are you thinking?', time: '10:15 AM', date: 'Mar 10' },
+{ from: 'Kevin Park', text: 'Keys, guitar, bass, drums. Cocktail hour into dinner â mostly standards and light pop/jazz. I have a bass player. Just need you and a drummer.', time: '10:20 AM', date: 'Mar 10' },
+{ from: 'me', text: 'I am in. I can bring Tony on drums. What is the pay?', time: '11:00 AM', date: 'Mar 10' },
+{ from: 'Kevin Park', text: '$600 each. 5pm-9pm with a break. I will send the advance sheet.', time: '11:05 AM', date: 'Mar 10' },
+]
+},
+{ id: 'c4', with: 'Jen Williams', initials: 'JW', role: 'DJ / Emcee', unread: 0, online: false, lastTime: '5d ago',
+messages: [
+{ from: 'Jen Williams', text: 'Marcus! I have a corporate gala that needs a live element during my DJ set. Would you be down for a 30-min guitar feature? I will mix under you.', time: '3:00 PM', date: 'Mar 7' },
+{ from: 'me', text: 'That sounds awesome â like a live remix thing? I am totally down.', time: '3:30 PM', date: 'Mar 7' },
+]
+},
+{ id: 'c5', with: 'Lisa Chang', initials: 'LC', role: 'Events Manager Â· Hotel Valley Ho', unread: 0, online: false, lastTime: '1w ago',
+messages: [
+{ from: 'Lisa Chang', text: 'Marcus, thank you for the wonderful performance at the pool party last weekend. Our guests loved it! We want to book you for our summer series.', time: '10:00 AM', date: 'Mar 5' },
+{ from: 'me', text: 'Thank you Lisa! I had a great time. Would love to discuss the summer series â what dates are you looking at?', time: '12:00 PM', date: 'Mar 5' },
+]
+}
+];
+
+function MessagesPage() {
+const [activeConvo, setActiveConvo] = useState(SAMPLE_CONVERSATIONS[0]);
+const [newMessage, setNewMessage] = useState('');
+const [localMessages, setLocalMessages] = useState({});
+const [showCompose, setShowCompose] = useState(false);
+const messagesEndRef = useRef(null);
+
+const allMessages = [...activeConvo.messages, ...(localMessages[activeConvo.id] || [])];
+
+const sendMessage = () => {
+if (!newMessage.trim()) return;
+const msg = { from: 'me', text: newMessage, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), date: 'Today' };
+setLocalMessages(prev => ({ ...prev, [activeConvo.id]: [...(prev[activeConvo.id] || []), msg] }));
+setNewMessage('');
+};
+
+return (
+<div style={{ padding: '32px 0', minHeight: '100vh' }}>
+<div className="container">
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+<h1 style={{ fontSize: 28, fontWeight: 800 }}>Messages</h1>
+<button className="btn btn-primary btn-sm" onClick={() => setShowCompose(true)}><i className="fa-solid fa-pen-to-square"></i> New Message</button>
+</div>
+
+<div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 0, height: 'calc(100vh - 180px)', border: '1px solid var(--dark-border)', borderRadius: 16, overflow: 'hidden' }}>
+{/* Conversation List */}
+<div style={{ background: 'var(--dark-card)', borderRight: '1px solid var(--dark-border)', overflowY: 'auto' }}>
+<div style={{ padding: '16px', borderBottom: '1px solid var(--dark-border)' }}>
+<div className="search-container">
+<i className="fa-solid fa-search"></i>
+<input placeholder="Search messages..." style={{ fontSize: 13 }} />
+</div>
+</div>
+{SAMPLE_CONVERSATIONS.map(c => (
+<div key={c.id} onClick={() => setActiveConvo(c)}
+style={{ display: 'flex', gap: 12, padding: '14px 16px', cursor: 'pointer', borderBottom: '1px solid var(--dark-border)', background: activeConvo.id === c.id ? 'rgba(108,43,217,0.1)' : 'transparent', borderLeft: activeConvo.id === c.id ? '3px solid var(--primary-light)' : '3px solid transparent', transition: 'all 0.2s' }}>
+<div style={{ position: 'relative' }}>
+<div className="avatar avatar-sm" style={{ background: c.unread > 0 ? 'var(--pro-gradient)' : 'var(--dark-lighter)' }}>{c.initials}</div>
+{c.online && <div style={{ width: 10, height: 10, background: 'var(--success)', borderRadius: '50%', position: 'absolute', bottom: -1, right: -1, border: '2px solid var(--dark-card)' }}></div>}
+</div>
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+<span style={{ fontWeight: c.unread > 0 ? 700 : 500, fontSize: 14 }}>{c.with}</span>
+<span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.lastTime}</span>
+</div>
+<p style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+{c.messages[c.messages.length - 1].text}
+</p>
+</div>
+{c.unread > 0 && <div style={{ minWidth: 20, height: 20, background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', marginTop: 4 }}>{c.unread}</div>}
+</div>
+))}
+</div>
+
+{/* Message Thread */}
+<div style={{ display: 'flex', flexDirection: 'column', background: 'var(--dark)' }}>
+{/* Thread Header */}
+<div style={{ padding: '14px 20px', borderBottom: '1px solid var(--dark-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--dark-card)' }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+<div className="avatar avatar-sm">{activeConvo.initials}</div>
+<div>
+<div style={{ fontWeight: 700, fontSize: 15 }}>{activeConvo.with}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{activeConvo.role} {activeConvo.online && <span style={{ color: 'var(--success)' }}>Â· Online</span>}</div>
+</div>
+</div>
+<div style={{ display: 'flex', gap: 8 }}>
+<button className="btn btn-outline btn-sm" style={{ padding: '6px 10px' }}><i className="fa-solid fa-phone"></i></button>
+<button className="btn btn-outline btn-sm" style={{ padding: '6px 10px' }}><i className="fa-solid fa-video"></i></button>
+<button className="btn btn-outline btn-sm" style={{ padding: '6px 10px' }}><i className="fa-solid fa-ellipsis-vertical"></i></button>
+</div>
+</div>
+
+{/* Messages */}
+<div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+{allMessages.map((m, i) => {
+const isMe = m.from === 'me';
+const showDate = i === 0 || allMessages[i-1].date !== m.date;
+return (
+<React.Fragment key={i}>
+{showDate && <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', padding: '8px 0' }}>{m.date}</div>}
+<div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
+<div style={{ maxWidth: '70%', padding: '10px 16px', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: isMe ? 'var(--primary)' : 'var(--dark-card)', border: isMe ? 'none' : '1px solid var(--dark-border)', fontSize: 14, lineHeight: 1.6 }}>
+{m.text}
+<div style={{ fontSize: 10, color: isMe ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>{m.time}</div>
+</div>
+</div>
+</React.Fragment>
+);
+})}
+<div ref={messagesEndRef}></div>
+</div>
+
+{/* Compose */}
+<div style={{ padding: '14px 20px', borderTop: '1px solid var(--dark-border)', background: 'var(--dark-card)', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+<button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 18, padding: '8px', cursor: 'pointer' }}><i className="fa-solid fa-paperclip"></i></button>
+<div style={{ flex: 1, position: 'relative' }}>
+<input value={newMessage} onChange={e => setNewMessage(e.target.value)}
+onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }}}
+placeholder={`Message ${activeConvo.with}...`}
+style={{ paddingRight: 40 }} />
+</div>
+<button onClick={sendMessage} className="btn btn-primary btn-sm" style={{ padding: '10px 16px' }}><i className="fa-solid fa-paper-plane"></i></button>
+</div>
+</div>
+</div>
+
+{/* Compose New Modal */}
+{showCompose && (
+<div className="modal-overlay" onClick={() => setShowCompose(false)}>
+<div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+<h2 style={{ fontSize: 20, fontWeight: 700 }}>New Message</h2>
+<button onClick={() => setShowCompose(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>To</label><input placeholder="Search StageLink365 members..." /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Subject (optional)</label><input placeholder="e.g., Availability for March gig" /></div>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Message</label><textarea rows={4} placeholder="Write your message..." style={{ resize: 'vertical' }}></textarea></div>
+<button className="btn btn-primary" style={{ justifyContent: 'center' }}><i className="fa-solid fa-paper-plane"></i> Send Message</button>
+</div>
+</div>
+</div>
+)}
+</div>
+</div>
+);
+}
+
+// ===========================
+// DATABASE ARCHITECTURE
+// ===========================
+
+function DatabaseArchitecture() {
+const [schemaTab, setSchemaTab] = useState('erd');
+
+const tables = [
+{ name: 'users', color: 'var(--primary-light)', icon: 'fa-user', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'email', type: 'VARCHAR(255)', unique: true }, { name: 'password_hash', type: 'VARCHAR(255)' },
+{ name: 'account_type', type: "ENUM('talent','booker','admin')" }, { name: 'subscription_tier', type: "ENUM('free','pro','premium','business')" },
+{ name: 'stripe_customer_id', type: 'VARCHAR(255)' }, { name: 'email_verified', type: 'BOOLEAN' },
+{ name: 'created_at', type: 'TIMESTAMP' }, { name: 'last_login', type: 'TIMESTAMP' }, { name: 'is_active', type: 'BOOLEAN' }
+]},
+{ name: 'profiles', color: 'var(--accent)', icon: 'fa-id-card', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'user_id', type: 'UUID', fk: 'users.id' }, { name: 'display_name', type: 'VARCHAR(255)' },
+{ name: 'bio', type: 'TEXT' }, { name: 'location_city', type: 'VARCHAR(100)' }, { name: 'location_state', type: 'VARCHAR(50)' },
+{ name: 'location_lat', type: 'DECIMAL(10,8)' }, { name: 'location_lng', type: 'DECIMAL(11,8)' },
+{ name: 'travel_radius_miles', type: 'INT' }, { name: 'rate_min', type: 'DECIMAL(10,2)' }, { name: 'rate_max', type: 'DECIMAL(10,2)' },
+{ name: 'rate_type', type: "ENUM('per_gig','per_day','per_hour')" }, { name: 'years_experience', type: 'INT' },
+{ name: 'is_verified', type: 'BOOLEAN' }, { name: 'is_available', type: 'BOOLEAN' },
+{ name: 'profile_photo_url', type: 'VARCHAR(500)' }, { name: 'custom_url_slug', type: 'VARCHAR(100)' },
+{ name: 'profile_views', type: 'INT DEFAULT 0' }, { name: 'search_appearances', type: 'INT DEFAULT 0' }
+]},
+{ name: 'categories', color: 'var(--success)', icon: 'fa-tags', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'name', type: 'VARCHAR(100)' }, { name: 'parent_id', type: 'UUID', fk: 'categories.id' },
+{ name: 'icon', type: 'VARCHAR(50)' }, { name: 'sort_order', type: 'INT' }
+]},
+{ name: 'profile_categories', color: '#EC4899', icon: 'fa-link', fields: [
+{ name: 'profile_id', type: 'UUID', fk: 'profiles.id' }, { name: 'category_id', type: 'UUID', fk: 'categories.id' },
+{ name: 'is_primary', type: 'BOOLEAN' }, { name: 'skill_level', type: "ENUM('beginner','intermediate','advanced','expert')" }
+]},
+{ name: 'media', color: '#06B6D4', icon: 'fa-photo-film', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'profile_id', type: 'UUID', fk: 'profiles.id' },
+{ name: 'type', type: "ENUM('video','audio','photo')" }, { name: 'url', type: 'VARCHAR(500)' },
+{ name: 'thumbnail_url', type: 'VARCHAR(500)' }, { name: 'title', type: 'VARCHAR(255)' },
+{ name: 'sort_order', type: 'INT' }, { name: 'is_featured', type: 'BOOLEAN' }
+]},
+{ name: 'venues', color: '#F97316', icon: 'fa-building', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'owner_user_id', type: 'UUID', fk: 'users.id' },
+{ name: 'name', type: 'VARCHAR(255)' }, { name: 'type', type: "ENUM('casino','resort','theater','bar','club','arena','outdoor','corporate','church','other')" },
+{ name: 'location_city', type: 'VARCHAR(100)' }, { name: 'location_state', type: 'VARCHAR(50)' },
+{ name: 'capacity', type: 'INT' }, { name: 'has_pa', type: 'BOOLEAN' }, { name: 'has_lighting', type: 'BOOLEAN' },
+{ name: 'has_backline', type: 'BOOLEAN' }, { name: 'contact_email', type: 'VARCHAR(255)' }
+]},
+{ name: 'gigs', color: '#8B5CF6', icon: 'fa-clipboard-list', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'posted_by_user_id', type: 'UUID', fk: 'users.id' },
+{ name: 'venue_id', type: 'UUID', fk: 'venues.id' }, { name: 'title', type: 'VARCHAR(255)' },
+{ name: 'description', type: 'TEXT' }, { name: 'date_start', type: 'DATETIME' }, { name: 'date_end', type: 'DATETIME' },
+{ name: 'pay_min', type: 'DECIMAL(10,2)' }, { name: 'pay_max', type: 'DECIMAL(10,2)' },
+{ name: 'pay_type', type: "ENUM('flat','per_night','per_hour')" },
+{ name: 'status', type: "ENUM('draft','active','filled','cancelled','completed')" },
+{ name: 'is_urgent', type: 'BOOLEAN' }, { name: 'is_recurring', type: 'BOOLEAN' }
+]},
+{ name: 'gig_applications', color: '#14B8A6', icon: 'fa-inbox', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'gig_id', type: 'UUID', fk: 'gigs.id' },
+{ name: 'profile_id', type: 'UUID', fk: 'profiles.id' }, { name: 'message', type: 'TEXT' },
+{ name: 'status', type: "ENUM('pending','accepted','rejected','withdrawn')" },
+{ name: 'applied_at', type: 'TIMESTAMP' }, { name: 'responded_at', type: 'TIMESTAMP' }
+]},
+{ name: 'messages', color: '#3B82F6', icon: 'fa-envelope', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'conversation_id', type: 'UUID', fk: 'conversations.id' },
+{ name: 'sender_id', type: 'UUID', fk: 'users.id' }, { name: 'body', type: 'TEXT' },
+{ name: 'sent_at', type: 'TIMESTAMP' }, { name: 'read_at', type: 'TIMESTAMP' },
+{ name: 'has_attachment', type: 'BOOLEAN' }
+]},
+{ name: 'conversations', color: '#6366F1', icon: 'fa-comments', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'created_at', type: 'TIMESTAMP' },
+{ name: 'last_message_at', type: 'TIMESTAMP' }, { name: 'subject', type: 'VARCHAR(255)' }
+]},
+{ name: 'reviews', color: '#EAB308', icon: 'fa-star', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'reviewer_id', type: 'UUID', fk: 'users.id' },
+{ name: 'profile_id', type: 'UUID', fk: 'profiles.id' }, { name: 'gig_id', type: 'UUID', fk: 'gigs.id' },
+{ name: 'rating', type: 'DECIMAL(2,1)' }, { name: 'text', type: 'TEXT' }, { name: 'created_at', type: 'TIMESTAMP' }
+]},
+{ name: 'availability', color: '#22C55E', icon: 'fa-calendar', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'profile_id', type: 'UUID', fk: 'profiles.id' },
+{ name: 'date', type: 'DATE' }, { name: 'status', type: "ENUM('available','booked','tentative','unavailable')" },
+{ name: 'note', type: 'VARCHAR(255)' }
+]},
+{ name: 'subscriptions', color: '#A855F7', icon: 'fa-crown', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'user_id', type: 'UUID', fk: 'users.id' },
+{ name: 'tier', type: "ENUM('free','pro','premium','business')" }, { name: 'stripe_sub_id', type: 'VARCHAR(255)' },
+{ name: 'started_at', type: 'TIMESTAMP' }, { name: 'expires_at', type: 'TIMESTAMP' },
+{ name: 'is_active', type: 'BOOLEAN' }, { name: 'amount_monthly', type: 'DECIMAL(10,2)' }
+]},
+{ name: 'roster_entries', color: '#F43F5E', icon: 'fa-address-book', fields: [
+{ name: 'id', type: 'UUID', pk: true }, { name: 'booker_user_id', type: 'UUID', fk: 'users.id' },
+{ name: 'profile_id', type: 'UUID', fk: 'profiles.id' }, { name: 'is_favorite', type: 'BOOLEAN' },
+{ name: 'notes', type: 'TEXT' }, { name: 'times_booked', type: 'INT' }, { name: 'last_booked_at', type: 'TIMESTAMP' }
+]}
+];
+
+return (
+<div style={{ padding: '32px 0', minHeight: '100vh' }}>
+<div className="container">
+<div style={{ marginBottom: 32 }}>
+<h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>Database Architecture</h1>
+<p style={{ color: 'var(--text-muted)' }}>Complete relational schema for StageLink365 platform</p>
+</div>
+
+<div className="tabs" style={{ marginBottom: 24, display: 'inline-flex' }}>
+{['erd','tables','relationships','tech-stack'].map(t => (
+<button key={t} className={`tab ${schemaTab === t ? 'active' : ''}`} onClick={() => setSchemaTab(t)}>
+{t === 'erd' ? 'Visual Schema' : t === 'tech-stack' ? 'Tech Stack' : t.charAt(0).toUpperCase() + t.slice(1)}
+</button>
+))}
+</div>
+
+{/* VISUAL SCHEMA */}
+{schemaTab === 'erd' && (
+<div>
+<div className="card" style={{ marginBottom: 20, background: 'linear-gradient(135deg, var(--dark-card), rgba(108,43,217,0.05))' }}>
+<div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 8 }}>
+<i className="fa-solid fa-diagram-project" style={{ color: 'var(--primary-light)', fontSize: 20 }}></i>
+<h3 style={{ fontWeight: 700 }}>14 Tables Â· 150+ Fields Â· Full Relational Model</h3>
+</div>
+<p style={{ fontSize: 14, color: 'var(--text-muted)' }}>This schema supports user accounts, profiles, categories, venues, gig postings, applications, messaging, reviews, availability, subscriptions, and booker rosters. Designed for PostgreSQL with UUID primary keys and proper foreign key constraints.</p>
+</div>
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+{tables.map(t => (
+<div key={t.name} className="card" style={{ padding: 16, borderLeft: `3px solid ${t.color}` }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+<i className={`fa-solid ${t.icon}`} style={{ color: t.color }}></i>
+<h4 style={{ fontWeight: 700, fontSize: 14 }}>{t.name}</h4>
+<span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>{t.fields.length} cols</span>
+</div>
+<div style={{ fontSize: 12, fontFamily: 'monospace' }}>
+{t.fields.map((f, i) => (
+<div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: i < t.fields.length - 1 ? '1px solid var(--dark-border)' : 'none' }}>
+<span style={{ color: f.pk ? 'var(--accent)' : f.fk ? 'var(--primary-light)' : 'var(--text)' }}>
+{f.pk && <i className="fa-solid fa-key" style={{ fontSize: 9, marginRight: 4 }}></i>}
+{f.fk && <i className="fa-solid fa-link" style={{ fontSize: 9, marginRight: 4 }}></i>}
+{f.name}
+</span>
+<span style={{ color: 'var(--text-muted)' }}>{f.type.length > 20 ? f.type.substring(0, 20) + '...' : f.type}</span>
+</div>
+))}
+</div>
+</div>
+))}
+</div>
+</div>
+)}
+
+{/* TABLES DETAIL */}
+{schemaTab === 'tables' && (
+<div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+{tables.map(t => (
+<div key={t.name} className="card">
+<div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+<div style={{ width: 36, height: 36, background: `${t.color}20`, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+<i className={`fa-solid ${t.icon}`} style={{ color: t.color }}></i>
+</div>
+<h3 style={{ fontWeight: 700 }}>{t.name}</h3>
+<span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.fields.length} columns</span>
+</div>
+<div style={{ background: 'var(--dark)', borderRadius: 8, overflow: 'hidden' }}>
+<div style={{ display: 'grid', gridTemplateColumns: '200px 250px 80px', padding: '8px 16px', background: 'var(--dark-lighter)', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+<span>Column</span><span>Type</span><span>Key</span>
+</div>
+{t.fields.map((f, i) => (
+<div key={i} style={{ display: 'grid', gridTemplateColumns: '200px 250px 80px', padding: '6px 16px', fontSize: 13, fontFamily: 'monospace', borderBottom: '1px solid var(--dark-border)' }}>
+<span style={{ fontWeight: 500 }}>{f.name}</span>
+<span style={{ color: 'var(--text-muted)' }}>{f.type}</span>
+<span>
+{f.pk && <span className="badge" style={{ background: 'rgba(245,158,11,0.2)', color: 'var(--accent)', fontSize: 9 }}>PK</span>}
+{f.fk && <span className="badge" style={{ background: 'rgba(108,43,217,0.2)', color: 'var(--primary-light)', fontSize: 9 }}>FK â {f.fk}</span>}
+{f.unique && <span className="badge" style={{ background: 'rgba(16,185,129,0.2)', color: 'var(--success)', fontSize: 9 }}>UQ</span>}
+</span>
+</div>
+))}
+</div>
+</div>
+))}
+</div>
+)}
+
+{/* RELATIONSHIPS */}
+{schemaTab === 'relationships' && (
+<div>
+<div className="card" style={{ marginBottom: 20 }}>
+<h3 style={{ fontWeight: 700, marginBottom: 16 }}>Entity Relationships</h3>
+{[
+{ from: 'users', to: 'profiles', type: '1:1', desc: 'Each user has one profile' },
+{ from: 'users', to: 'venues', type: '1:N', desc: 'A booker can manage multiple venues' },
+{ from: 'users', to: 'subscriptions', type: '1:N', desc: 'Subscription history per user' },
+{ from: 'profiles', to: 'profile_categories', type: '1:N', desc: 'Profile belongs to multiple categories (many-to-many via junction)' },
+{ from: 'profiles', to: 'media', type: '1:N', desc: 'Profile has multiple media items' },
+{ from: 'profiles', to: 'availability', type: '1:N', desc: 'Daily availability entries per profile' },
+{ from: 'profiles', to: 'reviews', type: '1:N', desc: 'Profile receives multiple reviews' },
+{ from: 'profiles', to: 'gig_applications', type: '1:N', desc: 'Profile can apply to multiple gigs' },
+{ from: 'gigs', to: 'gig_applications', type: '1:N', desc: 'Gig receives multiple applications' },
+{ from: 'gigs', to: 'venues', type: 'N:1', desc: 'Each gig is at one venue' },
+{ from: 'conversations', to: 'messages', type: '1:N', desc: 'Conversation contains multiple messages' },
+{ from: 'users', to: 'roster_entries', type: '1:N', desc: 'Booker maintains roster of talent' },
+].map((r, i) => (
+<div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < 11 ? '1px solid var(--dark-border)' : 'none' }}>
+<span style={{ fontFamily: 'monospace', fontWeight: 600, minWidth: 160 }}>{r.from}</span>
+<span className="badge badge-pro" style={{ minWidth: 40, justifyContent: 'center' }}>{r.type}</span>
+<span style={{ fontFamily: 'monospace', fontWeight: 600, minWidth: 160 }}>{r.to}</span>
+<span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{r.desc}</span>
+</div>
+))}
+</div>
+<div className="card">
+<h3 style={{ fontWeight: 700, marginBottom: 12 }}>Key Indexes</h3>
+<div style={{ fontSize: 13, fontFamily: 'monospace', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+{[
+'CREATE INDEX idx_profiles_location ON profiles(location_state, location_city);',
+'CREATE INDEX idx_profiles_available ON profiles(is_available) WHERE is_available = true;',
+'CREATE INDEX idx_gigs_status ON gigs(status, date_start);',
+'CREATE INDEX idx_availability_date ON availability(profile_id, date, status);',
+'CREATE INDEX idx_messages_conversation ON messages(conversation_id, sent_at);',
+'CREATE INDEX idx_profile_categories_cat ON profile_categories(category_id);',
+'CREATE INDEX idx_reviews_profile ON reviews(profile_id, rating);',
+'CREATE INDEX idx_gig_apps_status ON gig_applications(gig_id, status);',
+'CREATE INDEX idx_users_email ON users(email);',
+'CREATE INDEX idx_profiles_search ON profiles USING gin(to_tsvector(display_name || bio));'
+].map((idx, i) => <div key={i} style={{ padding: '6px 12px', background: 'var(--dark)', borderRadius: 6 }}>{idx}</div>)}
+</div>
+</div>
+</div>
+)}
+
+{/* TECH STACK */}
+{schemaTab === 'tech-stack' && (
+<div className="grid-2">
+{[
+{ title: 'Frontend', icon: 'fa-display', items: [
+{ name: 'React / Next.js', desc: 'Component-based UI with server-side rendering' },
+{ name: 'TypeScript', desc: 'Type safety across the entire codebase' },
+{ name: 'Tailwind CSS', desc: 'Utility-first styling matching current design system' },
+{ name: 'React Query', desc: 'Server state management and caching' },
+]},
+{ title: 'Backend', icon: 'fa-server', items: [
+{ name: 'Node.js / Express or Fastify', desc: 'High-performance API server' },
+{ name: 'PostgreSQL', desc: 'Primary relational database with full-text search' },
+{ name: 'Redis', desc: 'Session management, caching, real-time messaging' },
+{ name: 'Prisma ORM', desc: 'Type-safe database queries and migrations' },
+]},
+{ title: 'Infrastructure', icon: 'fa-cloud', items: [
+{ name: 'AWS / Vercel', desc: 'Scalable cloud hosting with CDN' },
+{ name: 'AWS S3 / CloudFront', desc: 'Media storage and delivery for videos/photos' },
+{ name: 'Docker', desc: 'Containerized deployment for consistency' },
+{ name: 'GitHub Actions', desc: 'CI/CD pipeline for automated deployments' },
+]},
+{ title: 'Services', icon: 'fa-puzzle-piece', items: [
+{ name: 'Stripe', desc: 'Subscription billing and payment processing' },
+{ name: 'SendGrid / Resend', desc: 'Transactional emails and notifications' },
+{ name: 'Socket.io', desc: 'Real-time messaging and notifications' },
+{ name: 'Algolia / Meilisearch', desc: 'Fast, typo-tolerant talent search' },
+]},
+{ title: 'Auth & Security', icon: 'fa-shield-halved', items: [
+{ name: 'NextAuth.js / Auth0', desc: 'Authentication with OAuth, email/password' },
+{ name: 'Rate Limiting', desc: 'API abuse prevention' },
+{ name: 'RBAC', desc: 'Role-based access: talent, booker, admin' },
+{ name: 'Data Encryption', desc: 'At-rest and in-transit encryption for all PII' },
+]},
+{ title: 'Analytics & Growth', icon: 'fa-chart-line', items: [
+{ name: 'PostHog / Mixpanel', desc: 'Product analytics and user tracking' },
+{ name: 'Sentry', desc: 'Error monitoring and performance tracking' },
+{ name: 'Google Maps API', desc: 'Geolocation and travel radius calculations' },
+{ name: 'Twilio', desc: 'SMS notifications for urgent gigs' },
+]},
+].map((section, i) => (
+<div key={i} className="card">
+<div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+<i className={`fa-solid ${section.icon}`} style={{ color: 'var(--primary-light)', fontSize: 18 }}></i>
+<h3 style={{ fontWeight: 700 }}>{section.title}</h3>
+</div>
+{section.items.map((item, j) => (
+<div key={j} style={{ padding: '10px 0', borderBottom: j < section.items.length - 1 ? '1px solid var(--dark-border)' : 'none' }}>
+<div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{item.name}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.desc}</div>
+</div>
+))}
+</div>
+))}
+</div>
+)}
+</div>
+</div>
+);
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>
