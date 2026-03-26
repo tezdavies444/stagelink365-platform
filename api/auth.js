@@ -17,15 +17,35 @@ module.exports = async function handler(req, res) {
 
   const { token, adminToken } = req.body;
 
-  // Admin authentication
+  // Admin authentication — check both adminToken field and token field
+  const adminInput = adminToken || token;
+  if (ADMIN_TOKEN && adminInput === ADMIN_TOKEN) {
+    // Look up the admin's profile in Airtable to get their real info
+    try {
+      const formula = encodeURIComponent(`{Account Type}="Admin"`);
+      const adminRes = await fetch(
+        `${AIRTABLE_BASE_URL}/${AIRTABLE_BASE_ID}/${PROFILES_TABLE_ID}?filterByFormula=${formula}&maxRecords=1`,
+        { headers: { 'Authorization': `Bearer ${AIRTABLE_API_TOKEN}` } }
+      );
+      if (adminRes.ok) {
+        const adminData = await adminRes.json();
+        if (adminData.records && adminData.records.length > 0) {
+          const r = adminData.records[0];
+          return res.status(200).json({
+            authenticated: true,
+            role: 'admin',
+            profile: { id: r.id, name: r.fields['Display Name'] || 'Admin', email: r.fields['Email'] || '', accountType: 'Admin', token: adminInput }
+          });
+        }
+      }
+    } catch (e) { /* fallback below */ }
+    return res.status(200).json({
+      authenticated: true,
+      role: 'admin',
+      profile: { name: 'Admin', accountType: 'Admin', token: adminInput }
+    });
+  }
   if (adminToken) {
-    if (ADMIN_TOKEN && adminToken === ADMIN_TOKEN) {
-      return res.status(200).json({
-        authenticated: true,
-        role: 'admin',
-        profile: { name: 'Admin', accountType: 'Admin' }
-      });
-    }
     return res.status(401).json({ error: 'Invalid admin token' });
   }
 
