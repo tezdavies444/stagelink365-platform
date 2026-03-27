@@ -49,7 +49,7 @@ module.exports = async function handler(req, res) {
     const { category, available, search, tier } = req.query;
 
     if (category && category !== 'all') {
-      filtered = filtered.filter(p => p.category === category);
+      filtered = filtered.filter(p => p.categories.includes(category));
     }
     if (available === 'true') {
       filtered = filtered.filter(p => p.available);
@@ -98,12 +98,18 @@ function transformProfile(record) {
     else if (subName.includes('business')) tier = 'premium';
   }
 
-  // Map category
-  let category = 'performers';
+  // Map categories (now multipleSelects — returns array)
+  let categories = ['performers'];
   const cat = f['Primary Category'];
   if (cat) {
-    category = (typeof cat === 'object' ? cat.name : cat).toLowerCase();
+    if (Array.isArray(cat)) {
+      categories = cat.map(c => (typeof c === 'object' ? c.name : c).toLowerCase());
+    } else {
+      categories = [(typeof cat === 'object' ? cat.name : cat).toLowerCase()];
+    }
   }
+  // Keep singular 'category' as first value for backwards compatibility
+  const category = categories[0] || 'performers';
 
   // Extract multi-select values
   const extractMulti = (field) => {
@@ -150,6 +156,7 @@ function transformProfile(record) {
     email: f['Email'] || '',
     phone: f['Phone'] || '',
     category,
+    categories,
     subcategories: extractMulti(f['Subcategories']),
     genres: extractMulti(f['Genres']),
     skills: extractMulti(f['Skills']),
