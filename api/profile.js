@@ -130,6 +130,9 @@ function mapToAirtableFields(fields) {
       // Handle arrays that need to be newline-separated text
       if (key === 'equipment' || key === 'recentVenues') {
         result[airtableKey] = Array.isArray(value) ? value.join('\n') : value;
+      } else if (key === 'category') {
+        // Primary Category is now multipleSelects -- always send as array
+        result[airtableKey] = Array.isArray(value) ? value : [value];
       } else {
         result[airtableKey] = value;
       }
@@ -152,11 +155,17 @@ function transformProfile(record) {
     else if (subName.includes('business')) tier = 'premium';
   }
 
-  let category = 'performers';
+  // Map categories (now multipleSelects -- returns array)
+  let categories = ['performers'];
   const cat = f['Primary Category'];
   if (cat) {
-    category = (typeof cat === 'object' ? cat.name : cat).toLowerCase();
+    if (Array.isArray(cat)) {
+      categories = cat.map(c => (typeof c === 'object' ? c.name : c).toLowerCase());
+    } else {
+      categories = [(typeof cat === 'object' ? cat.name : cat).toLowerCase()];
+    }
   }
+  const category = categories[0] || 'performers';
 
   const extractMulti = (field) => {
     if (!field) return [];
@@ -198,6 +207,7 @@ function transformProfile(record) {
     email: f['Email'] || '',
     phone: f['Phone'] || '',
     category,
+    categories,
     subcategories: extractMulti(f['Subcategories']),
     genres: extractMulti(f['Genres']),
     skills: extractMulti(f['Skills']),
