@@ -1,4 +1,4 @@
-// POST /api/profile-create â Create a new profile in Airtable
+// POST /api/profile-create — Create a new profile in Airtable
 // Body: { name, email, phone, category, subcategories, bio, location, state, ... }
 // Optional: adminToken in Authorization header for admin creation
 
@@ -37,7 +37,10 @@ module.exports = async function handler(req, res) {
   if (body.bio) fields['Bio'] = body.bio;
   if (body.location) fields['Location - City'] = body.location;
   if (body.state) fields['Location - State'] = body.state || 'AZ';
-  if (body.category) fields['Primary Category'] = body.category;
+  if (body.category) {
+    // Primary Category is now a multipleSelects field — always send as array
+    fields['Primary Category'] = Array.isArray(body.category) ? body.category : [body.category];
+  }
   if (body.subcategories && body.subcategories.length > 0) fields['Subcategories'] = body.subcategories;
   if (body.genres && body.genres.length > 0) fields['Genres'] = body.genres;
   if (body.skills && body.skills.length > 0) fields['Skills'] = body.skills;
@@ -58,7 +61,7 @@ module.exports = async function handler(req, res) {
   if (isAdmin && body.accountType) {
     fields['Account Type'] = body.accountType;
   } else {
-    fields['Account Type'] = 'Talent';
+    fields['Account Type'] = 'Performer';
   }
 
   if (body.tier) {
