@@ -624,7 +624,7 @@ const q = searchQuery.toLowerCase();
 const match = p.name.toLowerCase().includes(q) || p.subcategories.some(s => s.toLowerCase().includes(q)) || p.bio.toLowerCase().includes(q) || (p.genres && p.genres.some(g => g.toLowerCase().includes(q))) || p.skills.some(s => s.toLowerCase().includes(q));
 if (!match) return false;
 }
-if (filterCategory !== 'all' && p.category !== filterCategory) return false;
+if (filterCategory !== 'all' && !(p.categories || [p.category]).includes(filterCategory)) return false;
 if (filterLocation !== 'all' && p.location !== filterLocation) return false;
 if (filterAvailability && !p.available) return false;
 if (filterTier !== 'all' && p.tier !== filterTier) return false;
@@ -1244,7 +1244,7 @@ const [saving, setSaving] = useState(false);
 const [saveError, setSaveError] = useState('');
 const [createdResult, setCreatedResult] = useState(null);
 const [formData, setFormData] = useState({
-  name: '', email: '', phone: '', category: '', subcategories: [], location: '', state: 'AZ',
+  name: '', email: '', phone: '', category: [], subcategories: [], location: '', state: 'AZ',
   bio: '', rateMin: '', rateMax: '', rateType: '', yearsExp: '', travelRadius: '',
   genres: [], skills: [], unions: [], equipment: '', recentVenues: ''
 });
@@ -1311,17 +1311,21 @@ return (
 <div>
 <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Your Profession</h3>
 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Primary Category</label>
-<select value={formData.category} onChange={e => { update('category', e.target.value); update('subcategories', []); }}>
-<option value="">Select a category</option>
-{Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-</select>
+<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Primary Categories (select all that apply)</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+{Object.entries(CATEGORIES).map(([k, v]) => (
+<div key={k} className={`pill ${formData.category.includes(k) ? 'active' : ''}`}
+onClick={() => { toggleArrayItem('category', k); update('subcategories', []); }}>
+<i className={`fa-solid ${v.icon}`} style={{ marginRight: 6 }}></i>{v.label}
 </div>
-{formData.category && (
+))}
+</div>
+</div>
+{formData.category.length > 0 && (
 <div>
 <label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Specialties (select all that apply)</label>
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-{CATEGORIES[formData.category].subs.map(s => (
+{[...new Set(formData.category.flatMap(c => CATEGORIES[c] ? CATEGORIES[c].subs : []))].map(s => (
 <div key={s} className={`pill ${formData.subcategories.includes(s) ? 'active' : ''}`}
 onClick={() => toggleArrayItem('subcategories', s)}>
 {s}
@@ -1491,7 +1495,7 @@ const [loading, setLoading] = useState(true);
 const [saving, setSaving] = useState(false);
 const [error, setError] = useState('');
 const [formData, setFormData] = useState({
-  name: '', email: '', phone: '', category: '', subcategories: [], location: '', state: '',
+  name: '', email: '', phone: '', category: [], subcategories: [], location: '', state: '',
   bio: '', rateMin: '', rateMax: '', rateType: '', yearsExp: '', travelRadius: '',
   genres: [], skills: [], unions: [], equipment: '', recentVenues: '', available: true,
   videoLink: '', showReelLink: '', audioLink: ''
@@ -1507,7 +1511,7 @@ useEffect(() => {
       const p = data.profile;
       setFormData({
         name: p.name || '', email: p.email || '', phone: p.phone || '',
-        category: p.category || '', subcategories: p.subcategories || [],
+        category: p.categories || (p.category ? [p.category] : []), subcategories: p.subcategories || [],
         location: p.location || '', state: p.state || '',
         bio: p.bio || '', rateMin: p.rateMin || '', rateMax: p.rateMax || '', rateType: p.rateType || '',
         yearsExp: p.yearsExp || '', travelRadius: p.travelRadius || '',
@@ -1584,15 +1588,20 @@ return (
 <div>
 <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--primary-light)' }}><i className="fa-solid fa-tags" style={{ marginRight: 6 }}></i> Category & Skills</h3>
 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Primary Category</label>
-<select value={formData.category} onChange={e => { update('category', e.target.value); }}>
-<option value="">Select</option>{Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-</select></div>
-{formData.category && CATEGORIES[formData.category] && (
+<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Primary Categories (select all that apply)</label>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+{Object.entries(CATEGORIES).map(([k, v]) => (
+<div key={k} className={`pill ${formData.category.includes(k) ? 'active' : ''}`}
+onClick={() => { toggleArrayItem('category', k); update('subcategories', []); }} style={{ fontSize: 12 }}>
+<i className={`fa-solid ${v.icon}`} style={{ marginRight: 4 }}></i>{v.label}
+</div>
+))}
+</div></div>
+{formData.category.length > 0 && (
 <div>
 <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Specialties</label>
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-{CATEGORIES[formData.category].subs.map(s => (
+{[...new Set(formData.category.flatMap(c => CATEGORIES[c] ? CATEGORIES[c].subs : []))].map(s => (
 <div key={s} className={`pill ${formData.subcategories.includes(s) ? 'active' : ''}`} onClick={() => toggleArrayItem('subcategories', s)} style={{ fontSize: 12 }}>{s}</div>
 ))}
 </div>
