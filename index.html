@@ -319,8 +319,8 @@ useEffect(() => {
   }
 }, []);
 
-// Use live profiles if available, otherwise fall back to sample data
-const profiles = liveProfiles.length > 0 ? liveProfiles : SAMPLE_PROFILES;
+// Use live profiles if available, only fall back to sample data if API actually failed
+const profiles = loadingProfiles ? [] : (liveProfiles.length > 0 ? liveProfiles : (apiError ? SAMPLE_PROFILES : []));
 const isLiveData = liveProfiles.length > 0;
 
 const viewProfile = (profile) => { setSelectedProfile(profile); setPage('profile'); window.scrollTo(0,0); };
@@ -669,6 +669,13 @@ return (
 <i className="fa-solid fa-circle" style={{ fontSize: 7 }}></i> Available Now
 </div>
 </div>
+{loading ? (
+<div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+<i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 36, marginBottom: 16, opacity: 0.5 }}></i>
+<p style={{ fontSize: 16 }}>Loading professionals...</p>
+</div>
+) : (
+<>
 <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>{filtered.length} professional{filtered.length !== 1 ? 's' : ''} found</p>
 <div className="grid-3">
 {filtered.map(p => (
@@ -681,6 +688,8 @@ return (
 <p style={{ fontSize: 18 }}>No professionals match your search.</p>
 <p style={{ fontSize: 14 }}>Try adjusting your filters or search terms.</p>
 </div>
+)}
+</>
 )}
 </div>
 </div>
