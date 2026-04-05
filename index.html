@@ -319,8 +319,8 @@ useEffect(() => {
   }
 }, []);
 
-// Use live profiles if available, only fall back to sample data if API actually failed
-const profiles = loadingProfiles ? [] : (liveProfiles.length > 0 ? liveProfiles : (apiError ? SAMPLE_PROFILES : []));
+// Use live profiles if available, otherwise fall back to sample data
+const profiles = liveProfiles.length > 0 ? liveProfiles : SAMPLE_PROFILES;
 const isLiveData = liveProfiles.length > 0;
 
 const viewProfile = (profile) => { setSelectedProfile(profile); setPage('profile'); window.scrollTo(0,0); };
@@ -358,6 +358,7 @@ profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
 {page === 'pricing' && <PricingPage onCreateProfile={() => setShowCreateProfile(true)} />}
 {page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={(profileId) => { setEditingProfileId(profileId); setShowEditProfile(true); }} onLogin={() => setShowLogin(true)} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
 {page === 'booker' && <BookerDashboard onViewProfile={viewProfile} setPage={setPage} />}
+{page === 'vendor-onboarding' && <VendorOnboarding setPage={setPage} />}
 {page === 'messages' && <MessagesPage />}
 {page === 'database' && <DatabaseArchitecture />}
 {showCreateProfile && <CreateProfileModal onClose={() => setShowCreateProfile(false)} onSuccess={handleProfileCreated} currentUser={currentUser} />}
@@ -392,6 +393,7 @@ Stage<span style={{ color: 'var(--primary-light)' }}>Link365</span>
 { key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
 { key: 'pricing', label: 'Pricing', icon: 'fa-crown' },
 { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+{ key: 'vendor-onboarding', label: 'Vendor Signup', icon: 'fa-handshake' },
 { key: 'booker', label: 'Booker Hub', icon: 'fa-building' },
 { key: 'messages', label: 'Messages', icon: 'fa-envelope' },
 { key: 'database', label: 'DB Schema', icon: 'fa-database' },
@@ -669,13 +671,6 @@ return (
 <i className="fa-solid fa-circle" style={{ fontSize: 7 }}></i> Available Now
 </div>
 </div>
-{loading ? (
-<div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-<i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 36, marginBottom: 16, opacity: 0.5 }}></i>
-<p style={{ fontSize: 16 }}>Loading professionals...</p>
-</div>
-) : (
-<>
 <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>{filtered.length} professional{filtered.length !== 1 ? 's' : ''} found</p>
 <div className="grid-3">
 {filtered.map(p => (
@@ -688,8 +683,6 @@ return (
 <p style={{ fontSize: 18 }}>No professionals match your search.</p>
 <p style={{ fontSize: 14 }}>Try adjusting your filters or search terms.</p>
 </div>
-)}
-</>
 )}
 </div>
 </div>
@@ -2495,6 +2488,359 @@ return (
 </div>
 )}
 </div>
+</div>
+);
+}
+
+// ===========================
+// VENDOR ONBOARDING WIZARD
+// ===========================
+
+const GENRE_OPTIONS = [
+'Live Music (Band)', 'Solo Musician', 'Singer / Vocalist', 'DJ / Emcee',
+'Jazz', 'Classical', 'R&B / Soul', 'Country / Americana', 'Rock / Pop', 'Latin / Salsa',
+'Musical Theatre', 'Straight Play / Drama', 'Improv / Sketch Comedy', 'Stand-Up Comedy',
+'Cabaret / Burlesque', 'Dinner Theatre', 'Shakespeare / Classical Theatre', 'Pantomime',
+'One-Person Show', 'Immersive / Interactive Theatre', 'Puppetry / Marionettes',
+'Magic / Illusion', 'Mentalism / Hypnosis', 'Acrobatics / Circus', 'Aerial / Stunt',
+'Dance', 'Tribute Acts', 'Variety / Novelty', 'Production Shows', 'Revue / Ensemble Show',
+'Themed Entertainment', 'Corporate / Keynote', 'Emcee / Host',
+'Kids / Family', 'Spoken Word / Poetry', 'Cultural / Folk', 'Opera / Operetta',
+'Choreography / Movement Direction'
+];
+
+const AREA_OPTIONS = [
+'Northeast US', 'Southeast US', 'Midwest US', 'Southwest US', 'West Coast US',
+'Pacific Northwest US', 'Hawaii / Alaska', 'Caribbean', 'Mexico / Central America', 'Canada',
+'UK / Ireland', 'Western Europe', 'Eastern Europe', 'Middle East', 'Asia Pacific',
+'Australia / New Zealand', 'Cruise Lines (Worldwide)', 'Resorts / All-Inclusive',
+'Corporate (Nationwide)', 'Festivals (Touring)', 'South America', 'Africa'
+];
+
+function VendorOnboarding({ setPage }) {
+const [step, setStep] = useState(0);
+const [vendorType, setVendorType] = useState(null);
+const [alsoTalent, setAlsoTalent] = useState(false);
+const [form, setForm] = useState({ name: '', company: '', contact: '', taxId: '', phone: '', location: '', website: '', bio: '', instagram: '', linkedin: '', facebook: '' });
+const [services, setServices] = useState({ hire: true, represent: false, produce: false });
+const [selectedGenres, setSelectedGenres] = useState([]);
+const [selectedAreas, setSelectedAreas] = useState([]);
+const [customGenre, setCustomGenre] = useState('');
+const [customArea, setCustomArea] = useState('');
+const [teamEmails, setTeamEmails] = useState([]);
+const [teamInput, setTeamInput] = useState('');
+const [submitted, setSubmitted] = useState(false);
+
+const totalSteps = 5;
+const stepLabels = ['Type', 'Profile', 'Services', 'Branding', 'Review'];
+
+const updateForm = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
+
+const toggleGenre = (g) => setSelectedGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+const toggleArea = (a) => setSelectedAreas(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
+
+const addCustomGenre = () => { if (customGenre.trim() && !selectedGenres.includes(customGenre.trim())) { setSelectedGenres(prev => [...prev, customGenre.trim()]); } setCustomGenre(''); };
+const addCustomArea = () => { if (customArea.trim() && !selectedAreas.includes(customArea.trim())) { setSelectedAreas(prev => [...prev, customArea.trim()]); } setCustomArea(''); };
+const addTeamEmail = () => { if (teamInput.trim() && !teamEmails.includes(teamInput.trim())) { setTeamEmails(prev => [...prev, teamInput.trim()]); } setTeamInput(''); };
+
+const goTo = (s) => { setStep(s); window.scrollTo(0, 0); };
+
+// Chip component
+const Chip = ({ label, selected, onClick }) => (
+  <span onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: selected ? 'rgba(108,43,217,0.2)' : 'var(--dark-lighter)', border: `1.5px solid ${selected ? 'var(--primary-light)' : 'var(--dark-border)'}`, borderRadius: 20, fontSize: 13, color: selected ? 'var(--primary-light)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none' }}>
+    {selected && <span style={{ fontSize: 11 }}>✓</span>} {label}
+  </span>
+);
+
+// Progress bar
+const ProgressBar = () => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 500, margin: '0 auto 36px', position: 'relative' }}>
+    <div style={{ position: 'absolute', top: 15, left: 40, right: 40, height: 2, background: 'var(--dark-border)', zIndex: 0 }}></div>
+    <div style={{ position: 'absolute', top: 15, left: 40, height: 2, background: 'var(--primary)', zIndex: 1, transition: 'width 0.4s', width: `${step / (totalSteps - 1) * (100 - 16)}%` }}></div>
+    {stepLabels.map((label, i) => (
+      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2, minWidth: 60 }}>
+        <div style={{ width: 30, height: 30, borderRadius: '50%', background: i < step ? 'rgba(16,185,129,0.2)' : i === step ? 'rgba(108,43,217,0.3)' : 'var(--dark-card)', border: `2px solid ${i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--dark-border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all 0.3s' }}>
+          {i < step ? '✓' : i + 1}
+        </div>
+        <span style={{ fontSize: 11, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: i === step ? 600 : 400 }}>{label}</span>
+      </div>
+    ))}
+  </div>
+);
+
+// Card wrapper
+const WizardCard = ({ children }) => (
+  <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 20, padding: 36, maxWidth: 620, margin: '0 auto', width: '100%' }}>
+    {children}
+  </div>
+);
+
+const InputField = ({ label, hint, ...props }) => (
+  <div style={{ marginBottom: 20 }}>
+    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</label>
+    <input {...props} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+    {hint && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>{hint}</div>}
+  </div>
+);
+
+const ToggleRow = ({ label, desc, active, onClick }) => (
+  <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--dark-lighter)', border: `1px solid ${active ? 'var(--primary)' : 'var(--dark-border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s', marginBottom: 8 }}>
+    <div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
+      {desc && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{desc}</div>}
+    </div>
+    <div style={{ width: 44, height: 24, background: active ? 'var(--primary)' : 'var(--dark-lighter)', borderRadius: 12, position: 'relative', transition: 'background 0.3s', border: `1px solid ${active ? 'var(--primary)' : 'var(--dark-border)'}`, flexShrink: 0 }}>
+      <div style={{ position: 'absolute', width: 18, height: 18, background: active ? '#fff' : 'var(--text-muted)', borderRadius: '50%', top: 2, left: active ? 23 : 2, transition: 'all 0.3s' }}></div>
+    </div>
+  </div>
+);
+
+const AdaptiveLabel = ({ type }) => (
+  <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, padding: '3px 8px', borderRadius: 4, marginBottom: 16, background: type === 'agency' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)', color: type === 'agency' ? 'var(--accent)' : 'var(--success)' }}>
+    {type === 'agency' ? 'Agency / Company' : 'Solo Agent'}
+  </span>
+);
+
+const BtnRow = ({ onBack, onNext, nextLabel, nextStyle }) => (
+  <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 28 }}>
+    {onBack && <button className="btn btn-outline" onClick={onBack}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>}
+    <button className="btn btn-primary" onClick={onNext} style={nextStyle || {}}>{nextLabel || 'Continue'} <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
+  </div>
+);
+
+// SUCCESS screen
+if (submitted) {
+  return (
+    <div style={{ padding: '80px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
+      <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>You're Live on StageLink365!</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 15, maxWidth: 440, margin: '0 auto 32px', lineHeight: 1.6 }}>Your vendor profile is set up and ready to go. Start discovering talent, posting gigs, or building your roster.</p>
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <button className="btn btn-primary" onClick={() => setPage('browse')}><i className="fa-solid fa-search"></i> Find Talent</button>
+        <button className="btn btn-accent" onClick={() => setPage('gigs')}><i className="fa-solid fa-clipboard-list"></i> Post a Gig</button>
+        <button className="btn btn-outline" onClick={() => setPage('dashboard')}><i className="fa-solid fa-gauge-high"></i> My Dashboard</button>
+      </div>
+    </div>
+  );
+}
+
+return (
+<div style={{ padding: '40px 24px 80px', maxWidth: 700, margin: '0 auto' }}>
+  <div style={{ textAlign: 'center', marginBottom: 36 }}>
+    <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>Vendor Account Setup</h1>
+    <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Set up your vendor profile to start hiring and managing talent</p>
+  </div>
+
+  <ProgressBar />
+
+  {/* STEP 1: Vendor Type */}
+  {step === 0 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>What type of vendor are you?</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>This helps us tailor your experience. You can always update this later.</p>
+
+      <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+        {[{ key: 'solo', icon: 'fa-user', name: 'Solo Agent', desc: 'Independent agent or individual looking to hire and manage talent' },
+          { key: 'agency', icon: 'fa-building', name: 'Agency / Company', desc: 'Talent agency or entertainment company with a team' }
+        ].map(t => (
+          <div key={t.key} onClick={() => setVendorType(t.key)} style={{ flex: 1, padding: '24px 18px', background: vendorType === t.key ? 'rgba(108,43,217,0.1)' : 'var(--dark-lighter)', border: `2px solid ${vendorType === t.key ? 'var(--primary-light)' : 'var(--dark-border)'}`, borderRadius: 14, cursor: 'pointer', textAlign: 'center', transition: 'all 0.3s', position: 'relative' }}>
+            {vendorType === t.key && <div style={{ position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#fff' }}>✓</div>}
+            <i className={`fa-solid ${t.icon}`} style={{ fontSize: 32, color: vendorType === t.key ? 'var(--primary-light)' : 'var(--text-muted)', marginBottom: 10, display: 'block' }}></i>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{t.name}</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.4 }}>{t.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      <ToggleRow label="I'm also a performer" desc="Activate a Talent profile alongside your Vendor account" active={alsoTalent} onClick={() => setAlsoTalent(!alsoTalent)} />
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
+        <button className="btn btn-primary" disabled={!vendorType} onClick={() => goTo(1)} style={{ opacity: vendorType ? 1 : 0.3, cursor: vendorType ? 'pointer' : 'not-allowed' }}>Continue <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
+      </div>
+    </WizardCard>
+  )}
+
+  {/* STEP 2: Profile Details */}
+  {step === 1 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Your Vendor Profile</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Tell us about yourself so talent and venues can find you.</p>
+
+      {vendorType === 'solo' && (
+        <div>
+          <AdaptiveLabel type="solo" />
+          <InputField label="Full Name" placeholder="e.g., Jane Rodriguez" value={form.name} onChange={e => updateForm('name', e.target.value)} />
+        </div>
+      )}
+
+      {vendorType === 'agency' && (
+        <div>
+          <AdaptiveLabel type="agency" />
+          <InputField label="Company Name" placeholder="e.g., Starlight Entertainment Group" value={form.company} onChange={e => updateForm('company', e.target.value)} />
+          <InputField label="Your Name (Primary Contact)" placeholder="e.g., Jane Rodriguez" value={form.contact} onChange={e => updateForm('contact', e.target.value)} />
+          <InputField label="Company Registration / Tax ID" placeholder="Optional — for invoicing" hint="Used for invoicing and payment verification" value={form.taxId} onChange={e => updateForm('taxId', e.target.value)} />
+        </div>
+      )}
+
+      <InputField label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
+      <InputField label="Location" placeholder="City, State / Country" value={form.location} onChange={e => updateForm('location', e.target.value)} />
+      <InputField label="Website" placeholder="https://yoursite.com" hint="Optional — helps build trust with talent" value={form.website} onChange={e => updateForm('website', e.target.value)} />
+
+      <BtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 3: Services & Specialties */}
+  {step === 2 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Services & Specialties</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help talent understand what you're looking for and what you offer.</p>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>What are you looking to do?</label>
+        <ToggleRow label="Hire talent for events" desc="Book performers directly for gigs and shows" active={services.hire} onClick={() => setServices(prev => ({ ...prev, hire: !prev.hire }))} />
+        <ToggleRow label="Represent talent (agent/manager)" desc="Manage and book on behalf of your roster" active={services.represent} onClick={() => setServices(prev => ({ ...prev, represent: !prev.represent }))} />
+        <ToggleRow label="Produce or promote shows" desc="Organize events and source entertainment" active={services.produce} onClick={() => setServices(prev => ({ ...prev, produce: !prev.produce }))} />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Entertainment Genres</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select all that apply — you can also add your own</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...GENRE_OPTIONS, ...selectedGenres.filter(g => !GENRE_OPTIONS.includes(g))])].map(g => (
+            <Chip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleGenre(g)} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <input value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomGenre())} placeholder="Add a custom genre..." style={{ flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+          <button className="btn btn-outline btn-sm" onClick={addCustomGenre}>+ Add</button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Service Areas</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select the regions where you book or source talent</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].map(a => (
+            <Chip key={a} label={a} selected={selectedAreas.includes(a)} onClick={() => toggleArea(a)} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <input value={customArea} onChange={e => setCustomArea(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomArea())} placeholder="Add a custom region..." style={{ flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+          <button className="btn btn-outline btn-sm" onClick={addCustomArea}>+ Add</button>
+        </div>
+      </div>
+
+      {vendorType === 'agency' && (
+        <div>
+          <AdaptiveLabel type="agency" />
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Invite Team Members</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+            {teamEmails.map((em, i) => (
+              <span key={i} className="tag">{em} <span className="tag-remove" onClick={() => setTeamEmails(prev => prev.filter((_, j) => j !== i))}>×</span></span>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={teamInput} onChange={e => setTeamInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTeamEmail())} placeholder="Enter email addresses of team members" style={{ flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+            <button className="btn btn-outline btn-sm" onClick={addTeamEmail}>+ Invite</button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>They'll receive an invitation to join your agency account</div>
+        </div>
+      )}
+
+      <BtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 4: Branding & Media */}
+  {step === 3 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Branding & Media</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make your profile stand out — first impressions matter.</p>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Profile Photo / Logo</label>
+        <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+          <i className="fa-solid fa-camera" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Click to upload</span> or drag and drop<br/>PNG, JPG up to 5MB</div>
+        </div>
+      </div>
+
+      {vendorType === 'agency' && (
+        <div style={{ marginBottom: 20 }}>
+          <AdaptiveLabel type="agency" />
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Company Banner</label>
+          <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+            onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+            onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+            <i className="fa-solid fa-image" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Click to upload</span> a banner image<br/>Recommended: 1200×400px</div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Bio / About</label>
+        <textarea placeholder="Tell talent and venues about your experience, approach, and what makes you stand out..." rows="4" value={form.bio} onChange={e => updateForm('bio', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, resize: 'vertical', minHeight: 100, outline: 'none', fontFamily: 'inherit' }}></textarea>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>This appears on your public profile</div>
+      </div>
+
+      <div style={{ marginBottom: 4 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Social Links</label>
+        <InputField label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
+        <InputField label="" placeholder="LinkedIn URL" value={form.linkedin} onChange={e => updateForm('linkedin', e.target.value)} />
+        <InputField label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
+      </div>
+
+      <BtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
+    </WizardCard>
+  )}
+
+  {/* STEP 5: Review */}
+  {step === 4 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Review Your Profile</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make sure everything looks good before going live.</p>
+
+      {[
+        { section: 'Account Type', rows: [
+          { key: 'Vendor Type', val: vendorType === 'agency' ? 'Agency / Company' : 'Solo Agent', editStep: 0 },
+          { key: 'Also Talent?', val: alsoTalent ? 'Yes' : 'No', editStep: 0 },
+        ]},
+        { section: 'Profile', rows: [
+          vendorType === 'agency' ? { key: 'Company', val: form.company || '—', editStep: 1 } : null,
+          { key: 'Name', val: (vendorType === 'agency' ? form.contact : form.name) || '—', editStep: 1 },
+          { key: 'Location', val: form.location || '—', editStep: 1 },
+          { key: 'Website', val: form.website || '—', editStep: 1 },
+        ].filter(Boolean)},
+        { section: 'Services', rows: [
+          { key: 'Services', val: [services.hire && 'Hire', services.represent && 'Represent', services.produce && 'Produce'].filter(Boolean).join(', ') || '—', editStep: 2 },
+          { key: 'Genres', val: selectedGenres.length > 0 ? selectedGenres.slice(0, 5).join(', ') + (selectedGenres.length > 5 ? ` +${selectedGenres.length - 5} more` : '') : '—', editStep: 2 },
+          { key: 'Areas', val: selectedAreas.length > 0 ? selectedAreas.slice(0, 4).join(', ') + (selectedAreas.length > 4 ? ` +${selectedAreas.length - 4} more` : '') : '—', editStep: 2 },
+        ]},
+      ].map((section, si) => (
+        <div key={si} style={{ marginBottom: 24 }}>
+          <h4 style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, fontWeight: 600 }}>{section.section}</h4>
+          {section.rows.map((row, ri) => (
+            <div key={ri} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: ri < section.rows.length - 1 ? '1px solid var(--dark-lighter)' : 'none' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{row.key}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, textAlign: 'right', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.val}</span>
+                <span onClick={() => goTo(row.editStep)} style={{ color: 'var(--primary-light)', fontSize: 12, cursor: 'pointer' }}>Edit</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
+        <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
+        <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch My Profile <i className="fa-solid fa-rocket" style={{ fontSize: 14 }}></i></button>
+      </div>
+    </WizardCard>
+  )}
 </div>
 );
 }
