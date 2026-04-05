@@ -289,10 +289,25 @@ const [liveProfiles, setLiveProfiles] = useState([]);
 const [loadingProfiles, setLoadingProfiles] = useState(true);
 const [apiError, setApiError] = useState(null);
 
-// Auth state
+// Auth state — roles is an array (e.g. ['talent','vendor']), activeRole is whichever view they're using
 const [currentUser, setCurrentUser] = useState(null);
 const [editingProfileId, setEditingProfileId] = useState(null);
 const [calendarPopupUrl, setCalendarPopupUrl] = useState(null);
+
+// Helper: complete onboarding and set user with correct role(s)
+const handleOnboardingComplete = (name, email, primaryRole, dualRole) => {
+  const roles = [primaryRole];
+  if (dualRole) roles.push(dualRole);
+  setCurrentUser({ id: Date.now().toString(), name, email, roles, activeRole: primaryRole, token: 'onboarding-' + Date.now() });
+  setPage('dashboard');
+};
+
+// Helper: switch active role (for dual-role users)
+const switchRole = (role) => {
+  if (currentUser && currentUser.roles && currentUser.roles.includes(role)) {
+    setCurrentUser(prev => ({ ...prev, activeRole: role }));
+  }
+};
 
 // Fetch profiles from Airtable API
 const fetchProfiles = useCallback(async () => {
@@ -327,21 +342,28 @@ const isLiveData = liveProfiles.length > 0;
 const viewProfile = (profile) => { setSelectedProfile(profile); setPage('profile'); window.scrollTo(0,0); };
 const viewGig = (gig) => { setSelectedGig(gig); };
 
-const handleLogin = (user) => { setCurrentUser(user); setShowLogin(false); setPage('dashboard'); };
+const handleLogin = (user) => {
+  // Normalize legacy role field into roles array
+  const roles = user.roles || [user.role || 'talent'];
+  const activeRole = user.activeRole || roles[0];
+  setCurrentUser({ ...user, roles, activeRole });
+  setShowLogin(false);
+  setPage('dashboard');
+};
 const handleLogout = () => { setCurrentUser(null); setPage('home'); };
 
 const handleProfileCreated = (result) => {
   setShowCreateProfile(false);
   fetchProfiles();
   if (result && result.profile) {
-    setCurrentUser({ id: result.profile.id, name: result.profile.name, email: result.profile.email, role: 'performer', token: result.profile.token });
+    setCurrentUser({ id: result.profile.id, name: result.profile.name, email: result.profile.email, roles: ['talent'], activeRole: 'talent', token: result.profile.token });
   }
   setPage('dashboard');
 };
 
 return (
 <div>
-<Navbar page={page} setPage={setPage} onLogin={() => setShowLogin(true)} onCreateProfile={() => setShowCreateProfile(true)} currentUser={currentUser} onLogout={handleLogout} />
+<Navbar page={page} setPage={setPage} onLogin={() => setShowLogin(true)} onCreateProfile={() => setShowCreateProfile(true)} currentUser={currentUser} onLogout={handleLogout} onSwitchRole={switchRole} />
 {page === 'home' && <HomePage setPage={setPage} onCreateProfile={() => setShowCreateProfile(true)} profiles={profiles} isLiveData={isLiveData} />}
 {page === 'browse' && (
 <BrowsePage
@@ -359,11 +381,12 @@ profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
 {page === 'pricing' && <PricingPage onCreateProfile={() => setShowCreateProfile(true)} />}
 {page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={(profileId) => { setEditingProfileId(profileId); setShowEditProfile(true); }} onLogin={() => setShowLogin(true)} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
 {page === 'booker' && <BookerDashboard onViewProfile={viewProfile} setPage={setPage} />}
-{page === 'talent-onboarding' && <TalentOnboarding setPage={setPage} />}
-{page === 'band-onboarding' && <BandOnboarding setPage={setPage} />}
-{page === 'vendor-onboarding' && <VendorOnboarding setPage={setPage} />}
-{page === 'venue-onboarding' && <VenueOnboarding setPage={setPage} />}
+{page === 'talent-onboarding' && <TalentOnboarding setPage={setPage} onComplete={handleOnboardingComplete} />}
+{page === 'band-onboarding' && <BandOnboarding setPage={setPage} onComplete={handleOnboardingComplete} />}
+{page === 'vendor-onboarding' && <VendorOnboarding setPage={setPage} onComplete={handleOnboardingComplete} />}
+{page === 'venue-onboarding' && <VenueOnboarding setPage={setPage} onComplete={handleOnboardingComplete} />}
 {page === 'messages' && <MessagesPage />}
+{page === 'admin' && <AdminDashboard currentUser={currentUser} profiles={profiles} setPage={setPage} />}
 {page === 'database' && <DatabaseArchitecture />}
 {showCreateProfile && <CreateProfileModal onClose={() => setShowCreateProfile(false)} onSuccess={handleProfileCreated} currentUser={currentUser} />}
 {showEditProfile && currentUser && <EditProfileModal profileId={editingProfileId || currentUser.id || (selectedProfile && selectedProfile.id)} token={currentUser.token} onClose={() => { setShowEditProfile(false); setEditingProfileId(null); }} onSaved={() => { setShowEditProfile(false); setEditingProfileId(null); fetchProfiles(); }} />}
@@ -378,7 +401,70 @@ profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
 // NAVBAR
 // ===========================
 
-function Navbar({ page, setPage, onLogin, onCreateProfile, currentUser, onLogout }) {
+function Navbar({ page, setPage, onLogin, onCreateProfile, currentUser, onLogout, onSwitchRole }) {
+
+// Role-specific nav items
+const activeRole = currentUser && currentUser.activeRole;
+const roles = currentUser && currentUser.roles;
+const isSignedIn = !!currentUser;
+
+// Define which nav items each role sees
+const ROLE_NAV = {
+  talent:  [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+    { key: 'browse', label: 'Browse Talent', icon: 'fa-search' },
+    { key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
+    { key: 'messages', label: 'Messages', icon: 'fa-envelope' },
+  ],
+  band: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+    { key: 'browse', label: 'Browse Talent', icon: 'fa-search' },
+    { key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
+    { key: 'messages', label: 'Messages', icon: 'fa-envelope' },
+  ],
+  vendor: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+    { key: 'browse', label: 'Find Talent', icon: 'fa-search' },
+    { key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
+    { key: 'messages', label: 'Messages', icon: 'fa-envelope' },
+  ],
+  venue: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+    { key: 'browse', label: 'Find Talent', icon: 'fa-search' },
+    { key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
+    { key: 'booker', label: 'Booker Hub', icon: 'fa-building' },
+    { key: 'messages', label: 'Messages', icon: 'fa-envelope' },
+  ],
+  admin: [
+    { key: 'admin', label: 'Admin', icon: 'fa-shield-halved' },
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+    { key: 'browse', label: 'Browse Talent', icon: 'fa-search' },
+    { key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
+    { key: 'booker', label: 'Booker Hub', icon: 'fa-building' },
+    { key: 'messages', label: 'Messages', icon: 'fa-envelope' },
+    { key: 'pricing', label: 'Pricing', icon: 'fa-crown' },
+    { key: 'database', label: 'DB Schema', icon: 'fa-database' },
+  ],
+};
+
+// Signed-out nav items (public pages only)
+const SIGNED_OUT_NAV = [
+  { key: 'browse', label: 'Browse Talent', icon: 'fa-search' },
+  { key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
+  { key: 'pricing', label: 'Pricing', icon: 'fa-crown' },
+];
+
+const navItems = isSignedIn ? (ROLE_NAV[activeRole] || ROLE_NAV.talent) : SIGNED_OUT_NAV;
+
+// Role label & icon for the switcher pill
+const ROLE_META = {
+  talent: { label: 'Talent', icon: 'fa-microphone-lines', color: '#8B5CF6' },
+  band:   { label: 'Band', icon: 'fa-guitar', color: '#F59E0B' },
+  vendor: { label: 'Vendor', icon: 'fa-handshake', color: '#10B981' },
+  venue:  { label: 'Venue', icon: 'fa-building-columns', color: '#3B82F6' },
+  admin:  { label: 'Admin', icon: 'fa-shield-halved', color: '#EF4444' },
+};
+
 return (
 <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15,15,26,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--dark-border)', padding: '0 24px' }}>
 <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
@@ -392,19 +478,7 @@ Stage<span style={{ color: 'var(--primary-light)' }}>Link365</span>
 </span>
 </div>
 <div style={{ display: 'flex', gap: 4 }}>
-{[
-{ key: 'browse', label: 'Browse Talent', icon: 'fa-search' },
-{ key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
-{ key: 'pricing', label: 'Pricing', icon: 'fa-crown' },
-{ key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
-{ key: 'talent-onboarding', label: 'Talent Signup', icon: 'fa-microphone-lines' },
-{ key: 'band-onboarding', label: 'Band Signup', icon: 'fa-guitar' },
-{ key: 'vendor-onboarding', label: 'Vendor Signup', icon: 'fa-handshake' },
-{ key: 'venue-onboarding', label: 'Venue Signup', icon: 'fa-building-columns' },
-{ key: 'booker', label: 'Booker Hub', icon: 'fa-building' },
-{ key: 'messages', label: 'Messages', icon: 'fa-envelope' },
-{ key: 'database', label: 'DB Schema', icon: 'fa-database' },
-].map(item => (
+{navItems.map(item => (
 <button key={item.key} onClick={() => setPage(item.key)}
 style={{ background: page === item.key ? 'rgba(108,43,217,0.15)' : 'transparent', color: page === item.key ? 'var(--primary-light)' : 'var(--text-muted)', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'all 0.2s' }}>
 <i className={`fa-solid ${item.icon}`} style={{ fontSize: 12 }}></i> {item.label}
@@ -413,14 +487,33 @@ style={{ background: page === item.key ? 'rgba(108,43,217,0.15)' : 'transparent'
 </div>
 </div>
 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-{currentUser ? (
+{isSignedIn ? (
 <>
+{/* Role switcher pill — only shows if user has 2+ roles */}
+{roles && roles.length > 1 && (
+<div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 2, gap: 2 }}>
+{roles.map(r => {
+  const meta = ROLE_META[r] || ROLE_META.talent;
+  const isActive = r === activeRole;
+  return (
+    <button key={r} onClick={() => onSwitchRole(r)}
+      style={{ background: isActive ? 'rgba(108,43,217,0.25)' : 'transparent', color: isActive ? meta.color : 'var(--text-muted)', border: 'none', padding: '4px 12px', borderRadius: 18, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', transition: 'all 0.2s' }}>
+      <i className={`fa-solid ${meta.icon}`} style={{ fontSize: 10 }}></i> {meta.label}
+    </button>
+  );
+})}
+</div>
+)}
 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-<div className="avatar avatar-sm" style={{ width: 32, height: 32, fontSize: 12, background: currentUser.role === 'admin' ? 'var(--premium-gradient)' : 'var(--pro-gradient)' }}>
+<div className="avatar avatar-sm" style={{ width: 32, height: 32, fontSize: 12, background: activeRole === 'admin' ? 'linear-gradient(135deg, #EF4444, #DC2626)' : activeRole === 'venue' ? 'var(--premium-gradient)' : activeRole === 'vendor' ? 'linear-gradient(135deg, #10B981, #059669)' : 'var(--pro-gradient)' }}>
 {(currentUser.name || '?').split(' ').map(w => w[0]).join('').slice(0,2)}
 </div>
-<span style={{ fontSize: 13, fontWeight: 600 }}>{currentUser.name}</span>
-{currentUser.role === 'admin' && <span className="badge badge-premium" style={{ fontSize: 10 }}>Admin</span>}
+<div style={{ display: 'flex', flexDirection: 'column' }}>
+<span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>{currentUser.name}</span>
+<span style={{ fontSize: 10, color: (ROLE_META[activeRole] || ROLE_META.talent).color, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+{(ROLE_META[activeRole] || ROLE_META.talent).label} Account
+</span>
+</div>
 </div>
 <button className="btn btn-outline btn-sm" onClick={onLogout}>Log Out</button>
 </>
@@ -783,7 +876,7 @@ return (
 <button className="btn btn-outline"><i className="fa-regular fa-bookmark"></i> Save</button>
 <button className="btn btn-outline"><i className="fa-solid fa-share-nodes"></i> Share</button>
 {p.calendarToken && <button className="btn btn-accent" onClick={() => onViewCalendar(`${CALENDAR_BASE}/${p.calendarToken}`)}><i className="fa-solid fa-calendar"></i> View Calendar</button>}
-{currentUser && (currentUser.role === 'admin' || currentUser.id === p.id) && <button className="btn btn-outline" onClick={onEdit}><i className="fa-solid fa-pen"></i> Edit Profile</button>}
+{currentUser && (currentUser.activeRole === 'admin' || (currentUser.roles && currentUser.roles.includes('admin')) || currentUser.id === p.id) && <button className="btn btn-outline" onClick={onEdit}><i className="fa-solid fa-pen"></i> Edit Profile</button>}
 </div>
 </div>
 
@@ -1089,6 +1182,235 @@ For venues, production companies, agencies, and bookers. Advanced search, roster
 }
 
 // ===========================
+// ADMIN DASHBOARD
+// ===========================
+
+function AdminDashboard({ currentUser, profiles, setPage }) {
+const [adminTab, setAdminTab] = useState('overview');
+
+// Guard: only admins can see this
+if (!currentUser || !currentUser.roles || !currentUser.roles.includes('admin')) {
+  return (
+    <div style={{ padding: '80px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 64, marginBottom: 16 }}>🔒</div>
+      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Access Denied</h2>
+      <p style={{ color: 'var(--text-muted)' }}>You need admin privileges to view this page.</p>
+    </div>
+  );
+}
+
+// Mock platform stats (will connect to real data later)
+const stats = {
+  totalProfiles: profiles.length,
+  talentCount: profiles.filter(p => (p.category || []).length > 0).length,
+  pendingApprovals: Math.floor(Math.random() * 5) + 2,
+  activeGigs: 14,
+  totalMessages: 87,
+  newSignups7d: 9,
+  totalVendors: 6,
+  totalVenues: 8,
+  totalBands: 11,
+  revenue30d: '$4,280',
+};
+
+const ADMIN_TABS = [
+  { key: 'overview', label: 'Overview', icon: 'fa-chart-line' },
+  { key: 'users', label: 'Users & Profiles', icon: 'fa-users' },
+  { key: 'gigs', label: 'Gigs & Bookings', icon: 'fa-clipboard-list' },
+  { key: 'activity', label: 'Recent Activity', icon: 'fa-clock-rotate-left' },
+];
+
+const StatCard = ({ icon, label, value, color, subtitle }) => (
+  <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 14, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: color || 'rgba(108,43,217,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <i className={`fa-solid ${icon}`} style={{ fontSize: 16, color: color ? '#fff' : 'var(--primary-light)' }}></i>
+      </div>
+    </div>
+    <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1 }}>{value}</div>
+    <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{label}</div>
+    {subtitle && <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>{subtitle}</div>}
+  </div>
+);
+
+// Recent activity mock data
+const recentActivity = [
+  { icon: 'fa-user-plus', color: '#8B5CF6', text: 'New talent signup: Maria Santos (Vocalist)', time: '2 hours ago' },
+  { icon: 'fa-guitar', color: '#F59E0B', text: 'New band registered: The Midnight Collective', time: '5 hours ago' },
+  { icon: 'fa-handshake', color: '#10B981', text: 'Vendor onboarded: Pacific Coast Entertainment', time: '8 hours ago' },
+  { icon: 'fa-building-columns', color: '#3B82F6', text: 'New venue: The Grand Ballroom, Phoenix AZ', time: '1 day ago' },
+  { icon: 'fa-clipboard-check', color: '#8B5CF6', text: 'Gig posted: "House Band — 6-Month Residency"', time: '1 day ago' },
+  { icon: 'fa-envelope', color: '#F59E0B', text: 'Booking inquiry: Sapphire Princess, Nov 2026 sailing', time: '2 days ago' },
+  { icon: 'fa-user-plus', color: '#10B981', text: 'New talent signup: Jake Torres (Magician)', time: '2 days ago' },
+  { icon: 'fa-star', color: '#EF4444', text: 'Profile verified: DJ Neon (Premium tier)', time: '3 days ago' },
+  { icon: 'fa-building-columns', color: '#3B82F6', text: 'Venue updated: Laughlin River Lodge', time: '3 days ago' },
+  { icon: 'fa-credit-card', color: '#10B981', text: 'Subscription upgraded: Coastal Talent Agency → Pro', time: '4 days ago' },
+];
+
+return (
+<div style={{ padding: '32px 24px 80px', maxWidth: 1100, margin: '0 auto' }}>
+  {/* Header */}
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+    <div>
+      <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
+        <i className="fa-solid fa-shield-halved" style={{ color: '#EF4444', marginRight: 10 }}></i>
+        Admin Control Panel
+      </h1>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Platform overview and management for StageLink365</p>
+    </div>
+    <div style={{ display: 'flex', gap: 8 }}>
+      <button className="btn btn-outline btn-sm" onClick={() => setPage('database')}><i className="fa-solid fa-database"></i> DB Schema</button>
+    </div>
+  </div>
+
+  {/* Tab bar */}
+  <div style={{ display: 'flex', gap: 4, marginBottom: 28, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 12 }}>
+    {ADMIN_TABS.map(tab => (
+      <button key={tab.key} onClick={() => setAdminTab(tab.key)}
+        style={{ background: adminTab === tab.key ? 'rgba(239,68,68,0.15)' : 'transparent', color: adminTab === tab.key ? '#EF4444' : 'var(--text-muted)', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', transition: 'all 0.2s' }}>
+        <i className={`fa-solid ${tab.icon}`} style={{ fontSize: 12 }}></i> {tab.label}
+      </button>
+    ))}
+  </div>
+
+  {/* OVERVIEW TAB */}
+  {adminTab === 'overview' && (
+  <div>
+    {/* Stats grid */}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
+      <StatCard icon="fa-users" label="Total Profiles" value={stats.totalProfiles} subtitle={`+${stats.newSignups7d} this week`} />
+      <StatCard icon="fa-microphone-lines" label="Talent" value={stats.talentCount} color="rgba(139,92,246,0.2)" />
+      <StatCard icon="fa-guitar" label="Bands" value={stats.totalBands} color="rgba(245,158,11,0.2)" />
+      <StatCard icon="fa-handshake" label="Vendors" value={stats.totalVendors} color="rgba(16,185,129,0.2)" />
+      <StatCard icon="fa-building-columns" label="Venues" value={stats.totalVenues} color="rgba(59,130,246,0.2)" />
+      <StatCard icon="fa-clipboard-list" label="Active Gigs" value={stats.activeGigs} />
+      <StatCard icon="fa-envelope" label="Messages" value={stats.totalMessages} />
+      <StatCard icon="fa-clock" label="Pending Approvals" value={stats.pendingApprovals} color="rgba(239,68,68,0.2)" subtitle="Needs review" />
+    </div>
+
+    {/* Quick actions */}
+    <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 14, padding: 24, marginBottom: 24 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}><i className="fa-solid fa-bolt" style={{ color: 'var(--accent)', marginRight: 8 }}></i>Quick Actions</h3>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button className="btn btn-primary btn-sm" onClick={() => setPage('browse')}><i className="fa-solid fa-search"></i> Browse All Profiles</button>
+        <button className="btn btn-accent btn-sm" onClick={() => setPage('gigs')}><i className="fa-solid fa-clipboard-list"></i> View Gig Board</button>
+        <button className="btn btn-outline btn-sm" onClick={() => setPage('booker')}><i className="fa-solid fa-building"></i> Booker Hub</button>
+        <button className="btn btn-outline btn-sm" onClick={() => setPage('messages')}><i className="fa-solid fa-envelope"></i> Messages</button>
+        <button className="btn btn-outline btn-sm" onClick={() => setPage('pricing')}><i className="fa-solid fa-crown"></i> Pricing Config</button>
+      </div>
+    </div>
+
+    {/* Signups by type — visual bar */}
+    <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 14, padding: 24 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}><i className="fa-solid fa-chart-bar" style={{ color: 'var(--primary-light)', marginRight: 8 }}></i>Account Distribution</h3>
+      {[
+        { label: 'Talent', count: stats.talentCount, max: 30, color: '#8B5CF6' },
+        { label: 'Bands', count: stats.totalBands, max: 30, color: '#F59E0B' },
+        { label: 'Vendors', count: stats.totalVendors, max: 30, color: '#10B981' },
+        { label: 'Venues', count: stats.totalVenues, max: 30, color: '#3B82F6' },
+      ].map(bar => (
+        <div key={bar.label} style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+          <span style={{ width: 65, fontSize: 13, fontWeight: 600, color: bar.color }}>{bar.label}</span>
+          <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 6, height: 24, overflow: 'hidden' }}>
+            <div style={{ width: `${Math.min((bar.count / bar.max) * 100, 100)}%`, height: '100%', background: bar.color, borderRadius: 6, transition: 'width 0.6s ease', display: 'flex', alignItems: 'center', paddingLeft: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{bar.count}</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+  )}
+
+  {/* USERS TAB */}
+  {adminTab === 'users' && (
+  <div>
+    <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 14, overflow: 'hidden' }}>
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--dark-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700 }}>All Profiles ({profiles.length})</h3>
+        <input placeholder="Search profiles..." style={{ maxWidth: 260, fontSize: 13, padding: '8px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--dark-border)', borderRadius: 8, color: 'var(--text)' }} />
+      </div>
+      <div style={{ maxHeight: 500, overflowY: 'auto' }}>
+        {profiles.map((p, i) => (
+          <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div className="avatar avatar-sm" style={{ width: 36, height: 36, fontSize: 12, background: 'var(--pro-gradient)' }}>
+                {(p.name || '?').split(' ').map(w => w[0]).join('').slice(0,2)}
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{(p.category || []).join(', ') || 'No category'} · {p.location || 'No location'}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {p.tier && <span className="badge" style={{ fontSize: 10, background: p.tier === 'premium' ? 'rgba(245,158,11,0.2)' : 'rgba(108,43,217,0.15)', color: p.tier === 'premium' ? 'var(--accent)' : 'var(--primary-light)' }}>{p.tier}</span>}
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.available ? '✅ Available' : '⏸️ Busy'}</span>
+            </div>
+          </div>
+        ))}
+        {profiles.length === 0 && (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No profiles yet</div>
+        )}
+      </div>
+    </div>
+  </div>
+  )}
+
+  {/* GIGS TAB */}
+  {adminTab === 'gigs' && (
+  <div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+      <StatCard icon="fa-clipboard-list" label="Active Gig Postings" value={stats.activeGigs} />
+      <StatCard icon="fa-handshake" label="Bookings This Month" value="7" color="rgba(16,185,129,0.2)" />
+    </div>
+    <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 14, padding: 24 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Recent Gig Postings</h3>
+      {[
+        { title: 'House Band — 6-Month Residency', venue: 'The Grand Ballroom', status: 'Open', apps: 12 },
+        { title: 'Solo Vocalist — Cruise Ship Contract', venue: 'Sapphire Princess', status: 'Open', apps: 8 },
+        { title: 'Corporate Event DJ — Annual Gala', venue: 'Hilton Phoenix', status: 'Reviewing', apps: 5 },
+        { title: 'Comedy Night Host — Weekend Series', venue: 'Laughlin River Lodge', status: 'Filled', apps: 15 },
+        { title: 'Tribute Band — Summer Concert Series', venue: 'Mesa Amphitheatre', status: 'Open', apps: 3 },
+      ].map((gig, i) => (
+        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{gig.title}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{gig.venue}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{gig.apps} applicants</span>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 12, background: gig.status === 'Open' ? 'rgba(16,185,129,0.15)' : gig.status === 'Reviewing' ? 'rgba(245,158,11,0.15)' : 'rgba(108,43,217,0.15)', color: gig.status === 'Open' ? '#10B981' : gig.status === 'Reviewing' ? '#F59E0B' : '#8B5CF6' }}>{gig.status}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+  )}
+
+  {/* ACTIVITY TAB */}
+  {adminTab === 'activity' && (
+  <div>
+    <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 14, padding: 24 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 20 }}><i className="fa-solid fa-clock-rotate-left" style={{ color: 'var(--accent)', marginRight: 8 }}></i>Recent Platform Activity</h3>
+      {recentActivity.map((item, i) => (
+        <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '14px 0', borderBottom: i < recentActivity.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+          <div style={{ width: 34, height: 34, borderRadius: 8, background: `${item.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <i className={`fa-solid ${item.icon}`} style={{ fontSize: 13, color: item.color }}></i>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{item.text}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{item.time}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+  )}
+</div>
+);
+}
+
+// ===========================
 // DASHBOARD PAGE
 // ===========================
 
@@ -1112,7 +1434,7 @@ return (
 );
 }
 
-const isAdmin = currentUser.role === 'admin';
+const isAdmin = currentUser.activeRole === 'admin' || (currentUser.roles && currentUser.roles.includes('admin'));
 const myProfile = profiles.find(p => p.id === currentUser.id);
 
 return (
@@ -1317,7 +1639,7 @@ return (
 <div className="modal-overlay" onClick={onClose}>
 <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 600, maxHeight: '85vh', overflowY: 'auto' }}>
 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-<h2 style={{ fontSize: 22, fontWeight: 700 }}>{currentUser && currentUser.role === 'admin' ? 'Add Performer' : 'Join StageLink365'}</h2>
+<h2 style={{ fontSize: 22, fontWeight: 700 }}>{currentUser && (currentUser.activeRole === 'admin' || (currentUser.roles && currentUser.roles.includes('admin'))) ? 'Add Performer' : 'Join StageLink365'}</h2>
 <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
 </div>
 {/* Progress */}
@@ -1474,6 +1796,14 @@ const [loading, setLoading] = useState(false);
 const handleLogin = async () => {
   if (!loginToken.trim()) { setLoginError('Please enter your access token'); return; }
   setLoading(true); setLoginError('');
+
+  // Admin shortcut — client-side admin access
+  if (loginToken.trim().toLowerCase() === 'admin' || loginToken.trim() === 'stagelink-admin') {
+    onSuccess({ id: 'admin-001', name: 'TAD Admin', email: 'terry@tadshows.com', roles: ['admin'], activeRole: 'admin', token: 'admin-token' });
+    setLoading(false);
+    return;
+  }
+
   try {
     const data = await apiPost('/auth', { token: loginToken.trim() });
     if (data.authenticated) {
@@ -2620,7 +2950,7 @@ const AREA_OPTIONS = [
 'Corporate (Nationwide)', 'Festivals (Touring)', 'South America', 'Africa'
 ];
 
-function VendorOnboarding({ setPage }) {
+function VendorOnboarding({ setPage, onComplete }) {
 const [step, setStep] = useState(0);
 const [vendorType, setVendorType] = useState(null);
 const [alsoTalent, setAlsoTalent] = useState(false);
@@ -2884,7 +3214,7 @@ return (
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
         <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
-        <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch My Profile <i className="fa-solid fa-rocket" style={{ fontSize: 14 }}></i></button>
+        <button className="btn btn-accent btn-lg" onClick={() => { setSubmitted(true); if (onComplete) onComplete(form.name || form.company, form.contact, 'vendor', alsoTalent ? 'talent' : null); }} style={{ fontWeight: 700 }}>Launch My Profile <i className="fa-solid fa-rocket" style={{ fontSize: 14 }}></i></button>
       </div>
     </OnboardingWizardCard>
   )}
@@ -2917,7 +3247,7 @@ const GIG_TYPES = [
 'Schools / Educational', 'Community Events', 'Touring Productions'
 ];
 
-function TalentOnboarding({ setPage }) {
+function TalentOnboarding({ setPage, onComplete }) {
 const [step, setStep] = useState(0);
 const [alsoVendor, setAlsoVendor] = useState(false);
 const [form, setForm] = useState({ name: '', stageName: '', phone: '', location: '', website: '', bio: '', instagram: '', linkedin: '', facebook: '', youtube: '', tiktok: '', rateMin: '', rateMax: '', ratePer: 'per show' });
@@ -3192,7 +3522,7 @@ return (
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
         <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
-        <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Go Live <i className="fa-solid fa-microphone-lines" style={{ fontSize: 14 }}></i></button>
+        <button className="btn btn-accent btn-lg" onClick={() => { setSubmitted(true); if (onComplete) onComplete(form.name || form.stageName, '', 'talent', alsoVendor ? 'vendor' : null); }} style={{ fontWeight: 700 }}>Go Live <i className="fa-solid fa-microphone-lines" style={{ fontSize: 14 }}></i></button>
       </div>
     </OnboardingWizardCard>
   )}
@@ -3246,7 +3576,7 @@ const INSTRUMENTS_LIST = [
 'Turntables / DJ', 'Synth / Electronic', 'Harp', 'Upright Bass', 'French Horn'
 ];
 
-function BandOnboarding({ setPage }) {
+function BandOnboarding({ setPage, onComplete }) {
 const [step, setStep] = useState(0);
 const [form, setForm] = useState({ bandName: '', contactName: '', contactRole: '', phone: '', location: '', website: '', bio: '', instagram: '', facebook: '', youtube: '', tiktok: '', spotify: '', rateMin: '', rateMax: '', ratePer: 'per show', setLength: '2 sets (45 min each)' });
 const [bandType, setBandType] = useState(null);
@@ -3547,7 +3877,7 @@ return (
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
         <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
-        <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch Band Profile <i className="fa-solid fa-guitar" style={{ fontSize: 14 }}></i></button>
+        <button className="btn btn-accent btn-lg" onClick={() => { setSubmitted(true); if (onComplete) onComplete(form.bandName || 'Band', '', 'band', null); }} style={{ fontWeight: 700 }}>Launch Band Profile <i className="fa-solid fa-guitar" style={{ fontSize: 14 }}></i></button>
       </div>
     </OnboardingWizardCard>
   )}
@@ -3600,7 +3930,7 @@ const BOOKING_FREQUENCY = [
 'Bi-weekly', 'Monthly', 'Seasonally', 'For special events only'
 ];
 
-function VenueOnboarding({ setPage }) {
+function VenueOnboarding({ setPage, onComplete }) {
 const [step, setStep] = useState(0);
 const [form, setForm] = useState({ venueName: '', contactName: '', contactTitle: '', phone: '', email: '', address: '', city: '', stateCountry: '', website: '', bio: '', instagram: '', facebook: '', youtube: '', tiktok: '', budgetMin: '', budgetMax: '', budgetPer: 'per act' });
 const [venueType, setVenueType] = useState(null);
@@ -3866,7 +4196,7 @@ return (
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
         <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
-        <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch Venue Profile <i className="fa-solid fa-building-columns" style={{ fontSize: 14 }}></i></button>
+        <button className="btn btn-accent btn-lg" onClick={() => { setSubmitted(true); if (onComplete) onComplete(form.venueName || 'Venue', form.email || '', 'venue', null); }} style={{ fontWeight: 700 }}>Launch Venue Profile <i className="fa-solid fa-building-columns" style={{ fontSize: 14 }}></i></button>
       </div>
     </OnboardingWizardCard>
   )}
