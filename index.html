@@ -49,6 +49,7 @@ font-size: 14px;
 outline: none;
 transition: border-color 0.2s;
 width: 100%;
+box-sizing: border-box;
 }
 input:focus, select:focus, textarea:focus { border-color: var(--primary-light); }
 .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
@@ -2499,6 +2500,67 @@ return (
 }
 
 // ===========================
+// SHARED ONBOARDING COMPONENTS
+// ===========================
+
+function OnboardingChip({ label, selected, onClick }) {
+  return React.createElement('span', { onClick, style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: selected ? 'rgba(108,43,217,0.2)' : 'var(--dark-lighter)', border: '1.5px solid ' + (selected ? 'var(--primary-light)' : 'var(--dark-border)'), borderRadius: 20, fontSize: 13, color: selected ? 'var(--primary-light)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none' } },
+    selected ? React.createElement('span', { style: { fontSize: 11 } }, '✓') : null, ' ', label
+  );
+}
+
+function OnboardingInput({ label, hint, value, onChange, placeholder, type }) {
+  return React.createElement('div', { style: { marginBottom: 20 } },
+    label ? React.createElement('label', { style: { display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 } }, label) : null,
+    React.createElement('input', { type: type || 'text', autoComplete: 'off', value: value || '', onChange, placeholder, style: { width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: '#E2E2F0', fontSize: 14, outline: 'none', boxSizing: 'border-box' } }),
+    hint ? React.createElement('div', { style: { fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 } }, hint) : null
+  );
+}
+
+function OnboardingWizardCard({ children }) {
+  return React.createElement('div', { style: { background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 20, padding: 36, maxWidth: 620, margin: '0 auto', width: '100%' } }, children);
+}
+
+function OnboardingBtnRow({ onBack, onNext, nextLabel, nextStyle }) {
+  return React.createElement('div', { style: { display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 28 } },
+    onBack ? React.createElement('button', { className: 'btn btn-outline', onClick: onBack }, React.createElement('i', { className: 'fa-solid fa-arrow-left', style: { fontSize: 12, marginRight: 6 } }), ' Back') : null,
+    React.createElement('button', { className: 'btn btn-primary', onClick: onNext, style: nextStyle || {} }, nextLabel || 'Continue', ' ', React.createElement('i', { className: 'fa-solid fa-arrow-right', style: { fontSize: 12, marginLeft: 6 } }))
+  );
+}
+
+function OnboardingAddRow({ value, onChange, onAdd, onKeyDown, placeholder }) {
+  return React.createElement('div', { style: { display: 'flex', gap: 8, marginTop: 10 } },
+    React.createElement('input', { type: 'text', autoComplete: 'off', value, onChange, onKeyDown, placeholder, style: { flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: '#E2E2F0', fontSize: 13, outline: 'none', boxSizing: 'border-box' } }),
+    React.createElement('button', { className: 'btn btn-outline btn-sm', onClick: onAdd }, '+ Add')
+  );
+}
+
+function OnboardingToggleRow({ label, desc, active, onClick }) {
+  return React.createElement('div', { onClick, style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--dark-lighter)', border: '1px solid ' + (active ? 'var(--primary)' : 'var(--dark-border)'), borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s', marginBottom: 8 } },
+    React.createElement('div', null,
+      React.createElement('div', { style: { fontSize: 14, fontWeight: 600, color: 'var(--text)' } }, label),
+      desc ? React.createElement('div', { style: { fontSize: 11, color: 'var(--text-muted)', marginTop: 2 } }, desc) : null
+    ),
+    React.createElement('div', { style: { width: 44, height: 24, background: active ? 'var(--primary)' : 'var(--dark-lighter)', borderRadius: 12, position: 'relative', transition: 'background 0.3s', border: '1px solid ' + (active ? 'var(--primary)' : 'var(--dark-border)'), flexShrink: 0 } },
+      React.createElement('div', { style: { position: 'absolute', width: 18, height: 18, background: active ? '#fff' : 'var(--text-muted)', borderRadius: '50%', top: 2, left: active ? 23 : 2, transition: 'all 0.3s' } })
+    )
+  );
+}
+
+function OnboardingProgress({ step, totalSteps, labels }) {
+  return React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', maxWidth: 540, margin: '0 auto 36px', position: 'relative' } },
+    React.createElement('div', { style: { position: 'absolute', top: 15, left: 40, right: 40, height: 2, background: 'var(--dark-border)', zIndex: 0 } }),
+    React.createElement('div', { style: { position: 'absolute', top: 15, left: 40, height: 2, background: 'var(--primary)', zIndex: 1, transition: 'width 0.4s', width: (step / (totalSteps - 1) * 84) + '%' } }),
+    labels.map(function(label, i) {
+      return React.createElement('div', { key: i, style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2, minWidth: 60 } },
+        React.createElement('div', { style: { width: 30, height: 30, borderRadius: '50%', background: i < step ? 'rgba(16,185,129,0.2)' : i === step ? 'rgba(108,43,217,0.3)' : 'var(--dark-card)', border: '2px solid ' + (i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--dark-border)'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all 0.3s' } }, i < step ? '✓' : i + 1),
+        React.createElement('span', { style: { fontSize: 11, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: i === step ? 600 : 400 } }, label)
+      );
+    })
+  );
+}
+
+// ===========================
 // VENDOR ONBOARDING WIZARD
 // ===========================
 
@@ -2551,67 +2613,11 @@ const addTeamEmail = () => { if (teamInput.trim() && !teamEmails.includes(teamIn
 
 const goTo = (s) => { setStep(s); window.scrollTo(0, 0); };
 
-// Chip component
-const Chip = ({ label, selected, onClick }) => (
-  <span onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: selected ? 'rgba(108,43,217,0.2)' : 'var(--dark-lighter)', border: `1.5px solid ${selected ? 'var(--primary-light)' : 'var(--dark-border)'}`, borderRadius: 20, fontSize: 13, color: selected ? 'var(--primary-light)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none' }}>
-    {selected && <span style={{ fontSize: 11 }}>✓</span>} {label}
-  </span>
-);
-
-// Progress bar
-const ProgressBar = () => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 500, margin: '0 auto 36px', position: 'relative' }}>
-    <div style={{ position: 'absolute', top: 15, left: 40, right: 40, height: 2, background: 'var(--dark-border)', zIndex: 0 }}></div>
-    <div style={{ position: 'absolute', top: 15, left: 40, height: 2, background: 'var(--primary)', zIndex: 1, transition: 'width 0.4s', width: `${step / (totalSteps - 1) * (100 - 16)}%` }}></div>
-    {stepLabels.map((label, i) => (
-      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2, minWidth: 60 }}>
-        <div style={{ width: 30, height: 30, borderRadius: '50%', background: i < step ? 'rgba(16,185,129,0.2)' : i === step ? 'rgba(108,43,217,0.3)' : 'var(--dark-card)', border: `2px solid ${i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--dark-border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all 0.3s' }}>
-          {i < step ? '✓' : i + 1}
-        </div>
-        <span style={{ fontSize: 11, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: i === step ? 600 : 400 }}>{label}</span>
-      </div>
-    ))}
-  </div>
-);
-
-// Card wrapper
-const WizardCard = ({ children }) => (
-  <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 20, padding: 36, maxWidth: 620, margin: '0 auto', width: '100%' }}>
-    {children}
-  </div>
-);
-
-const InputField = ({ label, hint, ...props }) => (
-  <div style={{ marginBottom: 20 }}>
-    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</label>
-    <input {...props} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
-    {hint && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>{hint}</div>}
-  </div>
-);
-
-const ToggleRow = ({ label, desc, active, onClick }) => (
-  <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--dark-lighter)', border: `1px solid ${active ? 'var(--primary)' : 'var(--dark-border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s', marginBottom: 8 }}>
-    <div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
-      {desc && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{desc}</div>}
-    </div>
-    <div style={{ width: 44, height: 24, background: active ? 'var(--primary)' : 'var(--dark-lighter)', borderRadius: 12, position: 'relative', transition: 'background 0.3s', border: `1px solid ${active ? 'var(--primary)' : 'var(--dark-border)'}`, flexShrink: 0 }}>
-      <div style={{ position: 'absolute', width: 18, height: 18, background: active ? '#fff' : 'var(--text-muted)', borderRadius: '50%', top: 2, left: active ? 23 : 2, transition: 'all 0.3s' }}></div>
-    </div>
-  </div>
-);
-
+// AdaptiveLabel (local to VendorOnboarding)
 const AdaptiveLabel = ({ type }) => (
   <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, padding: '3px 8px', borderRadius: 4, marginBottom: 16, background: type === 'agency' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)', color: type === 'agency' ? 'var(--accent)' : 'var(--success)' }}>
     {type === 'agency' ? 'Agency / Company' : 'Solo Agent'}
   </span>
-);
-
-const BtnRow = ({ onBack, onNext, nextLabel, nextStyle }) => (
-  <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 28 }}>
-    {onBack && <button className="btn btn-outline" onClick={onBack}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>}
-    <button className="btn btn-primary" onClick={onNext} style={nextStyle || {}}>{nextLabel || 'Continue'} <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
-  </div>
 );
 
 // SUCCESS screen
@@ -2637,11 +2643,11 @@ return (
     <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Set up your vendor profile to start hiring and managing talent</p>
   </div>
 
-  <ProgressBar />
+  <OnboardingProgress step={step} totalSteps={totalSteps} labels={stepLabels} />
 
   {/* STEP 1: Vendor Type */}
   {step === 0 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>What type of vendor are you?</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>This helps us tailor your experience. You can always update this later.</p>
 
@@ -2658,55 +2664,55 @@ return (
         ))}
       </div>
 
-      <ToggleRow label="I'm also a performer" desc="Activate a Talent profile alongside your Vendor account" active={alsoTalent} onClick={() => setAlsoTalent(!alsoTalent)} />
+      <OnboardingToggleRow label="I'm also a performer" desc="Activate a Talent profile alongside your Vendor account" active={alsoTalent} onClick={() => setAlsoTalent(!alsoTalent)} />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
         <button className="btn btn-primary" disabled={!vendorType} onClick={() => goTo(1)} style={{ opacity: vendorType ? 1 : 0.3, cursor: vendorType ? 'pointer' : 'not-allowed' }}>Continue <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
       </div>
-    </WizardCard>
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 2: Profile Details */}
   {step === 1 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Your Vendor Profile</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Tell us about yourself so talent and venues can find you.</p>
 
       {vendorType === 'solo' && (
         <div>
           <AdaptiveLabel type="solo" />
-          <InputField label="Full Name" placeholder="e.g., Jane Rodriguez" value={form.name} onChange={e => updateForm('name', e.target.value)} />
+          <OnboardingInput label="Full Name" placeholder="e.g., Jane Rodriguez" value={form.name} onChange={e => updateForm('name', e.target.value)} />
         </div>
       )}
 
       {vendorType === 'agency' && (
         <div>
           <AdaptiveLabel type="agency" />
-          <InputField label="Company Name" placeholder="e.g., Starlight Entertainment Group" value={form.company} onChange={e => updateForm('company', e.target.value)} />
-          <InputField label="Your Name (Primary Contact)" placeholder="e.g., Jane Rodriguez" value={form.contact} onChange={e => updateForm('contact', e.target.value)} />
-          <InputField label="Company Registration / Tax ID" placeholder="Optional — for invoicing" hint="Used for invoicing and payment verification" value={form.taxId} onChange={e => updateForm('taxId', e.target.value)} />
+          <OnboardingInput label="Company Name" placeholder="e.g., Starlight Entertainment Group" value={form.company} onChange={e => updateForm('company', e.target.value)} />
+          <OnboardingInput label="Your Name (Primary Contact)" placeholder="e.g., Jane Rodriguez" value={form.contact} onChange={e => updateForm('contact', e.target.value)} />
+          <OnboardingInput label="Company Registration / Tax ID" placeholder="Optional — for invoicing" hint="Used for invoicing and payment verification" value={form.taxId} onChange={e => updateForm('taxId', e.target.value)} />
         </div>
       )}
 
-      <InputField label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
-      <InputField label="Location" placeholder="City, State / Country" value={form.location} onChange={e => updateForm('location', e.target.value)} />
-      <InputField label="Website" placeholder="https://yoursite.com" hint="Optional — helps build trust with talent" value={form.website} onChange={e => updateForm('website', e.target.value)} />
+      <OnboardingInput label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
+      <OnboardingInput label="Location" placeholder="City, State / Country" value={form.location} onChange={e => updateForm('location', e.target.value)} />
+      <OnboardingInput label="Website" placeholder="https://yoursite.com" hint="Optional — helps build trust with talent" value={form.website} onChange={e => updateForm('website', e.target.value)} />
 
-      <BtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 3: Services & Specialties */}
   {step === 2 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Services & Specialties</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help talent understand what you're looking for and what you offer.</p>
 
       <div style={{ marginBottom: 24 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>What are you looking to do?</label>
-        <ToggleRow label="Hire talent for events" desc="Book performers directly for gigs and shows" active={services.hire} onClick={() => setServices(prev => ({ ...prev, hire: !prev.hire }))} />
-        <ToggleRow label="Represent talent (agent/manager)" desc="Manage and book on behalf of your roster" active={services.represent} onClick={() => setServices(prev => ({ ...prev, represent: !prev.represent }))} />
-        <ToggleRow label="Produce or promote shows" desc="Organize events and source entertainment" active={services.produce} onClick={() => setServices(prev => ({ ...prev, produce: !prev.produce }))} />
+        <OnboardingToggleRow label="Hire talent for events" desc="Book performers directly for gigs and shows" active={services.hire} onClick={() => setServices(prev => ({ ...prev, hire: !prev.hire }))} />
+        <OnboardingToggleRow label="Represent talent (agent/manager)" desc="Manage and book on behalf of your roster" active={services.represent} onClick={() => setServices(prev => ({ ...prev, represent: !prev.represent }))} />
+        <OnboardingToggleRow label="Produce or promote shows" desc="Organize events and source entertainment" active={services.produce} onClick={() => setServices(prev => ({ ...prev, produce: !prev.produce }))} />
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -2714,7 +2720,7 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select all that apply — you can also add your own</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...GENRE_OPTIONS, ...selectedGenres.filter(g => !GENRE_OPTIONS.includes(g))])].map(g => (
-            <Chip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleGenre(g)} />
+            <OnboardingChip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleGenre(g)} />
           ))}
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
@@ -2728,7 +2734,7 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select the regions where you book or source talent</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].map(a => (
-            <Chip key={a} label={a} selected={selectedAreas.includes(a)} onClick={() => toggleArea(a)} />
+            <OnboardingChip key={a} label={a} selected={selectedAreas.includes(a)} onClick={() => toggleArea(a)} />
           ))}
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
@@ -2754,13 +2760,13 @@ return (
         </div>
       )}
 
-      <BtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 4: Branding & Media */}
   {step === 3 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Branding & Media</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make your profile stand out — first impressions matter.</p>
 
@@ -2795,18 +2801,18 @@ return (
 
       <div style={{ marginBottom: 4 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Social Links</label>
-        <InputField label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
-        <InputField label="" placeholder="LinkedIn URL" value={form.linkedin} onChange={e => updateForm('linkedin', e.target.value)} />
-        <InputField label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
+        <OnboardingInput label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
+        <OnboardingInput label="" placeholder="LinkedIn URL" value={form.linkedin} onChange={e => updateForm('linkedin', e.target.value)} />
+        <OnboardingInput label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
       </div>
 
-      <BtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 5: Review */}
   {step === 4 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Review Your Profile</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make sure everything looks good before going live.</p>
 
@@ -2845,7 +2851,7 @@ return (
         <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
         <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch My Profile <i className="fa-solid fa-rocket" style={{ fontSize: 14 }}></i></button>
       </div>
-    </WizardCard>
+    </OnboardingWizardCard>
   )}
 </div>
 );
@@ -2904,68 +2910,6 @@ const addSkill = () => { if (skillInput.trim() && !skills.includes(skillInput.tr
 
 const goTo = (s) => { setStep(s); window.scrollTo(0, 0); };
 
-// Reusable Chip
-const Chip = ({ label, selected, onClick }) => (
-  <span onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: selected ? 'rgba(108,43,217,0.2)' : 'var(--dark-lighter)', border: `1.5px solid ${selected ? 'var(--primary-light)' : 'var(--dark-border)'}`, borderRadius: 20, fontSize: 13, color: selected ? 'var(--primary-light)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none' }}>
-    {selected && <span style={{ fontSize: 11 }}>✓</span>} {label}
-  </span>
-);
-
-// Progress bar
-const ProgressBar = () => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 540, margin: '0 auto 36px', position: 'relative' }}>
-    <div style={{ position: 'absolute', top: 15, left: 40, right: 40, height: 2, background: 'var(--dark-border)', zIndex: 0 }}></div>
-    <div style={{ position: 'absolute', top: 15, left: 40, height: 2, background: 'var(--primary)', zIndex: 1, transition: 'width 0.4s', width: `${step / (totalSteps - 1) * (100 - 16)}%` }}></div>
-    {stepLabels.map((label, i) => (
-      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2, minWidth: 60 }}>
-        <div style={{ width: 30, height: 30, borderRadius: '50%', background: i < step ? 'rgba(16,185,129,0.2)' : i === step ? 'rgba(108,43,217,0.3)' : 'var(--dark-card)', border: `2px solid ${i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--dark-border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all 0.3s' }}>
-          {i < step ? '✓' : i + 1}
-        </div>
-        <span style={{ fontSize: 11, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: i === step ? 600 : 400 }}>{label}</span>
-      </div>
-    ))}
-  </div>
-);
-
-const WizardCard = ({ children }) => (
-  <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 20, padding: 36, maxWidth: 620, margin: '0 auto', width: '100%' }}>{children}</div>
-);
-
-const InputField = ({ label, hint, ...props }) => (
-  <div style={{ marginBottom: 20 }}>
-    {label && <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</label>}
-    <input {...props} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
-    {hint && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>{hint}</div>}
-  </div>
-);
-
-const ToggleRow = ({ label, desc, active, onClick }) => (
-  <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--dark-lighter)', border: `1px solid ${active ? 'var(--primary)' : 'var(--dark-border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s', marginBottom: 8 }}>
-    <div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
-      {desc && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{desc}</div>}
-    </div>
-    <div style={{ width: 44, height: 24, background: active ? 'var(--primary)' : 'var(--dark-lighter)', borderRadius: 12, position: 'relative', transition: 'background 0.3s', border: `1px solid ${active ? 'var(--primary)' : 'var(--dark-border)'}`, flexShrink: 0 }}>
-      <div style={{ position: 'absolute', width: 18, height: 18, background: active ? '#fff' : 'var(--text-muted)', borderRadius: '50%', top: 2, left: active ? 23 : 2, transition: 'all 0.3s' }}></div>
-    </div>
-  </div>
-);
-
-const BtnRow = ({ onBack, onNext, nextLabel, nextStyle }) => (
-  <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 28 }}>
-    {onBack && <button className="btn btn-outline" onClick={onBack}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>}
-    <button className="btn btn-primary" onClick={onNext} style={nextStyle || {}}>{nextLabel || 'Continue'} <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
-  </div>
-);
-
-// Custom add row
-const AddRow = ({ value, onChange, onAdd, onKeyDown, placeholder }) => (
-  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-    <input value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} style={{ flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
-    <button className="btn btn-outline btn-sm" onClick={onAdd}>+ Add</button>
-  </div>
-);
-
 // SUCCESS
 if (submitted) {
   return (
@@ -2989,37 +2933,37 @@ return (
     <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Join the marketplace and get discovered by venues, agents, and bookers</p>
   </div>
 
-  <ProgressBar />
+  <OnboardingProgress step={step} totalSteps={totalSteps} labels={stepLabels} />
 
   {/* STEP 1: About You */}
   {step === 0 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>About You</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Let's start with the basics so we can set up your profile.</p>
 
-      <InputField label="Full Name" placeholder="e.g., Marcus Rivera" value={form.name} onChange={e => updateForm('name', e.target.value)} />
-      <InputField label="Stage Name (optional)" placeholder="e.g., Marc the Magnificent" hint="Leave blank if you perform under your real name" value={form.stageName} onChange={e => updateForm('stageName', e.target.value)} />
-      <InputField label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
-      <InputField label="Location" placeholder="City, State / Country" hint="Where you're based — not where you're willing to travel" value={form.location} onChange={e => updateForm('location', e.target.value)} />
+      <OnboardingInput label="Full Name" placeholder="e.g., Marcus Rivera" value={form.name} onChange={e => updateForm('name', e.target.value)} />
+      <OnboardingInput label="Stage Name (optional)" placeholder="e.g., Marc the Magnificent" hint="Leave blank if you perform under your real name" value={form.stageName} onChange={e => updateForm('stageName', e.target.value)} />
+      <OnboardingInput label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
+      <OnboardingInput label="Location" placeholder="City, State / Country" hint="Where you're based — not where you're willing to travel" value={form.location} onChange={e => updateForm('location', e.target.value)} />
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Experience Level</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {EXPERIENCE_LEVELS.map(lvl => (
-            <Chip key={lvl} label={lvl} selected={experienceLevel === lvl} onClick={() => setExperienceLevel(lvl)} />
+            <OnboardingChip key={lvl} label={lvl} selected={experienceLevel === lvl} onClick={() => setExperienceLevel(lvl)} />
           ))}
         </div>
       </div>
 
-      <ToggleRow label="I also book or represent talent" desc="Activate a Vendor profile alongside your Talent account" active={alsoVendor} onClick={() => setAlsoVendor(!alsoVendor)} />
+      <OnboardingToggleRow label="I also book or represent talent" desc="Activate a Vendor profile alongside your Talent account" active={alsoVendor} onClick={() => setAlsoVendor(!alsoVendor)} />
 
-      <BtnRow onNext={() => goTo(1)} />
-    </WizardCard>
+      <OnboardingBtnRow onNext={() => goTo(1)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 2: Performance Details */}
   {step === 1 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Your Performance</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Tell us what you do so the right opportunities find you.</p>
 
@@ -3028,10 +2972,10 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select all that describe your act</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...PERFORMANCE_TYPES, ...selectedPerformanceTypes.filter(p => !PERFORMANCE_TYPES.includes(p))])].map(p => (
-            <Chip key={p} label={p} selected={selectedPerformanceTypes.includes(p)} onClick={() => toggleItem(selectedPerformanceTypes, setSelectedPerformanceTypes, p)} />
+            <OnboardingChip key={p} label={p} selected={selectedPerformanceTypes.includes(p)} onClick={() => toggleItem(selectedPerformanceTypes, setSelectedPerformanceTypes, p)} />
           ))}
         </div>
-        <AddRow value={customPerfType} onChange={e => setCustomPerfType(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customPerfType, selectedPerformanceTypes, setSelectedPerformanceTypes, setCustomPerfType))} onAdd={() => addCustom(customPerfType, selectedPerformanceTypes, setSelectedPerformanceTypes, setCustomPerfType)} placeholder="Add a custom performance type..." />
+        <OnboardingAddRow value={customPerfType} onChange={e => setCustomPerfType(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customPerfType, selectedPerformanceTypes, setSelectedPerformanceTypes, setCustomPerfType))} onAdd={() => addCustom(customPerfType, selectedPerformanceTypes, setSelectedPerformanceTypes, setCustomPerfType)} placeholder="Add a custom performance type..." />
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -3039,10 +2983,10 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What genres or styles does your act cover?</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...GENRE_OPTIONS, ...selectedGenres.filter(g => !GENRE_OPTIONS.includes(g))])].map(g => (
-            <Chip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleItem(selectedGenres, setSelectedGenres, g)} />
+            <OnboardingChip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleItem(selectedGenres, setSelectedGenres, g)} />
           ))}
         </div>
-        <AddRow value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre))} onAdd={() => addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre)} placeholder="Add a custom genre..." />
+        <OnboardingAddRow value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre))} onAdd={() => addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre)} placeholder="Add a custom genre..." />
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -3053,16 +2997,16 @@ return (
             <span key={i} className="tag">{s} <span className="tag-remove" onClick={() => setSkills(prev => prev.filter((_, j) => j !== i))}>×</span></span>
           ))}
         </div>
-        <AddRow value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())} onAdd={addSkill} placeholder="Add a skill or extra..." />
+        <OnboardingAddRow value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())} onAdd={addSkill} placeholder="Add a skill or extra..." />
       </div>
 
-      <BtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 3: Rates & Service Areas */}
   {step === 2 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Rates & Availability</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help bookers understand your pricing and where you're available.</p>
 
@@ -3092,10 +3036,10 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What kinds of venues or events do you perform at?</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...GIG_TYPES, ...selectedGigTypes.filter(g => !GIG_TYPES.includes(g))])].map(g => (
-            <Chip key={g} label={g} selected={selectedGigTypes.includes(g)} onClick={() => toggleItem(selectedGigTypes, setSelectedGigTypes, g)} />
+            <OnboardingChip key={g} label={g} selected={selectedGigTypes.includes(g)} onClick={() => toggleItem(selectedGigTypes, setSelectedGigTypes, g)} />
           ))}
         </div>
-        <AddRow value={customGigType} onChange={e => setCustomGigType(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType))} onAdd={() => addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType)} placeholder="Add a custom gig type..." />
+        <OnboardingAddRow value={customGigType} onChange={e => setCustomGigType(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType))} onAdd={() => addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType)} placeholder="Add a custom gig type..." />
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -3103,19 +3047,19 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select the regions you're available to work in</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].map(a => (
-            <Chip key={a} label={a} selected={selectedAreas.includes(a)} onClick={() => toggleItem(selectedAreas, setSelectedAreas, a)} />
+            <OnboardingChip key={a} label={a} selected={selectedAreas.includes(a)} onClick={() => toggleItem(selectedAreas, setSelectedAreas, a)} />
           ))}
         </div>
-        <AddRow value={customArea} onChange={e => setCustomArea(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea))} onAdd={() => addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea)} placeholder="Add a custom region..." />
+        <OnboardingAddRow value={customArea} onChange={e => setCustomArea(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea))} onAdd={() => addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea)} placeholder="Add a custom region..." />
       </div>
 
-      <BtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 4: Media & Bio */}
   {step === 3 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Media & Bio</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Showcase your act — this is what gets you booked.</p>
 
@@ -3158,20 +3102,20 @@ return (
 
       <div style={{ marginBottom: 4 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Social & Web Links</label>
-        <InputField label="" placeholder="Website URL" value={form.website} onChange={e => updateForm('website', e.target.value)} />
-        <InputField label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
-        <InputField label="" placeholder="YouTube Channel URL" value={form.youtube} onChange={e => updateForm('youtube', e.target.value)} />
-        <InputField label="" placeholder="TikTok URL" value={form.tiktok} onChange={e => updateForm('tiktok', e.target.value)} />
-        <InputField label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
+        <OnboardingInput label="" placeholder="Website URL" value={form.website} onChange={e => updateForm('website', e.target.value)} />
+        <OnboardingInput label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
+        <OnboardingInput label="" placeholder="YouTube Channel URL" value={form.youtube} onChange={e => updateForm('youtube', e.target.value)} />
+        <OnboardingInput label="" placeholder="TikTok URL" value={form.tiktok} onChange={e => updateForm('tiktok', e.target.value)} />
+        <OnboardingInput label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
       </div>
 
-      <BtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 5: Review */}
   {step === 4 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Review Your Profile</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make sure everything looks good before going live.</p>
 
@@ -3212,7 +3156,7 @@ return (
         <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
         <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Go Live <i className="fa-solid fa-microphone-lines" style={{ fontSize: 14 }}></i></button>
       </div>
-    </WizardCard>
+    </OnboardingWizardCard>
   )}
 </div>
 );
@@ -3293,53 +3237,6 @@ const removeMember = (i) => setMembers(prev => prev.filter((_, j) => j !== i));
 
 const goTo = (s) => { setStep(s); window.scrollTo(0, 0); };
 
-const Chip = ({ label, selected, onClick }) => (
-  <span onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: selected ? 'rgba(108,43,217,0.2)' : 'var(--dark-lighter)', border: `1.5px solid ${selected ? 'var(--primary-light)' : 'var(--dark-border)'}`, borderRadius: 20, fontSize: 13, color: selected ? 'var(--primary-light)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none' }}>
-    {selected && <span style={{ fontSize: 11 }}>✓</span>} {label}
-  </span>
-);
-
-const ProgressBar = () => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 540, margin: '0 auto 36px', position: 'relative' }}>
-    <div style={{ position: 'absolute', top: 15, left: 40, right: 40, height: 2, background: 'var(--dark-border)', zIndex: 0 }}></div>
-    <div style={{ position: 'absolute', top: 15, left: 40, height: 2, background: 'var(--primary)', zIndex: 1, transition: 'width 0.4s', width: `${step / (totalSteps - 1) * (100 - 16)}%` }}></div>
-    {stepLabels.map((label, i) => (
-      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2, minWidth: 60 }}>
-        <div style={{ width: 30, height: 30, borderRadius: '50%', background: i < step ? 'rgba(16,185,129,0.2)' : i === step ? 'rgba(108,43,217,0.3)' : 'var(--dark-card)', border: `2px solid ${i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--dark-border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all 0.3s' }}>
-          {i < step ? '✓' : i + 1}
-        </div>
-        <span style={{ fontSize: 11, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: i === step ? 600 : 400 }}>{label}</span>
-      </div>
-    ))}
-  </div>
-);
-
-const WizardCard = ({ children }) => (
-  <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 20, padding: 36, maxWidth: 620, margin: '0 auto', width: '100%' }}>{children}</div>
-);
-
-const InputField = ({ label, hint, ...props }) => (
-  <div style={{ marginBottom: 20 }}>
-    {label && <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</label>}
-    <input {...props} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
-    {hint && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>{hint}</div>}
-  </div>
-);
-
-const BtnRow = ({ onBack, onNext, nextLabel, nextStyle }) => (
-  <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 28 }}>
-    {onBack && <button className="btn btn-outline" onClick={onBack}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>}
-    <button className="btn btn-primary" onClick={onNext} style={nextStyle || {}}>{nextLabel || 'Continue'} <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
-  </div>
-);
-
-const AddRow = ({ value, onChange, onAdd, onKeyDown, placeholder }) => (
-  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-    <input value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} style={{ flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
-    <button className="btn btn-outline btn-sm" onClick={onAdd}>+ Add</button>
-  </div>
-);
-
 // SUCCESS
 if (submitted) {
   return (
@@ -3363,25 +3260,25 @@ return (
     <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Get your band discovered by venues, agents, and bookers worldwide</p>
   </div>
 
-  <ProgressBar />
+  <OnboardingProgress step={step} totalSteps={totalSteps} labels={stepLabels} />
 
   {/* STEP 1: Band Info */}
   {step === 0 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>About Your Band</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>The basics — who you are and how to reach you.</p>
 
-      <InputField label="Band / Group Name" placeholder="e.g., The Harbour Lights" value={form.bandName} onChange={e => updateForm('bandName', e.target.value)} />
-      <InputField label="Primary Contact Name" placeholder="e.g., Marcus Rivera" value={form.contactName} onChange={e => updateForm('contactName', e.target.value)} />
-      <InputField label="Your Role in the Band" placeholder="e.g., Band Leader, Manager, Lead Vocalist" value={form.contactRole} onChange={e => updateForm('contactRole', e.target.value)} />
-      <InputField label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
-      <InputField label="Based In" placeholder="City, State / Country" value={form.location} onChange={e => updateForm('location', e.target.value)} />
+      <OnboardingInput label="Band / Group Name" placeholder="e.g., The Harbour Lights" value={form.bandName} onChange={e => updateForm('bandName', e.target.value)} />
+      <OnboardingInput label="Primary Contact Name" placeholder="e.g., Marcus Rivera" value={form.contactName} onChange={e => updateForm('contactName', e.target.value)} />
+      <OnboardingInput label="Your Role in the Band" placeholder="e.g., Band Leader, Manager, Lead Vocalist" value={form.contactRole} onChange={e => updateForm('contactRole', e.target.value)} />
+      <OnboardingInput label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
+      <OnboardingInput label="Based In" placeholder="City, State / Country" value={form.location} onChange={e => updateForm('location', e.target.value)} />
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Band Size</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {BAND_SIZES.map(s => (
-            <Chip key={s} label={s} selected={bandSize === s} onClick={() => setBandSize(s)} />
+            <OnboardingChip key={s} label={s} selected={bandSize === s} onClick={() => setBandSize(s)} />
           ))}
         </div>
       </div>
@@ -3391,7 +3288,7 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What best describes your act?</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {BAND_TYPES.map(t => (
-            <Chip key={t} label={t} selected={bandType === t} onClick={() => setBandType(bandType === t ? null : t)} />
+            <OnboardingChip key={t} label={t} selected={bandType === t} onClick={() => setBandType(bandType === t ? null : t)} />
           ))}
         </div>
       </div>
@@ -3411,13 +3308,13 @@ return (
         <button className="btn btn-outline btn-sm" onClick={addMember} style={{ marginTop: 4 }}><i className="fa-solid fa-plus" style={{ fontSize: 11 }}></i> Add Member</button>
       </div>
 
-      <BtnRow onNext={() => goTo(1)} />
-    </WizardCard>
+      <OnboardingBtnRow onNext={() => goTo(1)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 2: Sound & Style */}
   {step === 1 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Sound & Style</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help bookers understand your sound so the right gigs find you.</p>
 
@@ -3426,10 +3323,10 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select all that describe your sound</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...BAND_GENRES, ...selectedGenres.filter(g => !BAND_GENRES.includes(g))])].map(g => (
-            <Chip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleItem(selectedGenres, setSelectedGenres, g)} />
+            <OnboardingChip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleItem(selectedGenres, setSelectedGenres, g)} />
           ))}
         </div>
-        <AddRow value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre))} onAdd={() => addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre)} placeholder="Add a custom genre..." />
+        <OnboardingAddRow value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre))} onAdd={() => addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre)} placeholder="Add a custom genre..." />
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -3437,28 +3334,28 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What instruments make up your lineup?</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...INSTRUMENTS_LIST, ...selectedInstruments.filter(i => !INSTRUMENTS_LIST.includes(i))])].map(inst => (
-            <Chip key={inst} label={inst} selected={selectedInstruments.includes(inst)} onClick={() => toggleItem(selectedInstruments, setSelectedInstruments, inst)} />
+            <OnboardingChip key={inst} label={inst} selected={selectedInstruments.includes(inst)} onClick={() => toggleItem(selectedInstruments, setSelectedInstruments, inst)} />
           ))}
         </div>
-        <AddRow value={customInstrument} onChange={e => setCustomInstrument(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customInstrument, selectedInstruments, setSelectedInstruments, setCustomInstrument))} onAdd={() => addCustom(customInstrument, selectedInstruments, setSelectedInstruments, setCustomInstrument)} placeholder="Add a custom instrument..." />
+        <OnboardingAddRow value={customInstrument} onChange={e => setCustomInstrument(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customInstrument, selectedInstruments, setSelectedInstruments, setCustomInstrument))} onAdd={() => addCustom(customInstrument, selectedInstruments, setSelectedInstruments, setCustomInstrument)} placeholder="Add a custom instrument..." />
       </div>
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Typical Set Length</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {['1 set (30-45 min)', '1 set (60 min)', '2 sets (45 min each)', '2 sets (60 min each)', '3 sets (45 min each)', 'Full show (90+ min)', 'Flexible / Custom'].map(s => (
-            <Chip key={s} label={s} selected={form.setLength === s} onClick={() => updateForm('setLength', s)} />
+            <OnboardingChip key={s} label={s} selected={form.setLength === s} onClick={() => updateForm('setLength', s)} />
           ))}
         </div>
       </div>
 
-      <BtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 3: Rates & Service Areas */}
   {step === 2 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Rates & Availability</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help bookers understand your pricing and where you're available.</p>
 
@@ -3489,10 +3386,10 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What kinds of events does your band play?</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...GIG_TYPES, ...selectedGigTypes.filter(g => !GIG_TYPES.includes(g))])].map(g => (
-            <Chip key={g} label={g} selected={selectedGigTypes.includes(g)} onClick={() => toggleItem(selectedGigTypes, setSelectedGigTypes, g)} />
+            <OnboardingChip key={g} label={g} selected={selectedGigTypes.includes(g)} onClick={() => toggleItem(selectedGigTypes, setSelectedGigTypes, g)} />
           ))}
         </div>
-        <AddRow value={customGigType} onChange={e => setCustomGigType(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType))} onAdd={() => addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType)} placeholder="Add a custom gig type..." />
+        <OnboardingAddRow value={customGigType} onChange={e => setCustomGigType(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType))} onAdd={() => addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType)} placeholder="Add a custom gig type..." />
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -3500,19 +3397,19 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select the regions your band is available to play</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].map(a => (
-            <Chip key={a} label={a} selected={selectedAreas.includes(a)} onClick={() => toggleItem(selectedAreas, setSelectedAreas, a)} />
+            <OnboardingChip key={a} label={a} selected={selectedAreas.includes(a)} onClick={() => toggleItem(selectedAreas, setSelectedAreas, a)} />
           ))}
         </div>
-        <AddRow value={customArea} onChange={e => setCustomArea(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea))} onAdd={() => addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea)} placeholder="Add a custom region..." />
+        <OnboardingAddRow value={customArea} onChange={e => setCustomArea(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea))} onAdd={() => addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea)} placeholder="Add a custom region..." />
       </div>
 
-      <BtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 4: Media & Bio */}
   {step === 3 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Media & Bio</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Showcase your band — great media is what gets you booked.</p>
 
@@ -3555,21 +3452,21 @@ return (
 
       <div style={{ marginBottom: 4 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Social & Streaming Links</label>
-        <InputField label="" placeholder="Website URL" value={form.website} onChange={e => updateForm('website', e.target.value)} />
-        <InputField label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
-        <InputField label="" placeholder="YouTube Channel URL" value={form.youtube} onChange={e => updateForm('youtube', e.target.value)} />
-        <InputField label="" placeholder="Spotify Artist Page" value={form.spotify} onChange={e => updateForm('spotify', e.target.value)} />
-        <InputField label="" placeholder="TikTok URL" value={form.tiktok} onChange={e => updateForm('tiktok', e.target.value)} />
-        <InputField label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
+        <OnboardingInput label="" placeholder="Website URL" value={form.website} onChange={e => updateForm('website', e.target.value)} />
+        <OnboardingInput label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
+        <OnboardingInput label="" placeholder="YouTube Channel URL" value={form.youtube} onChange={e => updateForm('youtube', e.target.value)} />
+        <OnboardingInput label="" placeholder="Spotify Artist Page" value={form.spotify} onChange={e => updateForm('spotify', e.target.value)} />
+        <OnboardingInput label="" placeholder="TikTok URL" value={form.tiktok} onChange={e => updateForm('tiktok', e.target.value)} />
+        <OnboardingInput label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
       </div>
 
-      <BtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 5: Review */}
   {step === 4 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Review Your Band Profile</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make sure everything looks good before going live.</p>
 
@@ -3611,7 +3508,7 @@ return (
         <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
         <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch Band Profile <i className="fa-solid fa-guitar" style={{ fontSize: 14 }}></i></button>
       </div>
-    </WizardCard>
+    </OnboardingWizardCard>
   )}
 </div>
 );
@@ -3685,53 +3582,6 @@ const addCustom = (val, list, setList, setInput) => { if (val.trim() && !list.in
 
 const goTo = (s) => { setStep(s); window.scrollTo(0, 0); };
 
-const Chip = ({ label, selected, onClick }) => (
-  <span onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: selected ? 'rgba(108,43,217,0.2)' : 'var(--dark-lighter)', border: `1.5px solid ${selected ? 'var(--primary-light)' : 'var(--dark-border)'}`, borderRadius: 20, fontSize: 13, color: selected ? 'var(--primary-light)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none' }}>
-    {selected && <span style={{ fontSize: 11 }}>✓</span>} {label}
-  </span>
-);
-
-const ProgressBar = () => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 540, margin: '0 auto 36px', position: 'relative' }}>
-    <div style={{ position: 'absolute', top: 15, left: 40, right: 40, height: 2, background: 'var(--dark-border)', zIndex: 0 }}></div>
-    <div style={{ position: 'absolute', top: 15, left: 40, height: 2, background: 'var(--primary)', zIndex: 1, transition: 'width 0.4s', width: `${step / (totalSteps - 1) * (100 - 16)}%` }}></div>
-    {stepLabels.map((label, i) => (
-      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2, minWidth: 60 }}>
-        <div style={{ width: 30, height: 30, borderRadius: '50%', background: i < step ? 'rgba(16,185,129,0.2)' : i === step ? 'rgba(108,43,217,0.3)' : 'var(--dark-card)', border: `2px solid ${i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--dark-border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all 0.3s' }}>
-          {i < step ? '✓' : i + 1}
-        </div>
-        <span style={{ fontSize: 11, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: i === step ? 600 : 400 }}>{label}</span>
-      </div>
-    ))}
-  </div>
-);
-
-const WizardCard = ({ children }) => (
-  <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 20, padding: 36, maxWidth: 620, margin: '0 auto', width: '100%' }}>{children}</div>
-);
-
-const InputField = ({ label, hint, ...props }) => (
-  <div style={{ marginBottom: 20 }}>
-    {label && <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</label>}
-    <input {...props} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
-    {hint && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>{hint}</div>}
-  </div>
-);
-
-const BtnRow = ({ onBack, onNext, nextLabel, nextStyle }) => (
-  <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 28 }}>
-    {onBack && <button className="btn btn-outline" onClick={onBack}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>}
-    <button className="btn btn-primary" onClick={onNext} style={nextStyle || {}}>{nextLabel || 'Continue'} <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
-  </div>
-);
-
-const AddRow = ({ value, onChange, onAdd, onKeyDown, placeholder }) => (
-  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-    <input value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} style={{ flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
-    <button className="btn btn-outline btn-sm" onClick={onAdd}>+ Add</button>
-  </div>
-);
-
 // SUCCESS
 if (submitted) {
   return (
@@ -3755,35 +3605,35 @@ return (
     <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>List your venue and start booking the best entertainment</p>
   </div>
 
-  <ProgressBar />
+  <OnboardingProgress step={step} totalSteps={totalSteps} labels={stepLabels} />
 
   {/* STEP 1: Venue Info */}
   {step === 0 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>About Your Venue</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Basic details so talent and agents can find and contact you.</p>
 
-      <InputField label="Venue Name" placeholder="e.g., The Blue Note Jazz Club" value={form.venueName} onChange={e => updateForm('venueName', e.target.value)} />
+      <OnboardingInput label="Venue Name" placeholder="e.g., The Blue Note Jazz Club" value={form.venueName} onChange={e => updateForm('venueName', e.target.value)} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <InputField label="Contact Name" placeholder="e.g., Sarah Chen" value={form.contactName} onChange={e => updateForm('contactName', e.target.value)} />
-        <InputField label="Title / Role" placeholder="e.g., Entertainment Director" value={form.contactTitle} onChange={e => updateForm('contactTitle', e.target.value)} />
+        <OnboardingInput label="Contact Name" placeholder="e.g., Sarah Chen" value={form.contactName} onChange={e => updateForm('contactName', e.target.value)} />
+        <OnboardingInput label="Title / Role" placeholder="e.g., Entertainment Director" value={form.contactTitle} onChange={e => updateForm('contactTitle', e.target.value)} />
       </div>
 
-      <InputField label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
-      <InputField label="Booking Email" placeholder="booking@yourvenue.com" hint="This is the email talent and agents will use to reach you" value={form.email} onChange={e => updateForm('email', e.target.value)} />
-      <InputField label="Street Address" placeholder="123 Main Street" value={form.address} onChange={e => updateForm('address', e.target.value)} />
+      <OnboardingInput label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
+      <OnboardingInput label="Booking Email" placeholder="booking@yourvenue.com" hint="This is the email talent and agents will use to reach you" value={form.email} onChange={e => updateForm('email', e.target.value)} />
+      <OnboardingInput label="Street Address" placeholder="123 Main Street" value={form.address} onChange={e => updateForm('address', e.target.value)} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <InputField label="City" placeholder="e.g., New York" value={form.city} onChange={e => updateForm('city', e.target.value)} />
-        <InputField label="State / Country" placeholder="e.g., NY, USA" value={form.stateCountry} onChange={e => updateForm('stateCountry', e.target.value)} />
+        <OnboardingInput label="City" placeholder="e.g., New York" value={form.city} onChange={e => updateForm('city', e.target.value)} />
+        <OnboardingInput label="State / Country" placeholder="e.g., NY, USA" value={form.stateCountry} onChange={e => updateForm('stateCountry', e.target.value)} />
       </div>
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Venue Type</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {VENUE_TYPES.map(t => (
-            <Chip key={t} label={t} selected={venueType === t} onClick={() => setVenueType(venueType === t ? null : t)} />
+            <OnboardingChip key={t} label={t} selected={venueType === t} onClick={() => setVenueType(venueType === t ? null : t)} />
           ))}
         </div>
       </div>
@@ -3792,18 +3642,18 @@ return (
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Capacity</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {VENUE_CAPACITY.map(c => (
-            <Chip key={c} label={c} selected={capacity === c} onClick={() => setCapacity(capacity === c ? null : c)} />
+            <OnboardingChip key={c} label={c} selected={capacity === c} onClick={() => setCapacity(capacity === c ? null : c)} />
           ))}
         </div>
       </div>
 
-      <BtnRow onNext={() => goTo(1)} />
-    </WizardCard>
+      <OnboardingBtnRow onNext={() => goTo(1)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 2: Stage & Technical */}
   {step === 1 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Stage & Technical</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help performers know what to expect when they play your venue.</p>
 
@@ -3812,10 +3662,10 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select everything your venue provides</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...STAGE_FEATURES, ...selectedStageFeatures.filter(f => !STAGE_FEATURES.includes(f))])].map(f => (
-            <Chip key={f} label={f} selected={selectedStageFeatures.includes(f)} onClick={() => toggleItem(selectedStageFeatures, setSelectedStageFeatures, f)} />
+            <OnboardingChip key={f} label={f} selected={selectedStageFeatures.includes(f)} onClick={() => toggleItem(selectedStageFeatures, setSelectedStageFeatures, f)} />
           ))}
         </div>
-        <AddRow value={customStageFeature} onChange={e => setCustomStageFeature(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customStageFeature, selectedStageFeatures, setSelectedStageFeatures, setCustomStageFeature))} onAdd={() => addCustom(customStageFeature, selectedStageFeatures, setSelectedStageFeatures, setCustomStageFeature)} placeholder="Add a custom feature..." />
+        <OnboardingAddRow value={customStageFeature} onChange={e => setCustomStageFeature(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customStageFeature, selectedStageFeatures, setSelectedStageFeatures, setCustomStageFeature))} onAdd={() => addCustom(customStageFeature, selectedStageFeatures, setSelectedStageFeatures, setCustomStageFeature)} placeholder="Add a custom feature..." />
       </div>
 
       <div style={{ marginBottom: 20 }}>
@@ -3824,13 +3674,13 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>This saves talent from asking — and speeds up booking</div>
       </div>
 
-      <BtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 3: Entertainment Needs */}
   {step === 2 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Entertainment Needs</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Tell us what you're looking for so we can match you with the right talent.</p>
 
@@ -3839,10 +3689,10 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What kinds of acts do you book?</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...ENTERTAINMENT_NEEDS, ...selectedEntNeeds.filter(n => !ENTERTAINMENT_NEEDS.includes(n))])].map(n => (
-            <Chip key={n} label={n} selected={selectedEntNeeds.includes(n)} onClick={() => toggleItem(selectedEntNeeds, setSelectedEntNeeds, n)} />
+            <OnboardingChip key={n} label={n} selected={selectedEntNeeds.includes(n)} onClick={() => toggleItem(selectedEntNeeds, setSelectedEntNeeds, n)} />
           ))}
         </div>
-        <AddRow value={customEntNeed} onChange={e => setCustomEntNeed(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customEntNeed, selectedEntNeeds, setSelectedEntNeeds, setCustomEntNeed))} onAdd={() => addCustom(customEntNeed, selectedEntNeeds, setSelectedEntNeeds, setCustomEntNeed)} placeholder="Add a custom entertainment type..." />
+        <OnboardingAddRow value={customEntNeed} onChange={e => setCustomEntNeed(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customEntNeed, selectedEntNeeds, setSelectedEntNeeds, setCustomEntNeed))} onAdd={() => addCustom(customEntNeed, selectedEntNeeds, setSelectedEntNeeds, setCustomEntNeed)} placeholder="Add a custom entertainment type..." />
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -3850,17 +3700,17 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What genres work best for your venue and audience?</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...GENRE_OPTIONS, ...BAND_GENRES.filter(g => !GENRE_OPTIONS.includes(g)), ...selectedGenres.filter(g => !GENRE_OPTIONS.includes(g) && !BAND_GENRES.includes(g))])].map(g => (
-            <Chip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleItem(selectedGenres, setSelectedGenres, g)} />
+            <OnboardingChip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleItem(selectedGenres, setSelectedGenres, g)} />
           ))}
         </div>
-        <AddRow value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre))} onAdd={() => addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre)} placeholder="Add a custom genre..." />
+        <OnboardingAddRow value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre))} onAdd={() => addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre)} placeholder="Add a custom genre..." />
       </div>
 
       <div style={{ marginBottom: 24 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>How Often Do You Book Entertainment?</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {BOOKING_FREQUENCY.map(f => (
-            <Chip key={f} label={f} selected={bookingFreq === f} onClick={() => setBookingFreq(bookingFreq === f ? null : f)} />
+            <OnboardingChip key={f} label={f} selected={bookingFreq === f} onClick={() => setBookingFreq(bookingFreq === f ? null : f)} />
           ))}
         </div>
       </div>
@@ -3885,13 +3735,13 @@ return (
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, opacity: 0.7 }}>This helps talent know if they're in range — only visible to matched talent</div>
       </div>
 
-      <BtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 4: Media & Bio */}
   {step === 3 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Media & Bio</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Show talent what your venue looks and feels like.</p>
 
@@ -3924,20 +3774,20 @@ return (
 
       <div style={{ marginBottom: 4 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Social & Web Links</label>
-        <InputField label="" placeholder="Website URL" value={form.website} onChange={e => updateForm('website', e.target.value)} />
-        <InputField label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
-        <InputField label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
-        <InputField label="" placeholder="YouTube Channel" value={form.youtube} onChange={e => updateForm('youtube', e.target.value)} />
-        <InputField label="" placeholder="TikTok URL" value={form.tiktok} onChange={e => updateForm('tiktok', e.target.value)} />
+        <OnboardingInput label="" placeholder="Website URL" value={form.website} onChange={e => updateForm('website', e.target.value)} />
+        <OnboardingInput label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
+        <OnboardingInput label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
+        <OnboardingInput label="" placeholder="YouTube Channel" value={form.youtube} onChange={e => updateForm('youtube', e.target.value)} />
+        <OnboardingInput label="" placeholder="TikTok URL" value={form.tiktok} onChange={e => updateForm('tiktok', e.target.value)} />
       </div>
 
-      <BtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
-    </WizardCard>
+      <OnboardingBtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
+    </OnboardingWizardCard>
   )}
 
   {/* STEP 5: Review */}
   {step === 4 && (
-    <WizardCard>
+    <OnboardingWizardCard>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Review Your Venue Profile</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make sure everything looks good before going live.</p>
 
@@ -3977,7 +3827,7 @@ return (
         <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
         <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch Venue Profile <i className="fa-solid fa-building-columns" style={{ fontSize: 14 }}></i></button>
       </div>
-    </WizardCard>
+    </OnboardingWizardCard>
   )}
 </div>
 );
