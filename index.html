@@ -447,12 +447,7 @@ return (
 <section style={{ background: 'var(--hero-gradient)', padding: '100px 0 80px', position: 'relative', overflow: 'hidden' }}>
 <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 70% 30%, rgba(108,43,217,0.15) 0%, transparent 60%)' }}></div>
 <div className="container" style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-<div className="fade-in" style={{ marginBottom: 16 }}>
-<span className="badge badge-pro" style={{ fontSize: 13, padding: '6px 16px' }}>
-<i className="fa-solid fa-bolt"></i> Now Live in Arizona
-</span>
-</div>
-<h1 className="fade-in fade-in-delay-1" style={{ fontFamily: "'Playfair Display', serif", fontSize: 64, fontWeight: 900, lineHeight: 1.1, marginBottom: 20, maxWidth: 800, margin: '0 auto 20px' }}>
+<h1 className="fade-in" style={{ fontFamily: "'Playfair Display', serif", fontSize: 64, fontWeight: 900, lineHeight: 1.1, marginBottom: 20, maxWidth: 800, margin: '0 auto 20px' }}>
 The Entertainment Industry,{' '}
 <span style={{ background: 'var(--pro-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Connected.</span>
 </h1>
@@ -491,16 +486,16 @@ Musicians, techs, performers, and industry pros -- all in one network. Find work
 <section style={{ padding: '80px 0' }}>
 <div className="container">
 <h2 style={{ textAlign: 'center', fontSize: 36, fontWeight: 800, marginBottom: 12 }}>How StageLink365 Works</h2>
-<p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 50, fontSize: 17 }}>Three steps to connecting with the entertainment industry</p>
+<p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 50, fontSize: 17 }}>Whether you're performing, booking, or managing — we've got you covered</p>
 <div className="grid-3">
 {[
-{ icon: 'fa-user-plus', title: 'Create Your Profile', desc: 'Build your professional portfolio with media, skills, availability, and rates. Show the industry what you bring to the stage.' },
-{ icon: 'fa-magnifying-glass', title: 'Get Discovered', desc: 'Venues, bookers, and fellow pros search by category, location, and availability. Premium members get featured placement.' },
-{ icon: 'fa-handshake', title: 'Get Booked', desc: 'Connect directly, respond to gig postings, and build your network. More visibility means more opportunities.' }
+{ icon: 'fa-microphone-lines', title: 'Sign Up as Who You Are', desc: 'Solo talent, band, vendor, or venue — choose the profile that fits you. Our guided setup captures everything bookers need to find and hire you.', color: '#6C2BD9' },
+{ icon: 'fa-magnifying-glass', title: 'Search, Match & Connect', desc: 'Browse talent by genre, location, and availability. Post gigs and let the right acts come to you. Message directly and negotiate on-platform.', color: '#3B82F6' },
+{ icon: 'fa-calendar-check', title: 'Book & Manage', desc: 'Confirm bookings, sync calendars, manage your roster, and keep everything in one place. From first contact to showtime — all on StageLink365.', color: '#10B981' }
 ].map((step, i) => (
 <div key={i} className="card fade-in" style={{ textAlign: 'center', animationDelay: `${i * 0.15}s` }}>
-<div style={{ width: 64, height: 64, background: 'rgba(108,43,217,0.15)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-<i className={`fa-solid ${step.icon}`} style={{ fontSize: 24, color: 'var(--primary-light)' }}></i>
+<div style={{ width: 64, height: 64, background: step.color + '20', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+<i className={`fa-solid ${step.icon}`} style={{ fontSize: 24, color: step.color }}></i>
 </div>
 <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>{step.title}</h3>
 <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.7 }}>{step.desc}</p>
