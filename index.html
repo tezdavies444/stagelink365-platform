@@ -294,10 +294,14 @@ const [currentUser, setCurrentUser] = useState(null);
 const [editingProfileId, setEditingProfileId] = useState(null);
 const [calendarPopupUrl, setCalendarPopupUrl] = useState(null);
 
+// Admin emails — these accounts automatically get admin access alongside their chosen role
+const ADMIN_EMAILS = ['terry@tadshows.com'];
+
 // Helper: complete onboarding and set user with correct role(s)
 const handleOnboardingComplete = (name, email, primaryRole, dualRole) => {
   const roles = [primaryRole];
   if (dualRole) roles.push(dualRole);
+  if (ADMIN_EMAILS.includes((email || '').toLowerCase()) && !roles.includes('admin')) roles.push('admin');
   setCurrentUser({ id: Date.now().toString(), name, email, roles, activeRole: primaryRole, token: 'onboarding-' + Date.now() });
   setPage('dashboard');
 };
@@ -346,6 +350,8 @@ const handleLogin = (user) => {
   // Normalize legacy role field into roles array
   const roles = user.roles || [user.role || 'talent'];
   const activeRole = user.activeRole || roles[0];
+  // Auto-grant admin if email is in the admin list
+  if (ADMIN_EMAILS.includes((user.email || '').toLowerCase()) && !roles.includes('admin')) roles.push('admin');
   setCurrentUser({ ...user, roles, activeRole });
   setShowLogin(false);
   setPage('dashboard');
@@ -519,8 +525,7 @@ style={{ background: page === item.key ? 'rgba(108,43,217,0.15)' : 'transparent'
 </>
 ) : (
 <>
-<button className="btn btn-outline btn-sm" onClick={onLogin}>Log In</button>
-<button className="btn btn-primary btn-sm" onClick={onCreateProfile}><i className="fa-solid fa-plus"></i> Join StageLink365</button>
+<button className="btn btn-primary btn-sm" onClick={onLogin}>Log In</button>
 </>
 )}
 </div>
@@ -1796,13 +1801,6 @@ const [loading, setLoading] = useState(false);
 const handleLogin = async () => {
   if (!loginToken.trim()) { setLoginError('Please enter your access token'); return; }
   setLoading(true); setLoginError('');
-
-  // Admin shortcut — client-side admin access
-  if (loginToken.trim().toLowerCase() === 'admin' || loginToken.trim() === 'stagelink-admin') {
-    onSuccess({ id: 'admin-001', name: 'TAD Admin', email: 'terry@tadshows.com', roles: ['admin'], activeRole: 'admin', token: 'admin-token' });
-    setLoading(false);
-    return;
-  }
 
   try {
     const data = await apiPost('/auth', { token: loginToken.trim() });
