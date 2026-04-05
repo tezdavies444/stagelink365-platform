@@ -459,13 +459,23 @@ The Entertainment Industry,{' '}
 <p className="fade-in fade-in-delay-2" style={{ fontSize: 20, color: 'var(--text-muted)', maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.6 }}>
 Musicians, techs, performers, and industry pros -- all in one network. Find work. Find talent. Build your career.
 </p>
-<div className="fade-in fade-in-delay-3" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-<button className="btn btn-primary btn-lg" onClick={onCreateProfile} style={{ animation: 'glow 3s infinite' }}>
-<i className="fa-solid fa-rocket"></i> Create Your Profile -- Free
-</button>
-<button className="btn btn-outline btn-lg" onClick={() => setPage('browse')}>
-<i className="fa-solid fa-search"></i> Browse Talent
-</button>
+<div className="fade-in fade-in-delay-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, maxWidth: 820, margin: '0 auto' }}>
+{[
+  { key: 'talent-onboarding', icon: 'fa-microphone-lines', label: 'Talent Signup', desc: 'Showcase your act and get booked', gradient: 'linear-gradient(135deg, #6C2BD9, #8B5CF6)' },
+  { key: 'band-onboarding', icon: 'fa-guitar', label: 'Band Signup', desc: 'List your band and find gigs', gradient: 'linear-gradient(135deg, #2563EB, #3B82F6)' },
+  { key: 'vendor-onboarding', icon: 'fa-handshake', label: 'Vendor Signup', desc: 'Hire or represent talent', gradient: 'linear-gradient(135deg, #F59E0B, #F97316)' },
+  { key: 'venue-onboarding', icon: 'fa-building-columns', label: 'Venue Signup', desc: 'Book entertainment for your venue', gradient: 'linear-gradient(135deg, #10B981, #059669)' },
+].map(item => (
+  <div key={item.key} onClick={() => setPage(item.key)} style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 16, padding: '28px 16px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s', position: 'relative', overflow: 'hidden' }}
+    onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.borderColor = 'var(--primary-light)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(108,43,217,0.3)'; }}
+    onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--dark-border)'; e.currentTarget.style.boxShadow = 'none'; }}>
+    <div style={{ width: 56, height: 56, background: item.gradient, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+      <i className={`fa-solid ${item.icon}`} style={{ fontSize: 24, color: '#fff' }}></i>
+    </div>
+    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+    <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>{item.desc}</div>
+  </div>
+))}
 </div>
 {/* Stats */}
 <div className="fade-in fade-in-delay-4" style={{ display: 'flex', gap: 60, justifyContent: 'center', marginTop: 60 }}>
@@ -3043,7 +3053,10 @@ return (
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Willing to Travel To</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>Willing to Travel To</label>
+          <span onClick={() => { const allAreas = [...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])]; setSelectedAreas(selectedAreas.length === allAreas.length ? [] : allAreas); }} style={{ fontSize: 12, color: 'var(--primary-light)', cursor: 'pointer', fontWeight: 600 }}>{selectedAreas.length === [...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].length ? 'Deselect All' : 'Select All'}</span>
+        </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select the regions you're available to work in</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].map(a => (
@@ -3393,7 +3406,10 @@ return (
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Willing to Travel To</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>Willing to Travel To</label>
+          <span onClick={() => { const allAreas = [...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])]; setSelectedAreas(selectedAreas.length === allAreas.length ? [] : allAreas); }} style={{ fontSize: 12, color: 'var(--primary-light)', cursor: 'pointer', fontWeight: 600 }}>{selectedAreas.length === [...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].length ? 'Deselect All' : 'Select All'}</span>
+        </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select the regions your band is available to play</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {[...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].map(a => (
