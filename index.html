@@ -505,60 +505,90 @@ Musicians, techs, performers, and industry pros -- all in one network. Find work
 </div>
 </section>
 
-{/* Categories */}
-<section style={{ padding: '60px 0', background: 'var(--dark-card)' }}>
+{/* Who's on StageLink365 */}
+<section style={{ padding: '80px 0', background: 'var(--dark-card)' }}>
 <div className="container">
-<h2 style={{ textAlign: 'center', fontSize: 36, fontWeight: 800, marginBottom: 12 }}>Every Role in Entertainment</h2>
-<p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 50, fontSize: 17 }}>From center stage to behind the scenes</p>
-<div className="grid-4">
-{Object.entries(CATEGORIES).map(([key, cat]) => (
-<div key={key} className="card" onClick={() => setPage('browse')} style={{ cursor: 'pointer' }}>
-<div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-<div style={{ width: 44, height: 44, background: 'rgba(108,43,217,0.15)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-<i className={`fa-solid ${cat.icon}`} style={{ color: 'var(--primary-light)' }}></i>
-</div>
-<h3 style={{ fontSize: 16, fontWeight: 700 }}>{cat.label}</h3>
-</div>
-<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-{cat.subs.slice(0, 6).map(s => <span key={s} className="badge badge-category">{s}</span>)}
-{cat.subs.length > 6 && <span className="badge badge-free">+{cat.subs.length - 6} more</span>}
-</div>
-</div>
-))}
-</div>
-</div>
-</section>
+<h2 style={{ textAlign: 'center', fontSize: 36, fontWeight: 800, marginBottom: 12 }}>Who's on StageLink365?</h2>
+<p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 50, fontSize: 17 }}>A marketplace built for every side of the entertainment industry</p>
 
-{/* Featured Profiles */}
-<section style={{ padding: '80px 0' }}>
-<div className="container">
-<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24, maxWidth: 1000, margin: '0 auto' }}>
+
+{/* Talent */}
+<div className="card" onClick={() => setPage('talent-onboarding')} style={{ cursor: 'pointer', borderLeft: '4px solid #8B5CF6', paddingLeft: 28 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+<div style={{ width: 52, height: 52, background: 'linear-gradient(135deg, #6C2BD9, #8B5CF6)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-microphone-lines" style={{ fontSize: 22, color: '#fff' }}></i>
+</div>
 <div>
-<h2 style={{ fontSize: 36, fontWeight: 800, marginBottom: 8 }}>Featured Professionals</h2>
-<p style={{ color: 'var(--text-muted)', fontSize: 15 }}>Top-rated talent in Arizona</p>
+<h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>Solo Talent</h3>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Performers, musicians, comedians, and entertainers</p>
 </div>
-<button className="btn btn-outline" onClick={() => setPage('browse')}>View All <i className="fa-solid fa-arrow-right"></i></button>
 </div>
-<div className="grid-3">
-{profiles.filter(p => p.tier === 'premium' || p.tier === 'pro').slice(0, 6).map(p => (
-<ProfileCard key={p.id} profile={p} onClick={() => { setPage('profile'); window.scrollTo(0,0); }} onView={() => { }} setPage={setPage} />
-))}
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+{['Singer / Vocalist', 'Musician', 'Comedian', 'Magician', 'DJ / Emcee', 'Dancer', 'Actor', 'Aerialist', 'Mentalist', 'Host / Emcee'].map(s => <span key={s} className="badge badge-category">{s}</span>)}
+</div>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 }}>Build your portfolio with media, set your rates, showcase your skills, and get discovered by venues and agents looking for your exact act.</p>
+<span style={{ fontSize: 13, fontWeight: 600, color: 'var(--primary-light)' }}>Create Talent Profile <i className="fa-solid fa-arrow-right" style={{ fontSize: 11 }}></i></span>
+</div>
+
+{/* Bands */}
+<div className="card" onClick={() => setPage('band-onboarding')} style={{ cursor: 'pointer', borderLeft: '4px solid #3B82F6', paddingLeft: 28 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+<div style={{ width: 52, height: 52, background: 'linear-gradient(135deg, #2563EB, #3B82F6)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-guitar" style={{ fontSize: 22, color: '#fff' }}></i>
+</div>
+<div>
+<h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>Bands & Groups</h3>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Cover bands, original acts, ensembles, and show bands</p>
+</div>
+</div>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+{['Cover Band', 'Jazz Ensemble', 'Show Band', 'Wedding Band', 'Tribute Act', 'Orchestra', 'Acoustic Duo', 'Pit Band', 'Function Band'].map(s => <span key={s} className="badge badge-category">{s}</span>)}
+</div>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 }}>List your band with genre, instrumentation, and set details. Add members who can link their own Stagelink profiles. One band page, full visibility.</p>
+<span style={{ fontSize: 13, fontWeight: 600, color: '#3B82F6' }}>Create Band Profile <i className="fa-solid fa-arrow-right" style={{ fontSize: 11 }}></i></span>
+</div>
+
+{/* Vendors */}
+<div className="card" onClick={() => setPage('vendor-onboarding')} style={{ cursor: 'pointer', borderLeft: '4px solid #F59E0B', paddingLeft: 28 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+<div style={{ width: 52, height: 52, background: 'linear-gradient(135deg, #F59E0B, #F97316)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-handshake" style={{ fontSize: 22, color: '#fff' }}></i>
+</div>
+<div>
+<h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>Vendors & Agents</h3>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Solo agents, agencies, and entertainment companies</p>
+</div>
+</div>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+{['Talent Agent', 'Booking Agency', 'Show Producer', 'Event Planner', 'Entertainment Director', 'Artist Manager'].map(s => <span key={s} className="badge badge-category">{s}</span>)}
+</div>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 }}>Search and hire talent, manage a roster, post gig opportunities, and handle bookings — whether you're a solo agent or a full agency with a team.</p>
+<span style={{ fontSize: 13, fontWeight: 600, color: '#F59E0B' }}>Create Vendor Profile <i className="fa-solid fa-arrow-right" style={{ fontSize: 11 }}></i></span>
+</div>
+
+{/* Venues */}
+<div className="card" onClick={() => setPage('venue-onboarding')} style={{ cursor: 'pointer', borderLeft: '4px solid #10B981', paddingLeft: 28 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+<div style={{ width: 52, height: 52, background: 'linear-gradient(135deg, #10B981, #059669)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+<i className="fa-solid fa-building-columns" style={{ fontSize: 22, color: '#fff' }}></i>
+</div>
+<div>
+<h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>Venues</h3>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Theatres, clubs, resorts, casinos, cruise lines, and event spaces</p>
+</div>
+</div>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+{['Concert Hall', 'Nightclub', 'Hotel / Resort', 'Casino', 'Cruise Ship', 'Restaurant', 'Wedding Venue', 'Festival', 'Corporate'].map(s => <span key={s} className="badge badge-category">{s}</span>)}
+</div>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 }}>List your venue with stage specs and capacity, post gigs, browse talent by genre and availability, and book the right entertainment directly.</p>
+<span style={{ fontSize: 13, fontWeight: 600, color: '#10B981' }}>Create Venue Profile <i className="fa-solid fa-arrow-right" style={{ fontSize: 11 }}></i></span>
+</div>
+
 </div>
 </div>
 </section>
 
-{/* CTA */}
-<section style={{ padding: '80px 0', background: 'var(--hero-gradient)' }}>
-<div className="container" style={{ textAlign: 'center' }}>
-<h2 style={{ fontSize: 42, fontWeight: 800, marginBottom: 16 }}>Ready to Get Connected?</h2>
-<p style={{ color: 'var(--text-muted)', fontSize: 18, marginBottom: 32, maxWidth: 500, margin: '0 auto 32px' }}>
-Join thousands of entertainment professionals building their careers on StageLink365.
-</p>
-<button className="btn btn-accent btn-lg" onClick={onCreateProfile}>
-<i className="fa-solid fa-star"></i> Create Your Free Profile
-</button>
-</div>
-</section>
 
 {/* Footer */}
 <footer style={{ padding: '40px 0', borderTop: '1px solid var(--dark-border)' }}>
