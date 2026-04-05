@@ -358,7 +358,10 @@ profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
 {page === 'pricing' && <PricingPage onCreateProfile={() => setShowCreateProfile(true)} />}
 {page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={(profileId) => { setEditingProfileId(profileId); setShowEditProfile(true); }} onLogin={() => setShowLogin(true)} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
 {page === 'booker' && <BookerDashboard onViewProfile={viewProfile} setPage={setPage} />}
+{page === 'talent-onboarding' && <TalentOnboarding setPage={setPage} />}
+{page === 'band-onboarding' && <BandOnboarding setPage={setPage} />}
 {page === 'vendor-onboarding' && <VendorOnboarding setPage={setPage} />}
+{page === 'venue-onboarding' && <VenueOnboarding setPage={setPage} />}
 {page === 'messages' && <MessagesPage />}
 {page === 'database' && <DatabaseArchitecture />}
 {showCreateProfile && <CreateProfileModal onClose={() => setShowCreateProfile(false)} onSuccess={handleProfileCreated} currentUser={currentUser} />}
@@ -393,7 +396,10 @@ Stage<span style={{ color: 'var(--primary-light)' }}>Link365</span>
 { key: 'gigs', label: 'Gig Board', icon: 'fa-clipboard-list' },
 { key: 'pricing', label: 'Pricing', icon: 'fa-crown' },
 { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+{ key: 'talent-onboarding', label: 'Talent Signup', icon: 'fa-microphone-lines' },
+{ key: 'band-onboarding', label: 'Band Signup', icon: 'fa-guitar' },
 { key: 'vendor-onboarding', label: 'Vendor Signup', icon: 'fa-handshake' },
+{ key: 'venue-onboarding', label: 'Venue Signup', icon: 'fa-building-columns' },
 { key: 'booker', label: 'Booker Hub', icon: 'fa-building' },
 { key: 'messages', label: 'Messages', icon: 'fa-envelope' },
 { key: 'database', label: 'DB Schema', icon: 'fa-database' },
@@ -2838,6 +2844,1138 @@ return (
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
         <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
         <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch My Profile <i className="fa-solid fa-rocket" style={{ fontSize: 14 }}></i></button>
+      </div>
+    </WizardCard>
+  )}
+</div>
+);
+}
+
+// ===========================
+// TALENT ONBOARDING WIZARD
+// ===========================
+
+const PERFORMANCE_TYPES = [
+'Singer / Vocalist', 'Musician / Instrumentalist', 'DJ / Emcee',
+'Actor / Actress', 'Comedian (Stand-Up)', 'Comedian (Improv/Sketch)',
+'Magician / Illusionist', 'Mentalist / Hypnotist', 'Dancer / Choreographer',
+'Acrobat / Circus Performer', 'Aerialist / Stunt Performer',
+'Variety / Novelty Act', 'Tribute Artist', 'Puppeteer / Marionettist',
+'Spoken Word / Poet', 'Host / Emcee', 'Character Performer',
+'Musical Theatre Performer', 'Opera Singer', 'Cabaret Performer',
+'One-Person Show', 'Strolling / Ambient Entertainer'
+];
+
+const EXPERIENCE_LEVELS = ['Just Starting Out', '1–3 Years', '3–7 Years', '7–15 Years', '15+ Years'];
+
+const GIG_TYPES = [
+'Cruise Ships', 'Resorts / All-Inclusive', 'Corporate Events', 'Weddings / Private Parties',
+'Festivals / Outdoor', 'Theatres / Performing Arts Centers', 'Casinos',
+'Restaurants / Dinner Shows', 'Nightclubs / Lounges', 'Hotels',
+'Theme Parks', 'Trade Shows / Conventions', 'Virtual / Livestream',
+'Schools / Educational', 'Community Events', 'Touring Productions'
+];
+
+function TalentOnboarding({ setPage }) {
+const [step, setStep] = useState(0);
+const [alsoVendor, setAlsoVendor] = useState(false);
+const [form, setForm] = useState({ name: '', stageName: '', phone: '', location: '', website: '', bio: '', instagram: '', linkedin: '', facebook: '', youtube: '', tiktok: '', rateMin: '', rateMax: '', ratePer: 'per show' });
+const [selectedPerformanceTypes, setSelectedPerformanceTypes] = useState([]);
+const [selectedGenres, setSelectedGenres] = useState([]);
+const [selectedGigTypes, setSelectedGigTypes] = useState([]);
+const [selectedAreas, setSelectedAreas] = useState([]);
+const [experienceLevel, setExperienceLevel] = useState(null);
+const [customPerfType, setCustomPerfType] = useState('');
+const [customGenre, setCustomGenre] = useState('');
+const [customGigType, setCustomGigType] = useState('');
+const [customArea, setCustomArea] = useState('');
+const [skills, setSkills] = useState([]);
+const [skillInput, setSkillInput] = useState('');
+const [submitted, setSubmitted] = useState(false);
+
+const totalSteps = 5;
+const stepLabels = ['About You', 'Performance', 'Rates & Areas', 'Media & Bio', 'Review'];
+
+const updateForm = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
+const toggleItem = (list, setList, item) => setList(prev => prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]);
+
+const addCustom = (val, list, setList, setInput) => { if (val.trim() && !list.includes(val.trim())) { setList(prev => [...prev, val.trim()]); } setInput(''); };
+const addSkill = () => { if (skillInput.trim() && !skills.includes(skillInput.trim())) { setSkills(prev => [...prev, skillInput.trim()]); } setSkillInput(''); };
+
+const goTo = (s) => { setStep(s); window.scrollTo(0, 0); };
+
+// Reusable Chip
+const Chip = ({ label, selected, onClick }) => (
+  <span onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: selected ? 'rgba(108,43,217,0.2)' : 'var(--dark-lighter)', border: `1.5px solid ${selected ? 'var(--primary-light)' : 'var(--dark-border)'}`, borderRadius: 20, fontSize: 13, color: selected ? 'var(--primary-light)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none' }}>
+    {selected && <span style={{ fontSize: 11 }}>✓</span>} {label}
+  </span>
+);
+
+// Progress bar
+const ProgressBar = () => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 540, margin: '0 auto 36px', position: 'relative' }}>
+    <div style={{ position: 'absolute', top: 15, left: 40, right: 40, height: 2, background: 'var(--dark-border)', zIndex: 0 }}></div>
+    <div style={{ position: 'absolute', top: 15, left: 40, height: 2, background: 'var(--primary)', zIndex: 1, transition: 'width 0.4s', width: `${step / (totalSteps - 1) * (100 - 16)}%` }}></div>
+    {stepLabels.map((label, i) => (
+      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2, minWidth: 60 }}>
+        <div style={{ width: 30, height: 30, borderRadius: '50%', background: i < step ? 'rgba(16,185,129,0.2)' : i === step ? 'rgba(108,43,217,0.3)' : 'var(--dark-card)', border: `2px solid ${i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--dark-border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all 0.3s' }}>
+          {i < step ? '✓' : i + 1}
+        </div>
+        <span style={{ fontSize: 11, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: i === step ? 600 : 400 }}>{label}</span>
+      </div>
+    ))}
+  </div>
+);
+
+const WizardCard = ({ children }) => (
+  <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 20, padding: 36, maxWidth: 620, margin: '0 auto', width: '100%' }}>{children}</div>
+);
+
+const InputField = ({ label, hint, ...props }) => (
+  <div style={{ marginBottom: 20 }}>
+    {label && <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</label>}
+    <input {...props} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+    {hint && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>{hint}</div>}
+  </div>
+);
+
+const ToggleRow = ({ label, desc, active, onClick }) => (
+  <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--dark-lighter)', border: `1px solid ${active ? 'var(--primary)' : 'var(--dark-border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s', marginBottom: 8 }}>
+    <div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
+      {desc && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{desc}</div>}
+    </div>
+    <div style={{ width: 44, height: 24, background: active ? 'var(--primary)' : 'var(--dark-lighter)', borderRadius: 12, position: 'relative', transition: 'background 0.3s', border: `1px solid ${active ? 'var(--primary)' : 'var(--dark-border)'}`, flexShrink: 0 }}>
+      <div style={{ position: 'absolute', width: 18, height: 18, background: active ? '#fff' : 'var(--text-muted)', borderRadius: '50%', top: 2, left: active ? 23 : 2, transition: 'all 0.3s' }}></div>
+    </div>
+  </div>
+);
+
+const BtnRow = ({ onBack, onNext, nextLabel, nextStyle }) => (
+  <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 28 }}>
+    {onBack && <button className="btn btn-outline" onClick={onBack}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>}
+    <button className="btn btn-primary" onClick={onNext} style={nextStyle || {}}>{nextLabel || 'Continue'} <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
+  </div>
+);
+
+// Custom add row
+const AddRow = ({ value, onChange, onAdd, onKeyDown, placeholder }) => (
+  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+    <input value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} style={{ flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+    <button className="btn btn-outline btn-sm" onClick={onAdd}>+ Add</button>
+  </div>
+);
+
+// SUCCESS
+if (submitted) {
+  return (
+    <div style={{ padding: '80px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 64, marginBottom: 16 }}>🎤</div>
+      <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Welcome to StageLink365!</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 15, maxWidth: 440, margin: '0 auto 32px', lineHeight: 1.6 }}>Your talent profile is live. Venues and vendors can now discover you. Start exploring gigs or polish your profile.</p>
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <button className="btn btn-primary" onClick={() => setPage('gigs')}><i className="fa-solid fa-clipboard-list"></i> Browse Gigs</button>
+        <button className="btn btn-accent" onClick={() => setPage('dashboard')}><i className="fa-solid fa-gauge-high"></i> My Dashboard</button>
+        <button className="btn btn-outline" onClick={() => setPage('browse')}><i className="fa-solid fa-search"></i> See Other Talent</button>
+      </div>
+    </div>
+  );
+}
+
+return (
+<div style={{ padding: '40px 24px 80px', maxWidth: 700, margin: '0 auto' }}>
+  <div style={{ textAlign: 'center', marginBottom: 36 }}>
+    <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>Talent Profile Setup</h1>
+    <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Join the marketplace and get discovered by venues, agents, and bookers</p>
+  </div>
+
+  <ProgressBar />
+
+  {/* STEP 1: About You */}
+  {step === 0 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>About You</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Let's start with the basics so we can set up your profile.</p>
+
+      <InputField label="Full Name" placeholder="e.g., Marcus Rivera" value={form.name} onChange={e => updateForm('name', e.target.value)} />
+      <InputField label="Stage Name (optional)" placeholder="e.g., Marc the Magnificent" hint="Leave blank if you perform under your real name" value={form.stageName} onChange={e => updateForm('stageName', e.target.value)} />
+      <InputField label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
+      <InputField label="Location" placeholder="City, State / Country" hint="Where you're based — not where you're willing to travel" value={form.location} onChange={e => updateForm('location', e.target.value)} />
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Experience Level</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {EXPERIENCE_LEVELS.map(lvl => (
+            <Chip key={lvl} label={lvl} selected={experienceLevel === lvl} onClick={() => setExperienceLevel(lvl)} />
+          ))}
+        </div>
+      </div>
+
+      <ToggleRow label="I also book or represent talent" desc="Activate a Vendor profile alongside your Talent account" active={alsoVendor} onClick={() => setAlsoVendor(!alsoVendor)} />
+
+      <BtnRow onNext={() => goTo(1)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 2: Performance Details */}
+  {step === 1 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Your Performance</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Tell us what you do so the right opportunities find you.</p>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Performance Type</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select all that describe your act</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...PERFORMANCE_TYPES, ...selectedPerformanceTypes.filter(p => !PERFORMANCE_TYPES.includes(p))])].map(p => (
+            <Chip key={p} label={p} selected={selectedPerformanceTypes.includes(p)} onClick={() => toggleItem(selectedPerformanceTypes, setSelectedPerformanceTypes, p)} />
+          ))}
+        </div>
+        <AddRow value={customPerfType} onChange={e => setCustomPerfType(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customPerfType, selectedPerformanceTypes, setSelectedPerformanceTypes, setCustomPerfType))} onAdd={() => addCustom(customPerfType, selectedPerformanceTypes, setSelectedPerformanceTypes, setCustomPerfType)} placeholder="Add a custom performance type..." />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Genres</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What genres or styles does your act cover?</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...GENRE_OPTIONS, ...selectedGenres.filter(g => !GENRE_OPTIONS.includes(g))])].map(g => (
+            <Chip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleItem(selectedGenres, setSelectedGenres, g)} />
+          ))}
+        </div>
+        <AddRow value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre))} onAdd={() => addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre)} placeholder="Add a custom genre..." />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Special Skills & Extras</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Anything extra you bring to a gig (e.g., "multi-instrument", "bilingual MC", "fire breathing")</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {skills.map((s, i) => (
+            <span key={i} className="tag">{s} <span className="tag-remove" onClick={() => setSkills(prev => prev.filter((_, j) => j !== i))}>×</span></span>
+          ))}
+        </div>
+        <AddRow value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())} onAdd={addSkill} placeholder="Add a skill or extra..." />
+      </div>
+
+      <BtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 3: Rates & Service Areas */}
+  {step === 2 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Rates & Availability</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help bookers understand your pricing and where you're available.</p>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Rate Range</label>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <input placeholder="Min ($)" value={form.rateMin} onChange={e => updateForm('rateMin', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+          </div>
+          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>to</span>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <input placeholder="Max ($)" value={form.rateMax} onChange={e => updateForm('rateMax', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+          </div>
+          <select value={form.ratePer} onChange={e => updateForm('ratePer', e.target.value)} style={{ padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none', minWidth: 130 }}>
+            <option value="per show">Per Show</option>
+            <option value="per hour">Per Hour</option>
+            <option value="per day">Per Day</option>
+            <option value="per week">Per Week</option>
+            <option value="negotiable">Negotiable</option>
+          </select>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, opacity: 0.7 }}>This is visible on your profile. You can set it to "Negotiable" if you prefer.</div>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Gig Types</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What kinds of venues or events do you perform at?</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...GIG_TYPES, ...selectedGigTypes.filter(g => !GIG_TYPES.includes(g))])].map(g => (
+            <Chip key={g} label={g} selected={selectedGigTypes.includes(g)} onClick={() => toggleItem(selectedGigTypes, setSelectedGigTypes, g)} />
+          ))}
+        </div>
+        <AddRow value={customGigType} onChange={e => setCustomGigType(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType))} onAdd={() => addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType)} placeholder="Add a custom gig type..." />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Willing to Travel To</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select the regions you're available to work in</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].map(a => (
+            <Chip key={a} label={a} selected={selectedAreas.includes(a)} onClick={() => toggleItem(selectedAreas, setSelectedAreas, a)} />
+          ))}
+        </div>
+        <AddRow value={customArea} onChange={e => setCustomArea(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea))} onAdd={() => addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea)} placeholder="Add a custom region..." />
+      </div>
+
+      <BtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 4: Media & Bio */}
+  {step === 3 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Media & Bio</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Showcase your act — this is what gets you booked.</p>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Profile Photo</label>
+        <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+          <i className="fa-solid fa-camera" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Click to upload</span> a headshot or promo photo<br/>PNG, JPG up to 5MB</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Performance Reel / Video</label>
+        <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+          <i className="fa-solid fa-video" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Upload a video</span> or paste a YouTube/Vimeo link<br/>MP4 up to 100MB, or paste URL below</div>
+        </div>
+        <input placeholder="Or paste a video URL (YouTube, Vimeo)" style={{ width: '100%', padding: '10px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none', marginTop: 8 }} />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Audio Samples</label>
+        <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+          <i className="fa-solid fa-music" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Upload audio</span> clips<br/>MP3, WAV up to 20MB each</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Bio / About Your Act</label>
+        <textarea placeholder="Describe your act, your experience, what makes you unique, and what a client can expect when they book you..." rows="5" value={form.bio} onChange={e => updateForm('bio', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, resize: 'vertical', minHeight: 120, outline: 'none', fontFamily: 'inherit' }}></textarea>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>This is the first thing bookers read — make it count</div>
+      </div>
+
+      <div style={{ marginBottom: 4 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Social & Web Links</label>
+        <InputField label="" placeholder="Website URL" value={form.website} onChange={e => updateForm('website', e.target.value)} />
+        <InputField label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
+        <InputField label="" placeholder="YouTube Channel URL" value={form.youtube} onChange={e => updateForm('youtube', e.target.value)} />
+        <InputField label="" placeholder="TikTok URL" value={form.tiktok} onChange={e => updateForm('tiktok', e.target.value)} />
+        <InputField label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
+      </div>
+
+      <BtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
+    </WizardCard>
+  )}
+
+  {/* STEP 5: Review */}
+  {step === 4 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Review Your Profile</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make sure everything looks good before going live.</p>
+
+      {[
+        { section: 'About You', rows: [
+          { key: 'Name', val: form.name || '—', editStep: 0 },
+          form.stageName ? { key: 'Stage Name', val: form.stageName, editStep: 0 } : null,
+          { key: 'Location', val: form.location || '—', editStep: 0 },
+          { key: 'Experience', val: experienceLevel || '—', editStep: 0 },
+          { key: 'Also Vendor?', val: alsoVendor ? 'Yes' : 'No', editStep: 0 },
+        ].filter(Boolean)},
+        { section: 'Performance', rows: [
+          { key: 'Type', val: selectedPerformanceTypes.length > 0 ? selectedPerformanceTypes.slice(0, 3).join(', ') + (selectedPerformanceTypes.length > 3 ? ` +${selectedPerformanceTypes.length - 3} more` : '') : '—', editStep: 1 },
+          { key: 'Genres', val: selectedGenres.length > 0 ? selectedGenres.slice(0, 4).join(', ') + (selectedGenres.length > 4 ? ` +${selectedGenres.length - 4} more` : '') : '—', editStep: 1 },
+          { key: 'Skills', val: skills.length > 0 ? skills.join(', ') : '—', editStep: 1 },
+        ]},
+        { section: 'Rates & Availability', rows: [
+          { key: 'Rate', val: form.rateMin && form.rateMax ? `$${form.rateMin} – $${form.rateMax} ${form.ratePer}` : form.ratePer === 'negotiable' ? 'Negotiable' : '—', editStep: 2 },
+          { key: 'Gig Types', val: selectedGigTypes.length > 0 ? selectedGigTypes.slice(0, 4).join(', ') + (selectedGigTypes.length > 4 ? ` +${selectedGigTypes.length - 4} more` : '') : '—', editStep: 2 },
+          { key: 'Travel Areas', val: selectedAreas.length > 0 ? selectedAreas.slice(0, 3).join(', ') + (selectedAreas.length > 3 ? ` +${selectedAreas.length - 3} more` : '') : '—', editStep: 2 },
+        ]},
+      ].map((section, si) => (
+        <div key={si} style={{ marginBottom: 24 }}>
+          <h4 style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, fontWeight: 600 }}>{section.section}</h4>
+          {section.rows.map((row, ri) => (
+            <div key={ri} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: ri < section.rows.length - 1 ? '1px solid var(--dark-lighter)' : 'none' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{row.key}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, textAlign: 'right', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.val}</span>
+                <span onClick={() => goTo(row.editStep)} style={{ color: 'var(--primary-light)', fontSize: 12, cursor: 'pointer' }}>Edit</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
+        <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
+        <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Go Live <i className="fa-solid fa-microphone-lines" style={{ fontSize: 14 }}></i></button>
+      </div>
+    </WizardCard>
+  )}
+</div>
+);
+}
+
+// ===========================
+// BAND ONBOARDING WIZARD
+// ===========================
+
+const BAND_GENRES = [
+// Rock & Pop
+'Rock', 'Classic Rock', 'Indie Rock', 'Alternative', 'Pop', 'Pop Rock', 'Punk / Punk Rock',
+'Metal / Hard Rock', 'Prog Rock', 'Emo / Post-Hardcore',
+// Jazz & Blues
+'Jazz', 'Jazz Fusion', 'Swing / Big Band', 'Blues', 'Blues Rock',
+// R&B, Soul & Funk
+'R&B / Soul', 'Funk', 'Motown / Retro Soul', 'Neo-Soul', 'Gospel',
+// Latin & World
+'Latin / Salsa', 'Reggae / Ska', 'Mariachi', 'Afrobeat', 'Celtic / Irish', 'World Music',
+'Bossa Nova', 'Cumbia / Tropical',
+// Country & Folk
+'Country', 'Country Rock', 'Americana / Roots', 'Folk / Acoustic', 'Bluegrass',
+// Electronic & DJ
+'Electronic / EDM', 'Synthwave / Retrowave', 'Dance / Disco',
+// Theatre & Specialty
+'Musical Theatre / Show Band', 'Cabaret', 'Tribute / Cover Band',
+'Wedding / Party Band', 'Corporate / Function Band', 'Pit Orchestra',
+// Classical & Orchestral
+'Classical Ensemble', 'String Quartet', 'Chamber Music', 'Orchestra',
+// Other
+'Hip-Hop / Rap', 'Spoken Word / Poetry', 'Experimental / Avant-Garde',
+'Kids / Family', 'Worship / Contemporary Christian'
+];
+
+const BAND_TYPES = [
+'Cover / Tribute Band', 'Original Music Band', 'Show Band / Revue',
+'Wedding & Events Band', 'Jazz Ensemble', 'Orchestra / Big Band',
+'Acoustic Duo / Trio', 'DJ + Live Musicians', 'Pit Band / Theatre Orchestra',
+'Worship / Church Band', 'Corporate Function Band', 'Specialty / Novelty Act'
+];
+
+const BAND_SIZES = ['Duo (2)', 'Trio (3)', '4-piece', '5-piece', '6-8 piece', '9-12 piece', '13+ piece'];
+
+const INSTRUMENTS_LIST = [
+'Lead Vocals', 'Backing Vocals', 'Electric Guitar', 'Acoustic Guitar', 'Bass Guitar',
+'Drums / Percussion', 'Keyboards / Piano', 'Saxophone', 'Trumpet', 'Trombone',
+'Violin / Fiddle', 'Cello', 'Flute', 'Clarinet', 'Harmonica',
+'Steel Drums', 'Accordion', 'Banjo', 'Mandolin', 'Ukulele',
+'Turntables / DJ', 'Synth / Electronic', 'Harp', 'Upright Bass', 'French Horn'
+];
+
+function BandOnboarding({ setPage }) {
+const [step, setStep] = useState(0);
+const [form, setForm] = useState({ bandName: '', contactName: '', contactRole: '', phone: '', location: '', website: '', bio: '', instagram: '', facebook: '', youtube: '', tiktok: '', spotify: '', rateMin: '', rateMax: '', ratePer: 'per show', setLength: '2 sets (45 min each)' });
+const [bandType, setBandType] = useState(null);
+const [bandSize, setBandSize] = useState(null);
+const [selectedGenres, setSelectedGenres] = useState([]);
+const [selectedInstruments, setSelectedInstruments] = useState([]);
+const [selectedGigTypes, setSelectedGigTypes] = useState([]);
+const [selectedAreas, setSelectedAreas] = useState([]);
+const [customGenre, setCustomGenre] = useState('');
+const [customInstrument, setCustomInstrument] = useState('');
+const [customGigType, setCustomGigType] = useState('');
+const [customArea, setCustomArea] = useState('');
+const [members, setMembers] = useState([{ name: '', role: '', email: '' }]);
+const [submitted, setSubmitted] = useState(false);
+
+const totalSteps = 5;
+const stepLabels = ['Band Info', 'Sound & Style', 'Rates & Areas', 'Media & Bio', 'Review'];
+
+const updateForm = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
+const toggleItem = (list, setList, item) => setList(prev => prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]);
+const addCustom = (val, list, setList, setInput) => { if (val.trim() && !list.includes(val.trim())) { setList(prev => [...prev, val.trim()]); } setInput(''); };
+
+const addMember = () => setMembers(prev => [...prev, { name: '', role: '', email: '' }]);
+const updateMember = (i, key, val) => setMembers(prev => prev.map((m, j) => j === i ? { ...m, [key]: val } : m));
+const removeMember = (i) => setMembers(prev => prev.filter((_, j) => j !== i));
+
+const goTo = (s) => { setStep(s); window.scrollTo(0, 0); };
+
+const Chip = ({ label, selected, onClick }) => (
+  <span onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: selected ? 'rgba(108,43,217,0.2)' : 'var(--dark-lighter)', border: `1.5px solid ${selected ? 'var(--primary-light)' : 'var(--dark-border)'}`, borderRadius: 20, fontSize: 13, color: selected ? 'var(--primary-light)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none' }}>
+    {selected && <span style={{ fontSize: 11 }}>✓</span>} {label}
+  </span>
+);
+
+const ProgressBar = () => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 540, margin: '0 auto 36px', position: 'relative' }}>
+    <div style={{ position: 'absolute', top: 15, left: 40, right: 40, height: 2, background: 'var(--dark-border)', zIndex: 0 }}></div>
+    <div style={{ position: 'absolute', top: 15, left: 40, height: 2, background: 'var(--primary)', zIndex: 1, transition: 'width 0.4s', width: `${step / (totalSteps - 1) * (100 - 16)}%` }}></div>
+    {stepLabels.map((label, i) => (
+      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2, minWidth: 60 }}>
+        <div style={{ width: 30, height: 30, borderRadius: '50%', background: i < step ? 'rgba(16,185,129,0.2)' : i === step ? 'rgba(108,43,217,0.3)' : 'var(--dark-card)', border: `2px solid ${i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--dark-border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all 0.3s' }}>
+          {i < step ? '✓' : i + 1}
+        </div>
+        <span style={{ fontSize: 11, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: i === step ? 600 : 400 }}>{label}</span>
+      </div>
+    ))}
+  </div>
+);
+
+const WizardCard = ({ children }) => (
+  <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 20, padding: 36, maxWidth: 620, margin: '0 auto', width: '100%' }}>{children}</div>
+);
+
+const InputField = ({ label, hint, ...props }) => (
+  <div style={{ marginBottom: 20 }}>
+    {label && <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</label>}
+    <input {...props} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+    {hint && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>{hint}</div>}
+  </div>
+);
+
+const BtnRow = ({ onBack, onNext, nextLabel, nextStyle }) => (
+  <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 28 }}>
+    {onBack && <button className="btn btn-outline" onClick={onBack}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>}
+    <button className="btn btn-primary" onClick={onNext} style={nextStyle || {}}>{nextLabel || 'Continue'} <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
+  </div>
+);
+
+const AddRow = ({ value, onChange, onAdd, onKeyDown, placeholder }) => (
+  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+    <input value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} style={{ flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+    <button className="btn btn-outline btn-sm" onClick={onAdd}>+ Add</button>
+  </div>
+);
+
+// SUCCESS
+if (submitted) {
+  return (
+    <div style={{ padding: '80px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 64, marginBottom: 16 }}>🎸</div>
+      <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Your Band is Live on StageLink365!</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 15, maxWidth: 460, margin: '0 auto 32px', lineHeight: 1.6 }}>Venues and bookers can now find {form.bandName || 'your band'}. Start exploring gigs or invite your members to claim their profiles.</p>
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <button className="btn btn-primary" onClick={() => setPage('gigs')}><i className="fa-solid fa-clipboard-list"></i> Browse Gigs</button>
+        <button className="btn btn-accent" onClick={() => setPage('dashboard')}><i className="fa-solid fa-gauge-high"></i> Band Dashboard</button>
+        <button className="btn btn-outline" onClick={() => setPage('browse')}><i className="fa-solid fa-search"></i> Browse Talent</button>
+      </div>
+    </div>
+  );
+}
+
+return (
+<div style={{ padding: '40px 24px 80px', maxWidth: 700, margin: '0 auto' }}>
+  <div style={{ textAlign: 'center', marginBottom: 36 }}>
+    <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>Band / Group Profile Setup</h1>
+    <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Get your band discovered by venues, agents, and bookers worldwide</p>
+  </div>
+
+  <ProgressBar />
+
+  {/* STEP 1: Band Info */}
+  {step === 0 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>About Your Band</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>The basics — who you are and how to reach you.</p>
+
+      <InputField label="Band / Group Name" placeholder="e.g., The Harbour Lights" value={form.bandName} onChange={e => updateForm('bandName', e.target.value)} />
+      <InputField label="Primary Contact Name" placeholder="e.g., Marcus Rivera" value={form.contactName} onChange={e => updateForm('contactName', e.target.value)} />
+      <InputField label="Your Role in the Band" placeholder="e.g., Band Leader, Manager, Lead Vocalist" value={form.contactRole} onChange={e => updateForm('contactRole', e.target.value)} />
+      <InputField label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
+      <InputField label="Based In" placeholder="City, State / Country" value={form.location} onChange={e => updateForm('location', e.target.value)} />
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Band Size</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {BAND_SIZES.map(s => (
+            <Chip key={s} label={s} selected={bandSize === s} onClick={() => setBandSize(s)} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Band Type</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What best describes your act?</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {BAND_TYPES.map(t => (
+            <Chip key={t} label={t} selected={bandType === t} onClick={() => setBandType(bandType === t ? null : t)} />
+          ))}
+        </div>
+      </div>
+
+      {/* Band Members */}
+      <div style={{ marginBottom: 8 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Band Members</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, opacity: 0.7 }}>Add your members — they'll be able to link their own Stagelink profiles later</div>
+        {members.map((m, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input placeholder="Name" value={m.name} onChange={e => updateMember(i, 'name', e.target.value)} style={{ flex: 2, minWidth: 120, padding: '10px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+            <input placeholder="Role / Instrument" value={m.role} onChange={e => updateMember(i, 'role', e.target.value)} style={{ flex: 2, minWidth: 120, padding: '10px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+            <input placeholder="Email (optional)" value={m.email} onChange={e => updateMember(i, 'email', e.target.value)} style={{ flex: 2, minWidth: 140, padding: '10px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+            {members.length > 1 && <span onClick={() => removeMember(i)} style={{ color: 'var(--danger)', cursor: 'pointer', fontSize: 18, padding: '0 4px', flexShrink: 0 }}>×</span>}
+          </div>
+        ))}
+        <button className="btn btn-outline btn-sm" onClick={addMember} style={{ marginTop: 4 }}><i className="fa-solid fa-plus" style={{ fontSize: 11 }}></i> Add Member</button>
+      </div>
+
+      <BtnRow onNext={() => goTo(1)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 2: Sound & Style */}
+  {step === 1 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Sound & Style</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help bookers understand your sound so the right gigs find you.</p>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Genres</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select all that describe your sound</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...BAND_GENRES, ...selectedGenres.filter(g => !BAND_GENRES.includes(g))])].map(g => (
+            <Chip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleItem(selectedGenres, setSelectedGenres, g)} />
+          ))}
+        </div>
+        <AddRow value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre))} onAdd={() => addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre)} placeholder="Add a custom genre..." />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Instruments in the Band</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What instruments make up your lineup?</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...INSTRUMENTS_LIST, ...selectedInstruments.filter(i => !INSTRUMENTS_LIST.includes(i))])].map(inst => (
+            <Chip key={inst} label={inst} selected={selectedInstruments.includes(inst)} onClick={() => toggleItem(selectedInstruments, setSelectedInstruments, inst)} />
+          ))}
+        </div>
+        <AddRow value={customInstrument} onChange={e => setCustomInstrument(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customInstrument, selectedInstruments, setSelectedInstruments, setCustomInstrument))} onAdd={() => addCustom(customInstrument, selectedInstruments, setSelectedInstruments, setCustomInstrument)} placeholder="Add a custom instrument..." />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Typical Set Length</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {['1 set (30-45 min)', '1 set (60 min)', '2 sets (45 min each)', '2 sets (60 min each)', '3 sets (45 min each)', 'Full show (90+ min)', 'Flexible / Custom'].map(s => (
+            <Chip key={s} label={s} selected={form.setLength === s} onClick={() => updateForm('setLength', s)} />
+          ))}
+        </div>
+      </div>
+
+      <BtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 3: Rates & Service Areas */}
+  {step === 2 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Rates & Availability</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help bookers understand your pricing and where you're available.</p>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Rate Range</label>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <input placeholder="Min ($)" value={form.rateMin} onChange={e => updateForm('rateMin', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+          </div>
+          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>to</span>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <input placeholder="Max ($)" value={form.rateMax} onChange={e => updateForm('rateMax', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+          </div>
+          <select value={form.ratePer} onChange={e => updateForm('ratePer', e.target.value)} style={{ padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none', minWidth: 130 }}>
+            <option value="per show">Per Show</option>
+            <option value="per set">Per Set</option>
+            <option value="per hour">Per Hour</option>
+            <option value="per day">Per Day</option>
+            <option value="per week">Per Week</option>
+            <option value="negotiable">Negotiable</option>
+          </select>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, opacity: 0.7 }}>Visible on your profile. Travel and tech rider costs can be noted in your bio.</div>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Gig Types</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What kinds of events does your band play?</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...GIG_TYPES, ...selectedGigTypes.filter(g => !GIG_TYPES.includes(g))])].map(g => (
+            <Chip key={g} label={g} selected={selectedGigTypes.includes(g)} onClick={() => toggleItem(selectedGigTypes, setSelectedGigTypes, g)} />
+          ))}
+        </div>
+        <AddRow value={customGigType} onChange={e => setCustomGigType(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType))} onAdd={() => addCustom(customGigType, selectedGigTypes, setSelectedGigTypes, setCustomGigType)} placeholder="Add a custom gig type..." />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Willing to Travel To</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select the regions your band is available to play</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...AREA_OPTIONS, ...selectedAreas.filter(a => !AREA_OPTIONS.includes(a))])].map(a => (
+            <Chip key={a} label={a} selected={selectedAreas.includes(a)} onClick={() => toggleItem(selectedAreas, setSelectedAreas, a)} />
+          ))}
+        </div>
+        <AddRow value={customArea} onChange={e => setCustomArea(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea))} onAdd={() => addCustom(customArea, selectedAreas, setSelectedAreas, setCustomArea)} placeholder="Add a custom region..." />
+      </div>
+
+      <BtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 4: Media & Bio */}
+  {step === 3 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Media & Bio</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Showcase your band — great media is what gets you booked.</p>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Band Photo / Logo</label>
+        <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+          <i className="fa-solid fa-users" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Click to upload</span> a group photo or logo<br/>PNG, JPG up to 5MB</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Performance Video / Reel</label>
+        <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+          <i className="fa-solid fa-video" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Upload a video</span> or paste a YouTube/Vimeo link<br/>MP4 up to 100MB, or paste URL below</div>
+        </div>
+        <input placeholder="Or paste a video URL (YouTube, Vimeo)" style={{ width: '100%', padding: '10px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none', marginTop: 8 }} />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Audio Samples / Tracks</label>
+        <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+          <i className="fa-solid fa-music" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Upload audio</span> clips or demo tracks<br/>MP3, WAV up to 20MB each</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Band Bio</label>
+        <textarea placeholder="Tell venues about your band — your story, your sound, notable gigs, what makes you the right choice for their event..." rows="5" value={form.bio} onChange={e => updateForm('bio', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, resize: 'vertical', minHeight: 120, outline: 'none', fontFamily: 'inherit' }}></textarea>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>Tip: mention notable venues, festivals, or artists you've worked with</div>
+      </div>
+
+      <div style={{ marginBottom: 4 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Social & Streaming Links</label>
+        <InputField label="" placeholder="Website URL" value={form.website} onChange={e => updateForm('website', e.target.value)} />
+        <InputField label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
+        <InputField label="" placeholder="YouTube Channel URL" value={form.youtube} onChange={e => updateForm('youtube', e.target.value)} />
+        <InputField label="" placeholder="Spotify Artist Page" value={form.spotify} onChange={e => updateForm('spotify', e.target.value)} />
+        <InputField label="" placeholder="TikTok URL" value={form.tiktok} onChange={e => updateForm('tiktok', e.target.value)} />
+        <InputField label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
+      </div>
+
+      <BtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
+    </WizardCard>
+  )}
+
+  {/* STEP 5: Review */}
+  {step === 4 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Review Your Band Profile</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make sure everything looks good before going live.</p>
+
+      {[
+        { section: 'Band Info', rows: [
+          { key: 'Band Name', val: form.bandName || '—', editStep: 0 },
+          { key: 'Contact', val: form.contactName ? `${form.contactName} (${form.contactRole || 'Primary Contact'})` : '—', editStep: 0 },
+          { key: 'Location', val: form.location || '—', editStep: 0 },
+          { key: 'Size', val: bandSize || '—', editStep: 0 },
+          { key: 'Type', val: bandType || '—', editStep: 0 },
+          { key: 'Members', val: members.filter(m => m.name).length > 0 ? members.filter(m => m.name).map(m => m.name).join(', ') : '—', editStep: 0 },
+        ]},
+        { section: 'Sound & Style', rows: [
+          { key: 'Genres', val: selectedGenres.length > 0 ? selectedGenres.slice(0, 4).join(', ') + (selectedGenres.length > 4 ? ` +${selectedGenres.length - 4} more` : '') : '—', editStep: 1 },
+          { key: 'Instruments', val: selectedInstruments.length > 0 ? selectedInstruments.slice(0, 4).join(', ') + (selectedInstruments.length > 4 ? ` +${selectedInstruments.length - 4} more` : '') : '—', editStep: 1 },
+          { key: 'Set Length', val: form.setLength || '—', editStep: 1 },
+        ]},
+        { section: 'Rates & Availability', rows: [
+          { key: 'Rate', val: form.rateMin && form.rateMax ? `$${form.rateMin} – $${form.rateMax} ${form.ratePer}` : form.ratePer === 'negotiable' ? 'Negotiable' : '—', editStep: 2 },
+          { key: 'Gig Types', val: selectedGigTypes.length > 0 ? selectedGigTypes.slice(0, 4).join(', ') + (selectedGigTypes.length > 4 ? ` +${selectedGigTypes.length - 4} more` : '') : '—', editStep: 2 },
+          { key: 'Travel Areas', val: selectedAreas.length > 0 ? selectedAreas.slice(0, 3).join(', ') + (selectedAreas.length > 3 ? ` +${selectedAreas.length - 3} more` : '') : '—', editStep: 2 },
+        ]},
+      ].map((section, si) => (
+        <div key={si} style={{ marginBottom: 24 }}>
+          <h4 style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, fontWeight: 600 }}>{section.section}</h4>
+          {section.rows.map((row, ri) => (
+            <div key={ri} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: ri < section.rows.length - 1 ? '1px solid var(--dark-lighter)' : 'none' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{row.key}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, textAlign: 'right', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.val}</span>
+                <span onClick={() => goTo(row.editStep)} style={{ color: 'var(--primary-light)', fontSize: 12, cursor: 'pointer' }}>Edit</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
+        <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
+        <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch Band Profile <i className="fa-solid fa-guitar" style={{ fontSize: 14 }}></i></button>
+      </div>
+    </WizardCard>
+  )}
+</div>
+);
+}
+
+// ===========================
+// VENUE ONBOARDING WIZARD (BOOKER HUB)
+// ===========================
+
+const VENUE_TYPES = [
+'Concert Hall / Theatre', 'Arena / Stadium', 'Nightclub / Lounge',
+'Bar / Pub', 'Restaurant / Dinner Venue', 'Hotel / Resort',
+'Casino', 'Cruise Ship', 'Convention Center',
+'Outdoor Amphitheatre', 'Festival Grounds', 'Private Event Space',
+'Country Club / Golf Club', 'Winery / Brewery', 'Community Center',
+'Church / House of Worship', 'Corporate Office / Campus',
+'Theme Park', 'Wedding Venue', 'Rooftop / Pool Venue'
+];
+
+const VENUE_CAPACITY = [
+'Under 50', '50–100', '100–250', '250–500',
+'500–1,000', '1,000–2,500', '2,500–5,000', '5,000+'
+];
+
+const STAGE_FEATURES = [
+'Full Stage with Wings', 'Thrust / Runway Stage', 'In-the-Round / 360°',
+'Raised Platform / Riser', 'Floor-Level Performance Area',
+'Outdoor Stage', 'Built-In Sound System', 'Built-In Lighting Rig',
+'Backstage / Green Room', 'Loading Dock / Drive-In Access',
+'Dressing Rooms', 'Monitor System', 'In-House Audio Engineer',
+'In-House Lighting Tech', 'Grand Piano Available', 'Drum Kit Available',
+'Backline Provided', 'Video / Projection System', 'Fly System / Rigging',
+'Orchestra Pit'
+];
+
+const ENTERTAINMENT_NEEDS = [
+'Live Bands / Musicians', 'Solo Performers / Singer-Songwriters',
+'DJs', 'Comedians', 'Magicians / Variety Acts',
+'Theatre / Musical Productions', 'Tribute / Cover Acts',
+'Corporate Speakers / Emcees', 'Dance Performers',
+'Kids / Family Entertainment', 'Ambient / Background Music',
+'Full Production Shows', 'Cultural / Specialty Acts',
+'Circus / Acrobatic Acts', 'Holiday / Seasonal Entertainment'
+];
+
+const BOOKING_FREQUENCY = [
+'Daily', 'Multiple times per week', 'Weekly',
+'Bi-weekly', 'Monthly', 'Seasonally', 'For special events only'
+];
+
+function VenueOnboarding({ setPage }) {
+const [step, setStep] = useState(0);
+const [form, setForm] = useState({ venueName: '', contactName: '', contactTitle: '', phone: '', email: '', address: '', city: '', stateCountry: '', website: '', bio: '', instagram: '', facebook: '', youtube: '', tiktok: '', budgetMin: '', budgetMax: '', budgetPer: 'per act' });
+const [venueType, setVenueType] = useState(null);
+const [capacity, setCapacity] = useState(null);
+const [selectedStageFeatures, setSelectedStageFeatures] = useState([]);
+const [selectedEntNeeds, setSelectedEntNeeds] = useState([]);
+const [selectedGenres, setSelectedGenres] = useState([]);
+const [bookingFreq, setBookingFreq] = useState(null);
+const [customStageFeature, setCustomStageFeature] = useState('');
+const [customEntNeed, setCustomEntNeed] = useState('');
+const [customGenre, setCustomGenre] = useState('');
+const [submitted, setSubmitted] = useState(false);
+
+const totalSteps = 5;
+const stepLabels = ['Venue Info', 'Stage & Tech', 'Entertainment', 'Media & Bio', 'Review'];
+
+const updateForm = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
+const toggleItem = (list, setList, item) => setList(prev => prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]);
+const addCustom = (val, list, setList, setInput) => { if (val.trim() && !list.includes(val.trim())) { setList(prev => [...prev, val.trim()]); } setInput(''); };
+
+const goTo = (s) => { setStep(s); window.scrollTo(0, 0); };
+
+const Chip = ({ label, selected, onClick }) => (
+  <span onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: selected ? 'rgba(108,43,217,0.2)' : 'var(--dark-lighter)', border: `1.5px solid ${selected ? 'var(--primary-light)' : 'var(--dark-border)'}`, borderRadius: 20, fontSize: 13, color: selected ? 'var(--primary-light)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none' }}>
+    {selected && <span style={{ fontSize: 11 }}>✓</span>} {label}
+  </span>
+);
+
+const ProgressBar = () => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 540, margin: '0 auto 36px', position: 'relative' }}>
+    <div style={{ position: 'absolute', top: 15, left: 40, right: 40, height: 2, background: 'var(--dark-border)', zIndex: 0 }}></div>
+    <div style={{ position: 'absolute', top: 15, left: 40, height: 2, background: 'var(--primary)', zIndex: 1, transition: 'width 0.4s', width: `${step / (totalSteps - 1) * (100 - 16)}%` }}></div>
+    {stepLabels.map((label, i) => (
+      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2, minWidth: 60 }}>
+        <div style={{ width: 30, height: 30, borderRadius: '50%', background: i < step ? 'rgba(16,185,129,0.2)' : i === step ? 'rgba(108,43,217,0.3)' : 'var(--dark-card)', border: `2px solid ${i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--dark-border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all 0.3s' }}>
+          {i < step ? '✓' : i + 1}
+        </div>
+        <span style={{ fontSize: 11, color: i < step ? 'var(--success)' : i === step ? 'var(--primary-light)' : 'var(--text-muted)', fontWeight: i === step ? 600 : 400 }}>{label}</span>
+      </div>
+    ))}
+  </div>
+);
+
+const WizardCard = ({ children }) => (
+  <div style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 20, padding: 36, maxWidth: 620, margin: '0 auto', width: '100%' }}>{children}</div>
+);
+
+const InputField = ({ label, hint, ...props }) => (
+  <div style={{ marginBottom: 20 }}>
+    {label && <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</label>}
+    <input {...props} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+    {hint && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>{hint}</div>}
+  </div>
+);
+
+const BtnRow = ({ onBack, onNext, nextLabel, nextStyle }) => (
+  <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 28 }}>
+    {onBack && <button className="btn btn-outline" onClick={onBack}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>}
+    <button className="btn btn-primary" onClick={onNext} style={nextStyle || {}}>{nextLabel || 'Continue'} <i className="fa-solid fa-arrow-right" style={{ fontSize: 12 }}></i></button>
+  </div>
+);
+
+const AddRow = ({ value, onChange, onAdd, onKeyDown, placeholder }) => (
+  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+    <input value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} style={{ flex: 1, padding: '8px 12px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+    <button className="btn btn-outline btn-sm" onClick={onAdd}>+ Add</button>
+  </div>
+);
+
+// SUCCESS
+if (submitted) {
+  return (
+    <div style={{ padding: '80px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 64, marginBottom: 16 }}>🏛️</div>
+      <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>{form.venueName || 'Your Venue'} is Live!</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 15, maxWidth: 460, margin: '0 auto 32px', lineHeight: 1.6 }}>Talent and agents can now discover your venue. Post your first gig or start browsing performers.</p>
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <button className="btn btn-accent" onClick={() => setPage('gigs')}><i className="fa-solid fa-clipboard-list"></i> Post a Gig</button>
+        <button className="btn btn-primary" onClick={() => setPage('browse')}><i className="fa-solid fa-search"></i> Find Talent</button>
+        <button className="btn btn-outline" onClick={() => setPage('booker')}><i className="fa-solid fa-building"></i> Booker Hub</button>
+      </div>
+    </div>
+  );
+}
+
+return (
+<div style={{ padding: '40px 24px 80px', maxWidth: 700, margin: '0 auto' }}>
+  <div style={{ textAlign: 'center', marginBottom: 36 }}>
+    <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>Venue Profile Setup</h1>
+    <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>List your venue and start booking the best entertainment</p>
+  </div>
+
+  <ProgressBar />
+
+  {/* STEP 1: Venue Info */}
+  {step === 0 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>About Your Venue</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Basic details so talent and agents can find and contact you.</p>
+
+      <InputField label="Venue Name" placeholder="e.g., The Blue Note Jazz Club" value={form.venueName} onChange={e => updateForm('venueName', e.target.value)} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <InputField label="Contact Name" placeholder="e.g., Sarah Chen" value={form.contactName} onChange={e => updateForm('contactName', e.target.value)} />
+        <InputField label="Title / Role" placeholder="e.g., Entertainment Director" value={form.contactTitle} onChange={e => updateForm('contactTitle', e.target.value)} />
+      </div>
+
+      <InputField label="Phone Number" placeholder="+1 (555) 123-4567" value={form.phone} onChange={e => updateForm('phone', e.target.value)} />
+      <InputField label="Booking Email" placeholder="booking@yourvenue.com" hint="This is the email talent and agents will use to reach you" value={form.email} onChange={e => updateForm('email', e.target.value)} />
+      <InputField label="Street Address" placeholder="123 Main Street" value={form.address} onChange={e => updateForm('address', e.target.value)} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <InputField label="City" placeholder="e.g., New York" value={form.city} onChange={e => updateForm('city', e.target.value)} />
+        <InputField label="State / Country" placeholder="e.g., NY, USA" value={form.stateCountry} onChange={e => updateForm('stateCountry', e.target.value)} />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Venue Type</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {VENUE_TYPES.map(t => (
+            <Chip key={t} label={t} selected={venueType === t} onClick={() => setVenueType(venueType === t ? null : t)} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 8 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Capacity</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {VENUE_CAPACITY.map(c => (
+            <Chip key={c} label={c} selected={capacity === c} onClick={() => setCapacity(capacity === c ? null : c)} />
+          ))}
+        </div>
+      </div>
+
+      <BtnRow onNext={() => goTo(1)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 2: Stage & Technical */}
+  {step === 1 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Stage & Technical</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Help performers know what to expect when they play your venue.</p>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Stage & Facilities</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>Select everything your venue provides</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...STAGE_FEATURES, ...selectedStageFeatures.filter(f => !STAGE_FEATURES.includes(f))])].map(f => (
+            <Chip key={f} label={f} selected={selectedStageFeatures.includes(f)} onClick={() => toggleItem(selectedStageFeatures, setSelectedStageFeatures, f)} />
+          ))}
+        </div>
+        <AddRow value={customStageFeature} onChange={e => setCustomStageFeature(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customStageFeature, selectedStageFeatures, setSelectedStageFeatures, setCustomStageFeature))} onAdd={() => addCustom(customStageFeature, selectedStageFeatures, setSelectedStageFeatures, setCustomStageFeature)} placeholder="Add a custom feature..." />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Additional Stage Notes</label>
+        <textarea placeholder="Anything else performers should know — stage dimensions, power supply, load-in details, parking, curfew..." rows="3" style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, resize: 'vertical', minHeight: 80, outline: 'none', fontFamily: 'inherit' }}></textarea>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>This saves talent from asking — and speeds up booking</div>
+      </div>
+
+      <BtnRow onBack={() => goTo(0)} onNext={() => goTo(2)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 3: Entertainment Needs */}
+  {step === 2 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Entertainment Needs</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Tell us what you're looking for so we can match you with the right talent.</p>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Types of Entertainment</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What kinds of acts do you book?</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...ENTERTAINMENT_NEEDS, ...selectedEntNeeds.filter(n => !ENTERTAINMENT_NEEDS.includes(n))])].map(n => (
+            <Chip key={n} label={n} selected={selectedEntNeeds.includes(n)} onClick={() => toggleItem(selectedEntNeeds, setSelectedEntNeeds, n)} />
+          ))}
+        </div>
+        <AddRow value={customEntNeed} onChange={e => setCustomEntNeed(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customEntNeed, selectedEntNeeds, setSelectedEntNeeds, setCustomEntNeed))} onAdd={() => addCustom(customEntNeed, selectedEntNeeds, setSelectedEntNeeds, setCustomEntNeed)} placeholder="Add a custom entertainment type..." />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Preferred Genres</label>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, opacity: 0.7 }}>What genres work best for your venue and audience?</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[...new Set([...GENRE_OPTIONS, ...BAND_GENRES.filter(g => !GENRE_OPTIONS.includes(g)), ...selectedGenres.filter(g => !GENRE_OPTIONS.includes(g) && !BAND_GENRES.includes(g))])].map(g => (
+            <Chip key={g} label={g} selected={selectedGenres.includes(g)} onClick={() => toggleItem(selectedGenres, setSelectedGenres, g)} />
+          ))}
+        </div>
+        <AddRow value={customGenre} onChange={e => setCustomGenre(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre))} onAdd={() => addCustom(customGenre, selectedGenres, setSelectedGenres, setCustomGenre)} placeholder="Add a custom genre..." />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>How Often Do You Book Entertainment?</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {BOOKING_FREQUENCY.map(f => (
+            <Chip key={f} label={f} selected={bookingFreq === f} onClick={() => setBookingFreq(bookingFreq === f ? null : f)} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Typical Budget Range Per Booking</label>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <input placeholder="Min ($)" value={form.budgetMin} onChange={e => updateForm('budgetMin', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+          </div>
+          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>to</span>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <input placeholder="Max ($)" value={form.budgetMax} onChange={e => updateForm('budgetMax', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+          </div>
+          <select value={form.budgetPer} onChange={e => updateForm('budgetPer', e.target.value)} style={{ padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, outline: 'none', minWidth: 130 }}>
+            <option value="per act">Per Act</option>
+            <option value="per night">Per Night</option>
+            <option value="per event">Per Event</option>
+            <option value="varies">Varies</option>
+          </select>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, opacity: 0.7 }}>This helps talent know if they're in range — only visible to matched talent</div>
+      </div>
+
+      <BtnRow onBack={() => goTo(1)} onNext={() => goTo(3)} />
+    </WizardCard>
+  )}
+
+  {/* STEP 4: Media & Bio */}
+  {step === 3 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Media & Bio</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Show talent what your venue looks and feels like.</p>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Venue Photos</label>
+        <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+          <i className="fa-solid fa-images" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Upload photos</span> of your venue, stage, and audience<br/>PNG, JPG up to 5MB each — upload multiple</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Venue Video / Virtual Tour</label>
+        <div style={{ border: '2px dashed var(--dark-border)', borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary-light)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--dark-border)'}>
+          <i className="fa-solid fa-video" style={{ fontSize: 28, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}></i>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}><span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Upload a video</span> or paste a link<br/>Great for showing the vibe, layout, and crowd</div>
+        </div>
+        <input placeholder="Or paste a video URL (YouTube, Vimeo)" style={{ width: '100%', padding: '10px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none', marginTop: 8 }} />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Venue Description</label>
+        <textarea placeholder="Tell talent about your venue — the atmosphere, your audience, what makes a great show here, any notable past performances..." rows="5" value={form.bio} onChange={e => updateForm('bio', e.target.value)} style={{ width: '100%', padding: '12px 14px', background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 10, color: 'var(--text)', fontSize: 14, resize: 'vertical', minHeight: 120, outline: 'none', fontFamily: 'inherit' }}></textarea>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>Performers want to know your vibe — help them picture themselves on your stage</div>
+      </div>
+
+      <div style={{ marginBottom: 4 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Social & Web Links</label>
+        <InputField label="" placeholder="Website URL" value={form.website} onChange={e => updateForm('website', e.target.value)} />
+        <InputField label="" placeholder="Instagram URL" value={form.instagram} onChange={e => updateForm('instagram', e.target.value)} />
+        <InputField label="" placeholder="Facebook URL" value={form.facebook} onChange={e => updateForm('facebook', e.target.value)} />
+        <InputField label="" placeholder="YouTube Channel" value={form.youtube} onChange={e => updateForm('youtube', e.target.value)} />
+        <InputField label="" placeholder="TikTok URL" value={form.tiktok} onChange={e => updateForm('tiktok', e.target.value)} />
+      </div>
+
+      <BtnRow onBack={() => goTo(2)} onNext={() => goTo(4)} nextLabel="Review" />
+    </WizardCard>
+  )}
+
+  {/* STEP 5: Review */}
+  {step === 4 && (
+    <WizardCard>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Review Your Venue Profile</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Make sure everything looks good before going live.</p>
+
+      {[
+        { section: 'Venue Info', rows: [
+          { key: 'Venue Name', val: form.venueName || '—', editStep: 0 },
+          { key: 'Contact', val: form.contactName ? `${form.contactName} (${form.contactTitle || 'Primary Contact'})` : '—', editStep: 0 },
+          { key: 'Location', val: [form.city, form.stateCountry].filter(Boolean).join(', ') || '—', editStep: 0 },
+          { key: 'Type', val: venueType || '—', editStep: 0 },
+          { key: 'Capacity', val: capacity || '—', editStep: 0 },
+        ]},
+        { section: 'Stage & Technical', rows: [
+          { key: 'Features', val: selectedStageFeatures.length > 0 ? selectedStageFeatures.slice(0, 4).join(', ') + (selectedStageFeatures.length > 4 ? ` +${selectedStageFeatures.length - 4} more` : '') : '—', editStep: 1 },
+        ]},
+        { section: 'Entertainment', rows: [
+          { key: 'Looking For', val: selectedEntNeeds.length > 0 ? selectedEntNeeds.slice(0, 3).join(', ') + (selectedEntNeeds.length > 3 ? ` +${selectedEntNeeds.length - 3} more` : '') : '—', editStep: 2 },
+          { key: 'Genres', val: selectedGenres.length > 0 ? selectedGenres.slice(0, 4).join(', ') + (selectedGenres.length > 4 ? ` +${selectedGenres.length - 4} more` : '') : '—', editStep: 2 },
+          { key: 'Frequency', val: bookingFreq || '—', editStep: 2 },
+          { key: 'Budget', val: form.budgetMin && form.budgetMax ? `$${form.budgetMin} – $${form.budgetMax} ${form.budgetPer}` : form.budgetPer === 'varies' ? 'Varies' : '—', editStep: 2 },
+        ]},
+      ].map((section, si) => (
+        <div key={si} style={{ marginBottom: 24 }}>
+          <h4 style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, fontWeight: 600 }}>{section.section}</h4>
+          {section.rows.map((row, ri) => (
+            <div key={ri} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: ri < section.rows.length - 1 ? '1px solid var(--dark-lighter)' : 'none' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{row.key}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, textAlign: 'right', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.val}</span>
+                <span onClick={() => goTo(row.editStep)} style={{ color: 'var(--primary-light)', fontSize: 12, cursor: 'pointer' }}>Edit</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
+        <button className="btn btn-outline" onClick={() => goTo(3)}><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Back</button>
+        <button className="btn btn-accent btn-lg" onClick={() => setSubmitted(true)} style={{ fontWeight: 700 }}>Launch Venue Profile <i className="fa-solid fa-building-columns" style={{ fontSize: 14 }}></i></button>
       </div>
     </WizardCard>
   )}
