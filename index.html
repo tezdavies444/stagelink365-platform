@@ -242,6 +242,212 @@ const GENRES = ['Rock', 'Pop', 'Jazz', 'Blues', 'Country', 'R&B/Soul', 'Hip-Hop'
 
 const AZ_LOCATIONS = ['Phoenix', 'Scottsdale', 'Tempe', 'Mesa', 'Chandler', 'Gilbert', 'Glendale', 'Peoria', 'Tucson', 'Sedona', 'Flagstaff', 'Prescott', 'Yuma', 'Lake Havasu City', 'Sierra Vista', 'Casa Grande', 'Surprise', 'Goodyear', 'Avondale', 'Maricopa'];
 
+// ── Location Data (Countries → States → Cities) ──
+const LOCATION_COUNTRIES = [
+  { code: 'US', name: 'United States' }, { code: 'CA', name: 'Canada' }, { code: 'GB', name: 'United Kingdom' },
+  { code: 'AU', name: 'Australia' }, { code: 'MX', name: 'Mexico' }, { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' }, { code: 'IT', name: 'Italy' }, { code: 'ES', name: 'Spain' },
+  { code: 'JP', name: 'Japan' }, { code: 'BR', name: 'Brazil' }, { code: 'NZ', name: 'New Zealand' },
+  { code: 'IE', name: 'Ireland' }, { code: 'NL', name: 'Netherlands' }, { code: 'SE', name: 'Sweden' },
+  { code: 'CH', name: 'Switzerland' }, { code: 'AE', name: 'United Arab Emirates' }, { code: 'ZA', name: 'South Africa' },
+  { code: 'PH', name: 'Philippines' }, { code: 'SG', name: 'Singapore' }, { code: 'JM', name: 'Jamaica' },
+  { code: 'BS', name: 'Bahamas' }, { code: 'TT', name: 'Trinidad and Tobago' }, { code: 'DO', name: 'Dominican Republic' },
+  { code: 'PR', name: 'Puerto Rico' }, { code: 'CO', name: 'Colombia' }, { code: 'AR', name: 'Argentina' },
+  { code: 'TH', name: 'Thailand' }, { code: 'IL', name: 'Israel' }, { code: 'NO', name: 'Norway' },
+];
+
+const LOCATION_STATES = {
+  US: [
+    { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
+    { code: 'AR', name: 'Arkansas' }, { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
+    { code: 'CT', name: 'Connecticut' }, { code: 'DE', name: 'Delaware' }, { code: 'DC', name: 'District of Columbia' },
+    { code: 'FL', name: 'Florida' }, { code: 'GA', name: 'Georgia' }, { code: 'HI', name: 'Hawaii' },
+    { code: 'ID', name: 'Idaho' }, { code: 'IL', name: 'Illinois' }, { code: 'IN', name: 'Indiana' },
+    { code: 'IA', name: 'Iowa' }, { code: 'KS', name: 'Kansas' }, { code: 'KY', name: 'Kentucky' },
+    { code: 'LA', name: 'Louisiana' }, { code: 'ME', name: 'Maine' }, { code: 'MD', name: 'Maryland' },
+    { code: 'MA', name: 'Massachusetts' }, { code: 'MI', name: 'Michigan' }, { code: 'MN', name: 'Minnesota' },
+    { code: 'MS', name: 'Mississippi' }, { code: 'MO', name: 'Missouri' }, { code: 'MT', name: 'Montana' },
+    { code: 'NE', name: 'Nebraska' }, { code: 'NV', name: 'Nevada' }, { code: 'NH', name: 'New Hampshire' },
+    { code: 'NJ', name: 'New Jersey' }, { code: 'NM', name: 'New Mexico' }, { code: 'NY', name: 'New York' },
+    { code: 'NC', name: 'North Carolina' }, { code: 'ND', name: 'North Dakota' }, { code: 'OH', name: 'Ohio' },
+    { code: 'OK', name: 'Oklahoma' }, { code: 'OR', name: 'Oregon' }, { code: 'PA', name: 'Pennsylvania' },
+    { code: 'RI', name: 'Rhode Island' }, { code: 'SC', name: 'South Carolina' }, { code: 'SD', name: 'South Dakota' },
+    { code: 'TN', name: 'Tennessee' }, { code: 'TX', name: 'Texas' }, { code: 'UT', name: 'Utah' },
+    { code: 'VT', name: 'Vermont' }, { code: 'VA', name: 'Virginia' }, { code: 'WA', name: 'Washington' },
+    { code: 'WV', name: 'West Virginia' }, { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' },
+  ],
+  CA: [
+    { code: 'AB', name: 'Alberta' }, { code: 'BC', name: 'British Columbia' }, { code: 'MB', name: 'Manitoba' },
+    { code: 'NB', name: 'New Brunswick' }, { code: 'NL', name: 'Newfoundland and Labrador' },
+    { code: 'NS', name: 'Nova Scotia' }, { code: 'ON', name: 'Ontario' }, { code: 'QC', name: 'Quebec' },
+    { code: 'SK', name: 'Saskatchewan' },
+  ],
+  GB: [
+    { code: 'ENG', name: 'England' }, { code: 'SCT', name: 'Scotland' },
+    { code: 'WLS', name: 'Wales' }, { code: 'NIR', name: 'Northern Ireland' },
+  ],
+  AU: [
+    { code: 'NSW', name: 'New South Wales' }, { code: 'VIC', name: 'Victoria' },
+    { code: 'QLD', name: 'Queensland' }, { code: 'WA', name: 'Western Australia' },
+    { code: 'SA', name: 'South Australia' }, { code: 'TAS', name: 'Tasmania' },
+  ],
+};
+
+const LOCATION_CITIES = {
+  US: {
+    AZ: ['Phoenix','Scottsdale','Tempe','Mesa','Chandler','Gilbert','Glendale','Peoria','Tucson','Sedona','Flagstaff','Prescott','Yuma','Lake Havasu City','Sierra Vista','Casa Grande','Surprise','Goodyear','Avondale','Maricopa'],
+    CA: ['Los Angeles','San Francisco','San Diego','Sacramento','San Jose','Oakland','Anaheim','Long Beach','Hollywood','Santa Monica','Beverly Hills','Palm Springs','Santa Barbara','Napa'],
+    CO: ['Denver','Colorado Springs','Boulder','Fort Collins','Aspen','Vail'],
+    CT: ['Hartford','New Haven','Stamford','Bridgeport','Mystic'],
+    FL: ['Miami','Orlando','Tampa','Fort Lauderdale','Jacksonville','St. Petersburg','Naples','West Palm Beach','Sarasota','Key West','Clearwater','Pensacola'],
+    GA: ['Atlanta','Savannah','Augusta','Athens'],
+    HI: ['Honolulu','Maui','Kailua-Kona'],
+    IL: ['Chicago','Springfield','Naperville','Evanston'],
+    LA: ['New Orleans','Baton Rouge','Shreveport','Lafayette'],
+    MA: ['Boston','Cambridge','Worcester','Salem','Cape Cod'],
+    MI: ['Detroit','Grand Rapids','Ann Arbor','Traverse City'],
+    MN: ['Minneapolis','St. Paul','Rochester','Duluth'],
+    MO: ['Kansas City','St. Louis','Springfield','Branson'],
+    NV: ['Las Vegas','Reno','Henderson','Laughlin','Lake Tahoe'],
+    NJ: ['Newark','Jersey City','Atlantic City','Hoboken','Asbury Park'],
+    NY: ['New York City','Brooklyn','Manhattan','Queens','Buffalo','Albany','Rochester','Syracuse','Long Island'],
+    NC: ['Charlotte','Raleigh','Asheville','Durham','Wilmington'],
+    OH: ['Columbus','Cleveland','Cincinnati','Dayton'],
+    OR: ['Portland','Eugene','Salem','Bend'],
+    PA: ['Philadelphia','Pittsburgh','Allentown','Harrisburg'],
+    SC: ['Charleston','Columbia','Myrtle Beach','Greenville','Hilton Head'],
+    TN: ['Nashville','Memphis','Knoxville','Chattanooga','Pigeon Forge','Gatlinburg'],
+    TX: ['Houston','Dallas','Austin','San Antonio','Fort Worth','El Paso','Galveston'],
+    VA: ['Virginia Beach','Richmond','Norfolk','Arlington','Alexandria','Charlottesville'],
+    WA: ['Seattle','Tacoma','Spokane','Bellevue'],
+    DC: ['Washington'],
+  },
+  CA: {
+    AB: ['Calgary','Edmonton','Banff'], BC: ['Vancouver','Victoria','Whistler','Kelowna'],
+    ON: ['Toronto','Ottawa','Hamilton','Niagara Falls'], QC: ['Montreal','Quebec City'],
+  },
+  GB: {
+    ENG: ['London','Manchester','Birmingham','Liverpool','Bristol','Leeds','Brighton','Bath','Oxford','Cambridge'],
+    SCT: ['Edinburgh','Glasgow','Aberdeen'], WLS: ['Cardiff','Swansea'], NIR: ['Belfast','Derry'],
+  },
+  AU: {
+    NSW: ['Sydney','Newcastle','Byron Bay'], VIC: ['Melbourne','Geelong'],
+    QLD: ['Brisbane','Gold Coast','Cairns'], WA: ['Perth','Fremantle'],
+  },
+};
+
+// Helper: find country code from name
+function findCountryCode(name) {
+  if (!name) return '';
+  const entry = LOCATION_COUNTRIES.find(c => c.name.toLowerCase() === name.toLowerCase());
+  return entry ? entry.code : '';
+}
+// Helper: find state code from name or code
+function findStateCode(countryCode, name) {
+  if (!name || !countryCode) return '';
+  const states = LOCATION_STATES[countryCode] || [];
+  const entry = states.find(s => s.name.toLowerCase() === name.toLowerCase() || s.code.toLowerCase() === name.toLowerCase());
+  return entry ? entry.code : name;
+}
+
+// ── LocationPicker Component ──
+function LocationPicker({ country, state, city, onChange, compact }) {
+  const [cityInput, setCityInput] = React.useState(city || '');
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
+  const cityRef = React.useRef(null);
+
+  React.useEffect(() => { setCityInput(city || ''); }, [city]);
+
+  const availableStates = country ? (LOCATION_STATES[country] || []) : [];
+  const availableCities = country && state ? (LOCATION_CITIES[country] && LOCATION_CITIES[country][state] || []) : [];
+
+  const filteredCities = cityInput.length > 0
+    ? availableCities.filter(c => c.toLowerCase().includes(cityInput.toLowerCase())).slice(0, 8)
+    : [];
+
+  const selectStyle = { fontSize: 13, padding: '8px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--dark-border)', borderRadius: 8, color: 'var(--text)', width: '100%' };
+  const labelStyle = { fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' };
+
+  const handleCountryChange = (code) => {
+    const cName = (LOCATION_COUNTRIES.find(c => c.code === code) || {}).name || '';
+    onChange({ country: code, countryName: cName, state: '', stateName: '', city: '' });
+    setCityInput('');
+  };
+  const handleStateChange = (code) => {
+    const sName = (availableStates.find(s => s.code === code) || {}).name || code;
+    onChange({ country, countryName: (LOCATION_COUNTRIES.find(c => c.code === country) || {}).name || '', state: code, stateName: sName, city: '' });
+    setCityInput('');
+  };
+  const handleCitySelect = (c) => {
+    setCityInput(c);
+    setShowSuggestions(false);
+    onChange({ country, countryName: (LOCATION_COUNTRIES.find(x => x.code === country) || {}).name || '', state, stateName: (availableStates.find(s => s.code === state) || {}).name || state, city: c });
+  };
+  const handleCityBlur = () => {
+    setTimeout(() => {
+      setShowSuggestions(false);
+      if (cityInput) onChange({ country, countryName: (LOCATION_COUNTRIES.find(x => x.code === country) || {}).name || '', state, stateName: (availableStates.find(s => s.code === state) || {}).name || state, city: cityInput });
+    }, 150);
+  };
+
+  if (compact) {
+    return React.createElement('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+      React.createElement('select', { value: country || '', onChange: e => handleCountryChange(e.target.value), style: { ...selectStyle, width: 'auto', minWidth: 160 } },
+        React.createElement('option', { value: '' }, 'All Countries'),
+        LOCATION_COUNTRIES.map(c => React.createElement('option', { key: c.code, value: c.code }, c.name))
+      ),
+      availableStates.length > 0 && React.createElement('select', { value: state || '', onChange: e => handleStateChange(e.target.value), style: { ...selectStyle, width: 'auto', minWidth: 140 } },
+        React.createElement('option', { value: '' }, 'All States'),
+        availableStates.map(s => React.createElement('option', { key: s.code, value: s.code }, s.name))
+      ),
+    );
+  }
+
+  return React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 } },
+    React.createElement('div', null,
+      React.createElement('label', { style: labelStyle }, 'Country'),
+      React.createElement('select', { value: country || '', onChange: e => handleCountryChange(e.target.value), style: selectStyle },
+        React.createElement('option', { value: '' }, 'Select country...'),
+        LOCATION_COUNTRIES.map(c => React.createElement('option', { key: c.code, value: c.code }, c.name))
+      )
+    ),
+    React.createElement('div', null,
+      React.createElement('label', { style: labelStyle }, country === 'CA' ? 'Province' : country === 'GB' ? 'Region' : 'State'),
+      availableStates.length > 0
+        ? React.createElement('select', { value: state || '', onChange: e => handleStateChange(e.target.value), style: selectStyle },
+            React.createElement('option', { value: '' }, 'Select...'),
+            availableStates.map(s => React.createElement('option', { key: s.code, value: s.code }, s.name))
+          )
+        : React.createElement('input', { value: state || '', onChange: e => { const v = e.target.value; onChange({ country, countryName: (LOCATION_COUNTRIES.find(x => x.code === country) || {}).name || '', state: v, stateName: v, city: cityInput }); }, placeholder: 'State / Region', style: selectStyle, disabled: !country })
+    ),
+    React.createElement('div', { style: { position: 'relative' } },
+      React.createElement('label', { style: labelStyle }, 'City'),
+      React.createElement('input', {
+        ref: cityRef, value: cityInput,
+        onChange: e => { setCityInput(e.target.value); setShowSuggestions(true); },
+        onFocus: () => { if (filteredCities.length > 0) setShowSuggestions(true); },
+        onBlur: handleCityBlur,
+        placeholder: !country ? 'Select country first...' : (!state && availableStates.length > 0) ? 'Select state first...' : 'Type city...',
+        disabled: !country || (!state && availableStates.length > 0),
+        style: selectStyle
+      }),
+      showSuggestions && filteredCities.length > 0 && React.createElement('div', {
+        style: { position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: 4, background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 8, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }
+      },
+        filteredCities.map(c => React.createElement('div', {
+          key: c, onMouseDown: () => handleCitySelect(c),
+          style: { padding: '10px 14px', fontSize: 13, cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.04)' },
+          onMouseOver: e => e.target.style.background = 'rgba(108,43,217,0.15)',
+          onMouseOut: e => e.target.style.background = 'transparent',
+        }, c))
+      ),
+      showSuggestions && cityInput.length > 0 && filteredCities.length === 0 && availableCities.length > 0 && React.createElement('div', {
+        style: { position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: 4, background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)' }
+      }, 'No match \u2014 your entry will be saved as-is')
+    )
+  );
+}
+
 const VENUES_AZ = ['Talking Stick Resort', 'Casino Arizona', 'Wild Horse Pass', 'Orpheum Theatre', 'Celebrity Theatre', 'Crescent Ballroom', 'The Van Buren', 'Marquee Theatre', 'Rialto Theatre (Tucson)', 'Musical Instrument Museum', 'Arizona Federal Theatre', 'Comerica Theatre', 'The Pressroom', 'Club Red', 'Livewire', "Charley's", 'Last Exit Live', 'Rhythm Room', 'Hotel Valley Ho', 'The Scottsdale Resort'];
 
 const SAMPLE_PROFILES = [
@@ -1615,9 +1821,10 @@ const [saving, setSaving] = useState(false);
 const [saveError, setSaveError] = useState('');
 const [createdResult, setCreatedResult] = useState(null);
 const [formData, setFormData] = useState({
-  name: '', email: '', phone: '', category: [], subcategories: [], location: '', state: 'AZ',
+  name: '', email: '', phone: '', category: [], subcategories: [], location: '', state: '', country: '',
   bio: '', rateMin: '', rateMax: '', rateType: '', yearsExp: '', travelRadius: '',
-  genres: [], skills: [], unions: [], equipment: '', recentVenues: ''
+  genres: [], skills: [], unions: [], equipment: '', recentVenues: '',
+  _countryCode: 'US', _stateCode: ''
 });
 const update = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
 const toggleArrayItem = (key, item) => update(key, formData[key].includes(item) ? formData[key].filter(x => x !== item) : [...formData[key], item]);
@@ -1661,16 +1868,11 @@ return (
 <div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Professional/Stage Name *</label><input placeholder="e.g., Marcus Johnson" value={formData.name} onChange={e => update('name', e.target.value)} /></div>
 <div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Email *</label><input type="email" placeholder="you@example.com" value={formData.email} onChange={e => update('email', e.target.value)} /></div>
 <div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Phone</label><input type="tel" placeholder="(555) 123-4567" value={formData.phone} onChange={e => update('phone', e.target.value)} /></div>
-<div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 12 }}>
-<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>City</label>
-<select value={formData.location} onChange={e => update('location', e.target.value)}>
-<option value="">Select city</option>
-{AZ_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
-</select>
-</div>
-<div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>State</label>
-<input value={formData.state} onChange={e => update('state', e.target.value)} />
-</div>
+<div>
+<label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Location</label>
+<LocationPicker country={formData._countryCode} state={formData._stateCode} city={formData.location} onChange={loc => {
+  setFormData(prev => ({ ...prev, _countryCode: loc.country, _stateCode: loc.state, country: loc.countryName, state: loc.stateName, location: loc.city }));
+}} />
 </div>
 <div><label style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Years of Experience</label>
 <input type="number" placeholder="e.g., 10" value={formData.yearsExp} onChange={e => update('yearsExp', e.target.value)} /></div>
@@ -1867,10 +2069,11 @@ const [loading, setLoading] = useState(true);
 const [saving, setSaving] = useState(false);
 const [error, setError] = useState('');
 const [formData, setFormData] = useState({
-  name: '', email: '', phone: '', category: [], subcategories: [], location: '', state: '',
+  name: '', email: '', phone: '', category: [], subcategories: [], location: '', state: '', country: '',
   bio: '', rateMin: '', rateMax: '', rateType: '', yearsExp: '', travelRadius: '',
   genres: [], skills: [], unions: [], equipment: '', recentVenues: '', available: true,
-  videoLink: '', showReelLink: '', audioLink: ''
+  videoLink: '', showReelLink: '', audioLink: '',
+  _countryCode: '', _stateCode: ''
 });
 const update = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
 const toggleArrayItem = (key, item) => update(key, formData[key].includes(item) ? formData[key].filter(x => x !== item) : [...formData[key], item]);
@@ -1881,10 +2084,13 @@ useEffect(() => {
     try {
       const data = await apiGet(`/profile?id=${profileId}`);
       const p = data.profile;
+      const cc = findCountryCode(p.country || '');
+      const sc = cc ? findStateCode(cc, p.state || '') : (p.state || '');
       setFormData({
         name: p.name || '', email: p.email || '', phone: p.phone || '',
         category: p.categories || (p.category ? [p.category] : []), subcategories: p.subcategories || [],
-        location: p.location || '', state: p.state || '',
+        location: p.location || '', state: p.state || '', country: p.country || '',
+        _countryCode: cc, _stateCode: sc,
         bio: p.bio || '', rateMin: p.rateMin || '', rateMax: p.rateMax || '', rateType: p.rateType || '',
         yearsExp: p.yearsExp || '', travelRadius: p.travelRadius || '',
         genres: p.genres || [], skills: p.skills || [], unions: p.unions || [],
@@ -1903,7 +2109,7 @@ const handleSave = async () => {
     const fields = {
       name: formData.name, email: formData.email, phone: formData.phone,
       category: formData.category, subcategories: formData.subcategories,
-      location: formData.location, state: formData.state,
+      location: formData.location, state: formData.state, country: formData.country,
       bio: formData.bio, yearsExp: formData.yearsExp ? parseInt(formData.yearsExp) : undefined,
       travelRadius: formData.travelRadius ? parseInt(formData.travelRadius) : undefined,
       genres: formData.genres, skills: formData.skills, unions: formData.unions,
@@ -1947,11 +2153,12 @@ return (
 <div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Name *</label><input value={formData.name} onChange={e => update('name', e.target.value)} /></div>
 <div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Email *</label><input type="email" value={formData.email} onChange={e => update('email', e.target.value)} /></div>
 </div>
-<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: 12 }}>
 <div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Phone</label><input value={formData.phone} onChange={e => update('phone', e.target.value)} /></div>
-<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>City</label>
-<select value={formData.location} onChange={e => update('location', e.target.value)}><option value="">Select</option>{AZ_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}</select></div>
-<div><label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>State</label><input value={formData.state} onChange={e => update('state', e.target.value)} /></div>
+<div style={{ marginTop: 12 }}>
+<h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Location</h4>
+<LocationPicker country={formData._countryCode} state={formData._stateCode} city={formData.location} onChange={loc => {
+  setFormData(prev => ({ ...prev, _countryCode: loc.country, _stateCode: loc.state, country: loc.countryName, state: loc.stateName, location: loc.city }));
+}} />
 </div>
 </div>
 </div>
