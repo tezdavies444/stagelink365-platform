@@ -486,7 +486,8 @@ const [showEditProfile, setShowEditProfile] = useState(false);
 const [showLogin, setShowLogin] = useState(false);
 const [searchQuery, setSearchQuery] = useState('');
 const [filterCategory, setFilterCategory] = useState('all');
-const [filterLocation, setFilterLocation] = useState('all');
+const [filterCountry, setFilterCountry] = useState('');
+const [filterState, setFilterState] = useState('');
 const [filterAvailability, setFilterAvailability] = useState(false);
 const [filterTier, setFilterTier] = useState('all');
 
@@ -581,7 +582,8 @@ return (
 <BrowsePage
 searchQuery={searchQuery} setSearchQuery={setSearchQuery}
 filterCategory={filterCategory} setFilterCategory={setFilterCategory}
-filterLocation={filterLocation} setFilterLocation={setFilterLocation}
+filterCountry={filterCountry} setFilterCountry={setFilterCountry}
+filterState={filterState} setFilterState={setFilterState}
 filterAvailability={filterAvailability} setFilterAvailability={setFilterAvailability}
 filterTier={filterTier} setFilterTier={setFilterTier}
 onViewProfile={viewProfile}
@@ -964,7 +966,7 @@ return (
 // BROWSE PAGE
 // ===========================
 
-function BrowsePage({ searchQuery, setSearchQuery, filterCategory, setFilterCategory, filterLocation, setFilterLocation, filterAvailability, setFilterAvailability, filterTier, setFilterTier, onViewProfile, profiles, loading, isLiveData }) {
+function BrowsePage({ searchQuery, setSearchQuery, filterCategory, setFilterCategory, filterCountry, setFilterCountry, filterState, setFilterState, filterAvailability, setFilterAvailability, filterTier, setFilterTier, onViewProfile, profiles, loading, isLiveData }) {
 const filtered = useMemo(() => {
 return profiles.filter(p => {
 if (searchQuery) {
@@ -973,7 +975,15 @@ const match = p.name.toLowerCase().includes(q) || p.subcategories.some(s => s.to
 if (!match) return false;
 }
 if (filterCategory !== 'all' && !(p.categories || [p.category]).includes(filterCategory)) return false;
-if (filterLocation !== 'all' && p.location !== filterLocation) return false;
+if (filterCountry) {
+  const cName = (LOCATION_COUNTRIES.find(c => c.code === filterCountry) || {}).name || '';
+  if (p.country && p.country !== cName) return false;
+  if (!p.country && filterCountry !== 'US') return false;
+}
+if (filterState) {
+  const sName = ((LOCATION_STATES[filterCountry] || []).find(s => s.code === filterState) || {}).name || filterState;
+  if (p.state !== sName) return false;
+}
 if (filterAvailability && !p.available) return false;
 if (filterTier !== 'all' && p.tier !== filterTier) return false;
 return true;
@@ -984,14 +994,14 @@ if (a.tier === 'pro' && b.tier === 'free') return -1;
 if (b.tier === 'pro' && a.tier === 'free') return 1;
 return b.rating - a.rating;
 });
-}, [searchQuery, filterCategory, filterLocation, filterAvailability, filterTier]);
+}, [searchQuery, filterCategory, filterCountry, filterState, filterAvailability, filterTier]);
 
 return (
 <div style={{ padding: '32px 0', minHeight: '100vh' }}>
 <div className="container">
 <div style={{ marginBottom: 32 }}>
 <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 8 }}>Browse Talent</h1>
-<p style={{ color: 'var(--text-muted)' }}>Discover entertainment professionals in Arizona</p>
+<p style={{ color: 'var(--text-muted)' }}>Discover entertainment professionals worldwide</p>
 </div>
 {/* Search & Filters */}
 <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1003,10 +1013,7 @@ return (
 <option value="all">All Categories</option>
 {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
 </select>
-<select value={filterLocation} onChange={e => setFilterLocation(e.target.value)} style={{ width: 'auto', minWidth: 160 }}>
-<option value="all">All Locations</option>
-{AZ_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
-</select>
+<LocationPicker compact country={filterCountry} state={filterState} city="" onChange={({ country, state }) => { setFilterCountry(country || ''); setFilterState(state || ''); }} />
 <select value={filterTier} onChange={e => setFilterTier(e.target.value)} style={{ width: 'auto', minWidth: 140 }}>
 <option value="all">All Tiers</option>
 <option value="premium">Premium</option>
