@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Environment / secrets — NEVER commit
+.env
+.env.*
+!.env.example
+
+# Local planning & session continuity docs (not part of the deployed site)
+00_STAGELINK365_BRIEF_CURRENT.md
+01_CURRENT_STATE.md
+CLAUDE.md
+WORKFLOW_CONVENTIONS.md
