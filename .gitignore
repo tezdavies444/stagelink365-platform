@@ -5,6 +5,9 @@
 .vscode/
 .idea/
 
+# Claude Code (worktree metadata, session state)
+.claude/
+
 # Environment / secrets — NEVER commit
 .env
 .env.*
@@ -13,5 +16,7 @@
 # Local planning & session continuity docs (not part of the deployed site)
 00_STAGELINK365_BRIEF_CURRENT.md
 01_CURRENT_STATE.md
-CLAUDE.md
 WORKFLOW_CONVENTIONS.md
+
+# Strategy source artifacts — local-only reference; not for the public site
+strategy/
