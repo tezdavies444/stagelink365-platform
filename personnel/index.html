@@ -487,6 +487,183 @@ section { padding: 80px 0; }
 .footer-links a:hover { color: var(--primary-light); }
 
 /* ═══════════════════════════════════════
+   FOUNDER TIER — hero counter, track tiles, claim modal
+   ═══════════════════════════════════════ */
+.founder-counter-card {
+  margin: 56px auto 32px;
+  max-width: 560px;
+  background: rgba(108,43,217,0.10);
+  border: 1px solid rgba(108,43,217,0.35);
+  border-radius: 18px;
+  padding: 28px 32px;
+  text-align: center;
+}
+.founder-counter-label {
+  font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--primary-light); margin-bottom: 10px;
+}
+.founder-counter-number {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(48px, 7vw, 80px);
+  font-weight: 900; line-height: 1.05; color: #fff;
+}
+.founder-counter-number .of {
+  font-size: 0.5em; color: var(--text-muted); font-weight: 700;
+}
+.founder-counter-tagline {
+  font-size: 14px; color: var(--text-muted); margin-top: 6px;
+}
+.founder-counter-bar {
+  height: 8px; background: rgba(255,255,255,0.06); border-radius: 999px;
+  overflow: hidden; margin: 18px 0 4px;
+}
+.founder-counter-bar-fill {
+  height: 100%; background: var(--pro-gradient);
+  width: 0%; transition: width 0.6s ease-out;
+}
+.founder-counter-status {
+  font-size: 13px; color: var(--text-muted); margin-top: 10px; min-height: 1.2em;
+}
+.founder-counter-status.error { color: var(--danger); }
+
+.founder-tracks {
+  background: var(--dark-card);
+  border-top: 1px solid var(--dark-border);
+  border-bottom: 1px solid var(--dark-border);
+}
+.founder-tracks .section-header h2 { font-size: clamp(28px, 3.5vw, 42px); }
+.founder-tracks-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  max-width: 920px; margin: 0 auto;
+}
+@media (max-width: 720px) { .founder-tracks-grid { grid-template-columns: 1fr; } }
+.founder-track-tile {
+  padding: 32px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.founder-track-eyebrow {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-weight: 700; color: var(--accent);
+}
+.founder-track-tile h3 { font-size: 22px; font-weight: 800; color: #fff; }
+.founder-track-tile p { font-size: 15px; color: var(--text-muted); line-height: 1.6; }
+.founder-track-counter {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px; font-weight: 800; color: #fff;
+}
+.founder-track-counter .of { font-size: 18px; color: var(--text-muted); font-weight: 600; margin-left: 4px; }
+.founder-track-tile .pricing-btn,
+.founder-track-tile .btn { margin-top: auto; }
+
+.founder-claim-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 22px; border-radius: 10px; font-weight: 700; font-size: 15px;
+  background: var(--pro-gradient); color: #fff; border: none; cursor: pointer;
+  transition: all 0.3s; text-decoration: none;
+}
+.founder-claim-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(108,43,217,0.4); }
+.founder-claim-btn[disabled],
+.founder-claim-btn.is-closed {
+  background: var(--dark-lighter); color: var(--text-muted); cursor: not-allowed;
+  box-shadow: none; transform: none;
+}
+
+/* ── Claim modal ── */
+.founder-modal {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(15,15,26,0.85);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.founder-modal.open { display: flex; }
+.founder-modal-box {
+  background: var(--dark-card);
+  border: 1px solid var(--dark-border);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 480px; width: 100%;
+  max-height: calc(100vh - 40px); overflow-y: auto;
+  position: relative;
+  animation: fadeInUp 0.25s ease-out both;
+}
+.founder-modal-close {
+  position: absolute; top: 12px; right: 14px;
+  background: transparent; border: none; color: var(--text-muted);
+  font-size: 22px; cursor: pointer; line-height: 1; padding: 4px 8px;
+}
+.founder-modal-close:hover { color: #fff; }
+.founder-modal-eyebrow {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-weight: 700; color: var(--primary-light); margin-bottom: 8px;
+}
+.founder-modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 6px;
+}
+.founder-modal-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.55; }
+.founder-form-row { margin-bottom: 14px; }
+.founder-form-row label {
+  display: block; font-size: 12px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.founder-form-row input {
+  width: 100%; padding: 12px 14px; border-radius: 10px;
+  background: var(--dark-lighter); border: 1px solid var(--dark-border);
+  color: var(--text); font-family: inherit; font-size: 15px;
+  transition: border-color 0.2s;
+}
+.founder-form-row input:focus { outline: none; border-color: var(--primary-light); }
+.founder-modal-submit {
+  width: 100%; padding: 14px; border-radius: 10px;
+  background: var(--pro-gradient); color: #fff; border: none;
+  font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 8px;
+  transition: all 0.3s;
+}
+.founder-modal-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(108,43,217,0.4); }
+.founder-modal-submit[disabled] {
+  background: var(--dark-lighter); color: var(--text-muted); cursor: not-allowed;
+  box-shadow: none; transform: none;
+}
+.founder-form-status {
+  margin-top: 16px; padding: 12px 14px; border-radius: 10px;
+  font-size: 14px; line-height: 1.5; display: none;
+}
+.founder-form-status.show { display: block; }
+.founder-form-status.error { background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.35); color: #FCA5A5; }
+.founder-form-status.info { background: rgba(108,43,217,0.10); border: 1px solid rgba(108,43,217,0.30); color: var(--text); }
+
+/* Success view replaces the form contents on a successful claim */
+.founder-success { text-align: center; padding: 8px 0 4px; }
+.founder-success-eyebrow {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-weight: 700; color: var(--success); margin-bottom: 14px;
+}
+.founder-success-seat {
+  font-family: 'Playfair Display', serif;
+  font-size: 56px; font-weight: 900; color: #fff; line-height: 1;
+}
+.founder-success-of {
+  font-size: 15px; color: var(--text-muted); margin-top: 6px;
+}
+.founder-success-message {
+  font-size: 15px; color: var(--text); line-height: 1.6;
+  margin: 22px 0 14px;
+  background: rgba(16,185,129,0.08);
+  border: 1px solid rgba(16,185,129,0.30);
+  border-radius: 10px; padding: 14px 16px; text-align: left;
+}
+.founder-success-note {
+  font-size: 13px; color: var(--text-muted); line-height: 1.5;
+  font-style: italic; margin-bottom: 18px;
+}
+.founder-success-done {
+  display: inline-block; padding: 12px 28px; border-radius: 10px;
+  background: transparent; border: 1px solid var(--dark-border); color: var(--text);
+  font-weight: 600; cursor: pointer;
+}
+.founder-success-done:hover { border-color: var(--primary-light); color: var(--primary-light); }
+
+/* ═══════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════ */
 @media (max-width: 900px) {
@@ -541,39 +718,63 @@ section { padding: 80px 0; }
     <div class="hero-content fade-in">
       <div class="hero-badge">
         <i class="fa-solid fa-bolt"></i>
-        The marketplace for live entertainment
+        Founder Tier &middot; lifetime access &middot; capped at 500
       </div>
       <h1>
-        Get <span class="highlight">Discovered.</span><br />
-        Get <span class="highlight-accent">Booked.</span>
+        Serious <span class="highlight">bookings,</span><br />
+        not <span class="highlight-accent">bidding wars.</span>
       </h1>
       <p>
-        StageLink365 connects musicians, performers, technicians and industry pros
-        with venues, bookers and agents worldwide. Think of it as
-        <strong style="color:#fff;">Amazon for the live music industry</strong> --
-        put yourself in the marketplace and let the gigs come to you.
+        The booking platform built for casino, corporate, and venue residency &mdash; where talent, agencies, and venues work together, not against each other.
       </p>
+
+      <div class="founder-counter-card" id="founder-talent-card">
+        <div class="founder-counter-label">Talent Founders</div>
+        <div class="founder-counter-number">
+          <span id="founder-talent-left">&mdash;</span><span class="of"> of 500 left</span>
+        </div>
+        <div class="founder-counter-bar"><div class="founder-counter-bar-fill" id="founder-talent-fill"></div></div>
+        <div class="founder-counter-tagline" id="founder-talent-tagline">Lifetime Pro features &middot; numbered Founding Member badge &middot; locked-for-life founder booking fee.</div>
+        <div class="founder-counter-status" id="founder-counter-status">Loading current seat counts&hellip;</div>
+      </div>
+
       <div class="hero-buttons">
-        <a href="https://stagelink365.com?action=create-profile" class="btn btn-primary btn-xl">
-          <i class="fa-solid fa-user-plus"></i> Create Your Free Profile
-        </a>
+        <button type="button" class="btn btn-primary btn-xl founder-claim-btn" id="founder-claim-talent-hero" data-track="talent">
+          <i class="fa-solid fa-bolt"></i> Claim a Talent Founder seat
+        </button>
         <a href="#pricing" class="btn btn-outline btn-lg">
           <i class="fa-solid fa-tags"></i> View Plans
         </a>
       </div>
-      <div class="hero-stats fade-in fade-in-delay-3">
-        <div class="hero-stat">
-          <div class="number">5,000<span class="accent">+</span></div>
-          <div class="label">Entertainment Pros</div>
-        </div>
-        <div class="hero-stat">
-          <div class="number">1,200<span class="accent">+</span></div>
-          <div class="label">Venues &amp; Cruise Lines</div>
-        </div>
-        <div class="hero-stat">
-          <div class="number">30<span class="accent">+</span></div>
-          <div class="label">Countries</div>
-        </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOUNDER TRACKS ═══ -->
+<section id="founder-tracks" class="founder-tracks">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Two more Founder tracks &mdash; tightly held</h2>
+      <p>Agencies and venues join by invitation. Small caps, real perks, no public pricing page until the operations layer ships.</p>
+    </div>
+    <div class="founder-tracks-grid">
+      <div class="card founder-track-tile fade-in fade-in-delay-1" id="founder-agency-tile">
+        <div class="founder-track-eyebrow">Agency Founder</div>
+        <h3>Founding Agencies &mdash; tightly curated.</h3>
+        <div class="founder-track-counter"><span id="founder-agency-claimed">&mdash;</span><span class="of">of 50 admitted</span></div>
+        <p>12 months of Agency tier free, then 50% off lifetime. Concierge CSV roster migration. Dedicated SL365 Slack channel. Priority feature requests. Founding Agency badge.</p>
+        <button type="button" class="founder-claim-btn" id="founder-claim-agency" data-track="agency">
+          <i class="fa-solid fa-bolt"></i> Claim a seat
+        </button>
+      </div>
+      <div class="card founder-track-tile fade-in fade-in-delay-2" id="founder-venue-tile">
+        <div class="founder-track-eyebrow">Venue Founder</div>
+        <h3>Founding Venues &mdash; hand-picked.</h3>
+        <div class="founder-track-counter"><span id="founder-venue-claimed">&mdash;</span><span class="of">of 50 admitted</span></div>
+        <p>Booker Hub free for 12 months, then lifetime 50% off. Homepage logo placement among the founding venues. Priority search placement. Concierge profile build-out. Founding Venue badge.</p>
+        <button type="button" class="founder-claim-btn" id="founder-claim-venue" data-track="venue">
+          <i class="fa-solid fa-bolt"></i> Claim a seat
+        </button>
       </div>
     </div>
   </div>
@@ -859,6 +1060,46 @@ section { padding: 80px 0; }
   </div>
 </footer>
 
+<!-- ═══ FOUNDER CLAIM MODAL ═══ -->
+<div class="founder-modal" id="founder-modal" role="dialog" aria-modal="true" aria-labelledby="founder-modal-title">
+  <div class="founder-modal-box">
+    <button type="button" class="founder-modal-close" id="founder-modal-close" aria-label="Close">&times;</button>
+
+    <div id="founder-modal-form-view">
+      <div class="founder-modal-eyebrow" id="founder-modal-eyebrow">Founder Tier</div>
+      <div class="founder-modal-title" id="founder-modal-title">Claim a seat</div>
+      <div class="founder-modal-sub" id="founder-modal-sub">Lock in your Founder seat. We'll reserve your numbered spot now.</div>
+
+      <form id="founder-form" novalidate>
+        <input type="hidden" id="founder-form-track" name="track" value="" />
+        <div class="founder-form-row">
+          <label for="founder-form-name">Name</label>
+          <input type="text" id="founder-form-name" name="name" autocomplete="name" required />
+        </div>
+        <div class="founder-form-row">
+          <label for="founder-form-email">Email</label>
+          <input type="email" id="founder-form-email" name="email" autocomplete="email" required />
+        </div>
+        <button type="submit" class="founder-modal-submit" id="founder-form-submit">
+          Claim my seat
+        </button>
+        <div class="founder-form-status" id="founder-form-status" role="status" aria-live="polite"></div>
+      </form>
+    </div>
+
+    <div id="founder-modal-success-view" style="display:none;">
+      <div class="founder-success">
+        <div class="founder-success-eyebrow" id="founder-success-eyebrow">You're in</div>
+        <div class="founder-success-seat">Seat #<span id="founder-success-number">&mdash;</span></div>
+        <div class="founder-success-of" id="founder-success-of">of 500 &middot; Talent Founders</div>
+        <div class="founder-success-message" id="founder-success-message"></div>
+        <div class="founder-success-note">Save this seat number &mdash; email confirmations come in a later sprint.</div>
+        <button type="button" class="founder-success-done" id="founder-success-done">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ BILLING TOGGLE SCRIPT ═══ -->
 <script>
 let isAnnual = false;
@@ -889,6 +1130,243 @@ function toggleBilling() {
     premiumNote.innerHTML = '&nbsp;';
   }
 }
+
+/* ═══ FOUNDER TIER — counters + claim flow ═══ */
+(function () {
+  var FOUNDER_API = '/api/founder';
+  var TRACK_LABELS = { talent: 'Talent Founders', agency: 'Agency Founders', venue: 'Venue Founders' };
+  var TRACK_CTAS = {
+    talent: { btnId: 'founder-claim-talent-hero', defaultLabel: '<i class="fa-solid fa-bolt"></i> Claim a Talent Founder seat' },
+    agency: { btnId: 'founder-claim-agency',      defaultLabel: '<i class="fa-solid fa-bolt"></i> Claim a seat' },
+    venue:  { btnId: 'founder-claim-venue',       defaultLabel: '<i class="fa-solid fa-bolt"></i> Claim a seat' }
+  };
+
+  var modal      = document.getElementById('founder-modal');
+  var modalClose = document.getElementById('founder-modal-close');
+  var modalEye   = document.getElementById('founder-modal-eyebrow');
+  var modalTitle = document.getElementById('founder-modal-title');
+  var modalSub   = document.getElementById('founder-modal-sub');
+  var formView    = document.getElementById('founder-modal-form-view');
+  var successView = document.getElementById('founder-modal-success-view');
+  var form       = document.getElementById('founder-form');
+  var trackInput = document.getElementById('founder-form-track');
+  var nameInput  = document.getElementById('founder-form-name');
+  var emailInput = document.getElementById('founder-form-email');
+  var submitBtn  = document.getElementById('founder-form-submit');
+  var status     = document.getElementById('founder-form-status');
+  var successEye    = document.getElementById('founder-success-eyebrow');
+  var successNumber = document.getElementById('founder-success-number');
+  var successOf     = document.getElementById('founder-success-of');
+  var successMsg    = document.getElementById('founder-success-message');
+  var successDone   = document.getElementById('founder-success-done');
+  var counterStatus = document.getElementById('founder-counter-status');
+
+  function setStatus(msg, kind) {
+    if (!status) return;
+    status.textContent = msg || '';
+    status.classList.remove('error', 'info', 'show');
+    if (msg) {
+      status.classList.add('show');
+      status.classList.add(kind === 'error' ? 'error' : 'info');
+    }
+  }
+
+  function setCounterStatus(msg, isError) {
+    if (!counterStatus) return;
+    counterStatus.textContent = msg || '';
+    counterStatus.classList.toggle('error', !!isError);
+  }
+
+  function renderCounts(counts) {
+    if (!counts) return;
+    var t = counts.talent || { claimed: 0, cap: 500 };
+    var a = counts.agency || { claimed: 0, cap: 50 };
+    var v = counts.venue  || { claimed: 0, cap: 50 };
+
+    var talentLeft = Math.max(0, t.cap - t.claimed);
+    document.getElementById('founder-talent-left').textContent = talentLeft;
+    var pct = Math.min(100, Math.round((t.claimed / t.cap) * 100));
+    document.getElementById('founder-talent-fill').style.width = pct + '%';
+
+    document.getElementById('founder-agency-claimed').textContent = a.claimed + ' ';
+    document.getElementById('founder-venue-claimed').textContent  = v.claimed + ' ';
+
+    setCounterStatus('', false);
+    applyCapState('talent', t);
+    applyCapState('agency', a);
+    applyCapState('venue',  v);
+  }
+
+  function applyCapState(track, c) {
+    var cfg = TRACK_CTAS[track];
+    if (!cfg) return;
+    var btn = document.getElementById(cfg.btnId);
+    if (!btn) return;
+    if (c.claimed >= c.cap) {
+      btn.disabled = true;
+      btn.classList.add('is-closed');
+      btn.innerHTML = 'Closed &middot; ' + c.claimed + ' admitted';
+    } else {
+      btn.disabled = false;
+      btn.classList.remove('is-closed');
+      btn.innerHTML = cfg.defaultLabel;
+    }
+  }
+
+  function loadCounts() {
+    setCounterStatus('Loading current seat counts…', false);
+    fetch(FOUNDER_API, { method: 'GET', headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+      .then(function (res) {
+        if (res.ok && res.data && res.data.success) {
+          renderCounts(res.data.counts);
+        } else {
+          setCounterStatus('Couldn’t load seat counts — try refreshing the page.', true);
+        }
+      })
+      .catch(function () {
+        setCounterStatus('Couldn’t load seat counts — check your connection and refresh.', true);
+      });
+  }
+
+  function openModal(track) {
+    if (!modal || !TRACK_CTAS[track]) return;
+    trackInput.value = track;
+    modalEye.textContent = TRACK_LABELS[track] || 'Founder Tier';
+    if (track === 'talent') {
+      modalTitle.textContent = 'Claim a Talent Founder seat';
+      modalSub.textContent   = 'Numbered for life. Lifetime Pro features. Locked-in founder booking fee when payments go live.';
+    } else if (track === 'agency') {
+      modalTitle.textContent = 'Claim a Founding Agency seat';
+      modalSub.textContent   = '12 months free, then 50% off lifetime. Concierge roster migration. Direct line to the SL365 team.';
+    } else {
+      modalTitle.textContent = 'Claim a Founding Venue seat';
+      modalSub.textContent   = 'Booker Hub free for 12 months, then 50% off lifetime. Homepage placement among the founding venues.';
+    }
+    formView.style.display    = '';
+    successView.style.display = 'none';
+    setStatus('', null);
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Claim my seat';
+    modal.classList.add('open');
+    setTimeout(function () { nameInput && nameInput.focus(); }, 50);
+  }
+
+  function closeModal() {
+    if (!modal) return;
+    modal.classList.remove('open');
+  }
+
+  function showSuccess(payload) {
+    var seat = payload && payload.seat || {};
+    var track = seat.track || trackInput.value || 'talent';
+    successEye.textContent = TRACK_LABELS[track] || 'Founder Tier';
+    successNumber.textContent = seat.number != null ? seat.number : '?';
+    successOf.innerHTML = 'of ' + (seat.cap || (track === 'talent' ? 500 : 50)) + ' &middot; ' + (TRACK_LABELS[track] || 'Founder Tier');
+    successMsg.textContent = payload && payload.message
+      ? payload.message
+      : 'Seat #' + (seat.number != null ? seat.number : '?') + ' claimed. When SL365 platform payments go live, your booking fee is locked at 2% (vs 3% for non-Founders) — for life.';
+    formView.style.display    = 'none';
+    successView.style.display = '';
+  }
+
+  function describeError(data, httpStatus) {
+    if (data && data.error) {
+      switch (data.error) {
+        case 'cap_reached':     return 'This track just hit its cap. Refresh to see the latest counts.';
+        case 'invalid_track':   return 'That track isn’t recognised. Please refresh and try again.';
+        case 'missing_email':   return 'Please enter an email address.';
+        case 'missing_name':    return 'Please enter your name.';
+        case 'server_config':   return 'The server isn’t configured yet — please try again shortly or email terry@tadshows.com.';
+        case 'airtable_error':  return 'We couldn’t reach our database. Please try again in a moment.';
+        case 'method_not_allowed': return 'Unexpected request type. Please refresh and try again.';
+        case 'server_error':    return 'Something went wrong on our end. Please try again in a moment.';
+      }
+    }
+    if (httpStatus === 0) return 'Network error — check your connection and try again.';
+    return 'Something went wrong (status ' + (httpStatus || '?') + '). Please try again.';
+  }
+
+  function submitClaim(e) {
+    e.preventDefault();
+    var track = trackInput.value;
+    var name  = (nameInput.value || '').trim();
+    var email = (emailInput.value || '').trim();
+
+    if (!name)  { setStatus('Please enter your name.', 'error'); nameInput.focus(); return; }
+    if (!email) { setStatus('Please enter an email address.', 'error'); emailInput.focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setStatus('That email doesn’t look right — please double-check.', 'error'); emailInput.focus(); return;
+    }
+    if (!track) { setStatus('Please refresh the page and try again.', 'error'); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Claiming…';
+    setStatus('Reserving your seat…', 'info');
+
+    fetch(FOUNDER_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ track: track, name: name, email: email })
+    })
+      .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; }); })
+      .then(function (res) {
+        if (res.ok && res.data && res.data.success) {
+          showSuccess(res.data);
+          if (res.data.seat && res.data.seat.number != null) {
+            // Optimistically update visible counts so the hero/tile reflects the new seat.
+            applyOptimisticIncrement(track);
+          }
+          // Refetch in the background to settle on the authoritative number.
+          loadCounts();
+        } else {
+          if (res.data && res.data.counts) renderCounts(res.data.counts);
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Claim my seat';
+          setStatus(describeError(res.data, res.status), 'error');
+        }
+      })
+      .catch(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Claim my seat';
+        setStatus(describeError(null, 0), 'error');
+      });
+  }
+
+  function applyOptimisticIncrement(track) {
+    if (track === 'talent') {
+      var leftEl = document.getElementById('founder-talent-left');
+      var n = parseInt(leftEl.textContent, 10);
+      if (!isNaN(n) && n > 0) leftEl.textContent = n - 1;
+    } else if (track === 'agency') {
+      var aEl = document.getElementById('founder-agency-claimed');
+      var an = parseInt(aEl.textContent, 10);
+      if (!isNaN(an)) aEl.textContent = (an + 1) + ' ';
+    } else if (track === 'venue') {
+      var vEl = document.getElementById('founder-venue-claimed');
+      var vn = parseInt(vEl.textContent, 10);
+      if (!isNaN(vn)) vEl.textContent = (vn + 1) + ' ';
+    }
+  }
+
+  // Wire up
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('[data-track]');
+    if (t && t.classList.contains('founder-claim-btn') && !t.disabled) {
+      openModal(t.getAttribute('data-track'));
+    }
+  });
+  if (modalClose)  modalClose.addEventListener('click', closeModal);
+  if (successDone) successDone.addEventListener('click', closeModal);
+  if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal && modal.classList.contains('open')) closeModal();
+  });
+  if (form) form.addEventListener('submit', submitClaim);
+
+  // Kick off
+  loadCounts();
+})();
 </script>
 
 </body>
