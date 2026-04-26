@@ -632,6 +632,47 @@ section { padding: 80px 0; }
 .founder-form-status.error { background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.35); color: #FCA5A5; }
 .founder-form-status.info { background: rgba(108,43,217,0.10); border: 1px solid rgba(108,43,217,0.30); color: var(--text); }
 
+/* Pitch view — shown first on every modal open, before the form view */
+.founder-pitch-view { padding-top: 4px; }
+.founder-pitch-hook {
+  font-size: 15px; color: var(--text); line-height: 1.55;
+  margin: 0 0 18px;
+}
+.founder-pitch-section-h {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-weight: 700; color: var(--primary-light); margin: 22px 0 10px;
+}
+.founder-pitch-list, .founder-pitch-faq {
+  margin: 0; padding-left: 18px; color: var(--text);
+}
+.founder-pitch-list li, .founder-pitch-faq li {
+  font-size: 14px; line-height: 1.55; margin-bottom: 10px;
+}
+.founder-pitch-list li:last-child, .founder-pitch-faq li:last-child { margin-bottom: 0; }
+.founder-pitch-faq li em { color: var(--text-muted); font-style: italic; }
+.founder-pitch-explainer {
+  font-size: 14px; line-height: 1.6; color: var(--text);
+  background: rgba(108,43,217,0.08);
+  border: 1px solid rgba(108,43,217,0.25);
+  border-radius: 10px; padding: 12px 14px; margin: 0;
+}
+.founder-pitch-urgency {
+  font-size: 15px; font-weight: 700; color: #fff;
+  line-height: 1.45; margin: 22px 0 18px;
+  padding: 12px 14px; border-radius: 10px;
+  background: rgba(239,68,68,0.10);
+  border: 1px solid rgba(239,68,68,0.30);
+}
+/* .founder-pitch-cta reuses .founder-modal-submit styling for visual parity */
+
+/* "← Back to the offer" affordance on the form view */
+.founder-form-back {
+  display: inline-block; font-size: 13px; color: var(--text-muted);
+  text-decoration: none; margin-bottom: 12px; padding: 4px 0; cursor: pointer;
+  background: transparent; border: none; font-family: inherit;
+}
+.founder-form-back:hover { color: var(--primary-light); }
+
 /* Success view replaces the form contents on a successful claim */
 .founder-success { text-align: center; padding: 8px 0 4px; }
 .founder-success-eyebrow {
@@ -1065,7 +1106,106 @@ section { padding: 80px 0; }
   <div class="founder-modal-box">
     <button type="button" class="founder-modal-close" id="founder-modal-close" aria-label="Close">&times;</button>
 
-    <div id="founder-modal-form-view">
+    <!-- Pitch view — shown first on every modal open -->
+    <div id="founder-modal-pitch-view" class="founder-pitch-view" style="display:none;">
+
+      <!-- Talent pitch -->
+      <div class="founder-pitch-track" data-pitch-track="talent" style="display:none;">
+        <div class="founder-modal-eyebrow">For performers, musicians, DJs, bands &amp; comedians &middot; 500 seats</div>
+        <div class="founder-modal-title">Founding Member &mdash; free for life.</div>
+        <p class="founder-pitch-hook">This is the only round of the offer. If you book gigs for a living, this is built for you.</p>
+
+        <div class="founder-pitch-section-h">What you actually get</div>
+        <ul class="founder-pitch-list">
+          <li><strong>Every Pro feature, free for life.</strong> Pro is $19/mo &mdash; $228 a year &mdash; for everyone else. As a Founding Member, you never pay it.</li>
+          <li><strong>A numbered badge on your profile.</strong> &ldquo;Founding Member &middot; Seat #X of 500&rdquo; &mdash; yours permanently. If you ever leave, the seat is retired, not reassigned.</li>
+          <li><strong>First in line for our booker outreach.</strong> Over the next 90 days, SL365 is pitching performers directly to casino, corporate, and venue bookers. Founders are on every list.</li>
+          <li><strong>An early-access vote on new features.</strong> What we ship next is partly up to you.</li>
+          <li><strong>Extra Founder months for every performer you refer.</strong></li>
+        </ul>
+
+        <div class="founder-pitch-section-h">About the 2% promise</div>
+        <p class="founder-pitch-explainer">When SL365 platform payments go live, your booking fee is locked at 2% (vs 3% for non-Founders) &mdash; for life. This is a real future discount, not a paper IOU: if we never ship payments, you never owed anything for the seat.</p>
+
+        <div class="founder-pitch-section-h">Two questions people ask</div>
+        <ul class="founder-pitch-faq">
+          <li><em>Is this really free forever?</em> Yes. Pro features stay free for the life of your account. No expiry, no renewal trick.</li>
+          <li><em>What&rsquo;s the catch?</em> The cap is 500, total. When they&rsquo;re claimed, the offer closes &mdash; no waitlist, no second round.</li>
+        </ul>
+
+        <div class="founder-pitch-urgency">500 seats. When they&rsquo;re claimed, the offer closes &mdash; no second round.</div>
+
+        <button type="button" class="founder-modal-submit founder-pitch-cta" data-pitch-cta="talent">
+          Yes &mdash; claim my Founding Member seat
+        </button>
+      </div>
+
+      <!-- Agency pitch -->
+      <div class="founder-pitch-track" data-pitch-track="agency" style="display:none;">
+        <div class="founder-modal-eyebrow">For booking agencies &middot; 50 seats</div>
+        <div class="founder-modal-title">Founding Agency &mdash; run your whole roster, free for a year.</div>
+        <p class="founder-pitch-hook">Built for agents who book multiple acts and want one place for the roster, the inquiries, and the team.</p>
+
+        <div class="founder-pitch-section-h">What you actually get</div>
+        <ul class="founder-pitch-list">
+          <li><strong>12 months of the Agency tier, free</strong> when it launches. Then 50% off forever.</li>
+          <li><strong>We migrate your roster for you.</strong> Send us a CSV &mdash; we build the profiles end-to-end. No data entry on your end.</li>
+          <li><strong>A private Slack channel with the SL365 team.</strong> Direct line, no support queue.</li>
+          <li><strong>Your feature requests jump the queue.</strong> What we build next is shaped by the first 50 agencies.</li>
+          <li><strong>Numbered Founding Agency badge</strong> on your agency profile and on every act you manage.</li>
+        </ul>
+
+        <div class="founder-pitch-section-h">About the 2% promise</div>
+        <p class="founder-pitch-explainer">When SL365 platform payments go live, every booking that runs through your roster is at the Founder fee &mdash; 2% vs 3% for non-Founders, for life. This is a real future discount, not a paper IOU: if payments never ship, you never owed anything for the seat.</p>
+
+        <div class="founder-pitch-section-h">Two questions agencies ask</div>
+        <ul class="founder-pitch-faq">
+          <li><em>What if the Agency tier launches at a price I don&rsquo;t like?</em> You pay nothing for the first 12 months and 50% of the launch price after that &mdash; for life. The downside is bounded.</li>
+          <li><em>What does &ldquo;concierge migration&rdquo; mean in practice?</em> You send us a CSV with your acts. We build the profiles, pull in headshots, set the calendars up. You review and approve.</li>
+        </ul>
+
+        <div class="founder-pitch-urgency">50 seats. After that, agencies join at standard pricing &mdash; no Founder round again.</div>
+
+        <button type="button" class="founder-modal-submit founder-pitch-cta" data-pitch-cta="agency">
+          Yes &mdash; claim my Founding Agency seat
+        </button>
+      </div>
+
+      <!-- Venue pitch -->
+      <div class="founder-pitch-track" data-pitch-track="venue" style="display:none;">
+        <div class="founder-modal-eyebrow">For venues, casinos &amp; corporate bookers &middot; 50 seats</div>
+        <div class="founder-modal-title">Founding Venue &mdash; concierge setup, then free for a year.</div>
+        <p class="founder-pitch-hook">Book entertainment without phone tag, email contracts, or paying a third party to chase artists for you.</p>
+
+        <div class="founder-pitch-section-h">What you actually get</div>
+        <ul class="founder-pitch-list">
+          <li><strong>Booker Hub free for 12 months.</strong> Then 50% off forever.</li>
+          <li><strong>Your logo on the StageLink365 homepage</strong> among the founding venues.</li>
+          <li><strong>Priority placement</strong> when performers search for venues.</li>
+          <li><strong>We&rsquo;ll build your venue profile end-to-end.</strong> You review and approve, we do the work.</li>
+          <li><strong>Numbered Founding Venue badge</strong> on your booker profile.</li>
+        </ul>
+
+        <div class="founder-pitch-section-h">About the 2% promise</div>
+        <p class="founder-pitch-explainer">When SL365 platform payments go live, every booking you make through StageLink365 is at the Founder fee &mdash; 2% vs 3% for non-Founders, for life. This is a real future discount, not a paper IOU: if payments never ship, you never owed anything for the seat.</p>
+
+        <div class="founder-pitch-section-h">Two questions venues ask</div>
+        <ul class="founder-pitch-faq">
+          <li><em>How is this different from a booking agent?</em> No commission on the booking. You and the artist talk directly through the platform. We&rsquo;re infrastructure, not a middleman.</li>
+          <li><em>What if our talent buyer changes next year?</em> The Founding Venue seat is attached to the venue, not the person. Hand the login over and the seat moves with the booker role.</li>
+        </ul>
+
+        <div class="founder-pitch-urgency">50 seats. After that, new venues join at standard rates &mdash; no Founder round for late arrivals.</div>
+
+        <button type="button" class="founder-modal-submit founder-pitch-cta" data-pitch-cta="venue">
+          Yes &mdash; claim my Founding Venue seat
+        </button>
+      </div>
+
+    </div>
+
+    <div id="founder-modal-form-view" style="display:none;">
+      <button type="button" class="founder-form-back" id="founder-form-back">&larr; Back to the offer</button>
       <div class="founder-modal-eyebrow" id="founder-modal-eyebrow">Founder Tier</div>
       <div class="founder-modal-title" id="founder-modal-title">Claim a seat</div>
       <div class="founder-modal-sub" id="founder-modal-sub">Lock in your Founder seat. We'll reserve your numbered spot now.</div>
@@ -1142,10 +1282,15 @@ function toggleBilling() {
   };
 
   var modal      = document.getElementById('founder-modal');
+  var modalBox   = modal && modal.querySelector('.founder-modal-box');
   var modalClose = document.getElementById('founder-modal-close');
   var modalEye   = document.getElementById('founder-modal-eyebrow');
   var modalTitle = document.getElementById('founder-modal-title');
   var modalSub   = document.getElementById('founder-modal-sub');
+  var pitchView   = document.getElementById('founder-modal-pitch-view');
+  var pitchTracks = document.querySelectorAll('[data-pitch-track]');
+  var pitchCTAs   = document.querySelectorAll('[data-pitch-cta]');
+  var formBack    = document.getElementById('founder-form-back');
   var formView    = document.getElementById('founder-modal-form-view');
   var successView = document.getElementById('founder-modal-success-view');
   var form       = document.getElementById('founder-form');
@@ -1232,6 +1377,7 @@ function toggleBilling() {
   function openModal(track) {
     if (!modal || !TRACK_CTAS[track]) return;
     trackInput.value = track;
+    // Pre-set the form-view headers in case the user advances to the form.
     modalEye.textContent = TRACK_LABELS[track] || 'Founder Tier';
     if (track === 'talent') {
       modalTitle.textContent = 'Claim a Talent Founder seat';
@@ -1243,12 +1389,29 @@ function toggleBilling() {
       modalTitle.textContent = 'Claim a Founding Venue seat';
       modalSub.textContent   = 'Booker Hub free for 12 months, then 50% off lifetime. Homepage placement among the founding venues.';
     }
-    formView.style.display    = '';
-    successView.style.display = 'none';
     setStatus('', null);
     submitBtn.disabled = false;
     submitBtn.textContent = 'Claim my seat';
+    showPitchView(track);
     modal.classList.add('open');
+  }
+
+  function showPitchView(track) {
+    if (pitchView) pitchView.style.display = '';
+    if (formView) formView.style.display = 'none';
+    if (successView) successView.style.display = 'none';
+    for (var i = 0; i < pitchTracks.length; i++) {
+      pitchTracks[i].style.display = (pitchTracks[i].getAttribute('data-pitch-track') === track) ? '' : 'none';
+    }
+    if (modalBox) modalBox.scrollTop = 0;
+  }
+
+  function showFormView() {
+    if (pitchView) pitchView.style.display = 'none';
+    if (formView) formView.style.display = '';
+    if (successView) successView.style.display = 'none';
+    setStatus('', null);
+    if (modalBox) modalBox.scrollTop = 0;
     setTimeout(function () { nameInput && nameInput.focus(); }, 50);
   }
 
@@ -1266,6 +1429,7 @@ function toggleBilling() {
     successMsg.textContent = payload && payload.message
       ? payload.message
       : 'Seat #' + (seat.number != null ? seat.number : '?') + ' claimed. When SL365 platform payments go live, your booking fee is locked at 2% (vs 3% for non-Founders) — for life.';
+    if (pitchView) pitchView.style.display = 'none';
     formView.style.display    = 'none';
     successView.style.display = '';
   }
@@ -1363,6 +1527,12 @@ function toggleBilling() {
     if (e.key === 'Escape' && modal && modal.classList.contains('open')) closeModal();
   });
   if (form) form.addEventListener('submit', submitClaim);
+  for (var i = 0; i < pitchCTAs.length; i++) {
+    pitchCTAs[i].addEventListener('click', function () { showFormView(); });
+  }
+  if (formBack) formBack.addEventListener('click', function () {
+    showPitchView(trackInput.value || 'talent');
+  });
 
   // Kick off
   loadCounts();
