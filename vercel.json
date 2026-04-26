@@ -1,6 +1,7 @@
 {
   "redirects": [
     { "source": "/personnel", "destination": "/", "permanent": true },
+    { "source": "/personnel/", "destination": "/", "permanent": true },
     { "source": "/personnel/:path*", "destination": "/", "permanent": true }
   ]
 }
