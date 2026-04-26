@@ -881,11 +881,11 @@ Musicians, techs, performers, and industry pros -- all in one network. Find work
 </div>
 <div>
 <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>Venues</h3>
-<p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Theatres, clubs, resorts, casinos, cruise lines, and event spaces</p>
+<p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Theatres, clubs, resorts, casinos, and event spaces</p>
 </div>
 </div>
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-{['Concert Hall', 'Nightclub', 'Hotel / Resort', 'Casino', 'Cruise Ship', 'Restaurant', 'Wedding Venue', 'Festival', 'Corporate'].map(s => <span key={s} className="badge badge-category">{s}</span>)}
+{['Concert Hall', 'Nightclub', 'Hotel / Resort', 'Casino', 'Restaurant', 'Wedding Venue', 'Festival', 'Corporate'].map(s => <span key={s} className="badge badge-category">{s}</span>)}
 </div>
 <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 }}>List your venue with stage specs and capacity, post gigs, browse talent by genre and availability, and book the right entertainment directly.</p>
 <span style={{ fontSize: 13, fontWeight: 600, color: '#10B981' }}>Create Venue Profile <i className="fa-solid fa-arrow-right" style={{ fontSize: 11 }}></i></span>
@@ -1585,7 +1585,7 @@ return (
       <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Recent Gig Postings</h3>
       {[
         { title: 'House Band — 6-Month Residency', venue: 'The Grand Ballroom', status: 'Open', apps: 12 },
-        { title: 'Solo Vocalist — Cruise Ship Contract', venue: 'Sapphire Princess', status: 'Open', apps: 8 },
+        { title: 'Solo Vocalist — Casino Lounge Residency', venue: 'Talking Stick Resort', status: 'Open', apps: 8 },
         { title: 'Corporate Event DJ — Annual Gala', venue: 'Hilton Phoenix', status: 'Reviewing', apps: 5 },
         { title: 'Comedy Night Host — Weekend Series', venue: 'Laughlin River Lodge', status: 'Filled', apps: 15 },
         { title: 'Tribute Band — Summer Concert Series', venue: 'Mesa Amphitheatre', status: 'Open', apps: 3 },
@@ -3158,7 +3158,7 @@ const AREA_OPTIONS = [
 'Northeast US', 'Southeast US', 'Midwest US', 'Southwest US', 'West Coast US',
 'Pacific Northwest US', 'Hawaii / Alaska', 'Caribbean', 'Mexico / Central America', 'Canada',
 'UK / Ireland', 'Western Europe', 'Eastern Europe', 'Middle East', 'Asia Pacific',
-'Australia / New Zealand', 'Cruise Lines (Worldwide)', 'Resorts / All-Inclusive',
+'Australia / New Zealand', 'Resorts / All-Inclusive',
 'Corporate (Nationwide)', 'Festivals (Touring)', 'South America', 'Africa'
 ];
 
@@ -3452,7 +3452,7 @@ const PERFORMANCE_TYPES = [
 const EXPERIENCE_LEVELS = ['Just Starting Out', '1–3 Years', '3–7 Years', '7–15 Years', '15+ Years'];
 
 const GIG_TYPES = [
-'Cruise Ships', 'Resorts / All-Inclusive', 'Corporate Events', 'Weddings / Private Parties',
+'Resorts / All-Inclusive', 'Corporate Events', 'Weddings / Private Parties',
 'Festivals / Outdoor', 'Theatres / Performing Arts Centers', 'Casinos',
 'Restaurants / Dinner Shows', 'Nightclubs / Lounges', 'Hotels',
 'Theme Parks', 'Trade Shows / Conventions', 'Virtual / Livestream',
@@ -4104,7 +4104,7 @@ return (
 const VENUE_TYPES = [
 'Concert Hall / Theatre', 'Arena / Stadium', 'Nightclub / Lounge',
 'Bar / Pub', 'Restaurant / Dinner Venue', 'Hotel / Resort',
-'Casino', 'Cruise Ship', 'Convention Center',
+'Casino', 'Convention Center',
 'Outdoor Amphitheatre', 'Festival Grounds', 'Private Event Space',
 'Country Club / Golf Club', 'Winery / Brewery', 'Community Center',
 'Church / House of Worship', 'Corporate Office / Campus',
