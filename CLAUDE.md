@@ -59,6 +59,7 @@ The working agreement, fixed 2026-04-25 after a session reset.
 - **Code edits happen here, never in the GitHub web UI.** UI edits bypass review and have shipped broken HTML to production. All edits land via Claude Code → worktree → PR.
 - **Worktrees are mandatory in the Desktop app.** Each session opens at `.claude/worktrees/<name>/` on a feature branch (`claude/<name>`). The parent repo at `/Users/terrydavies/Documents/TAD-Dev/StageLink365/` stays on `main`. The Desktop app does not expose a toggle to disable this — don't try to fight it.
 - **PR-gated, not direct push.** End-of-session ritual: `git push -u origin <branch>` → `gh pr create` → wait for the Vercel preview URL → Terry verifies on the preview → `gh pr merge --squash --delete-branch`. Vercel deploys `main` to production after merge. Never `git push origin <branch>:main`.
+  - **Worktree merge gotcha:** `--delete-branch` fails from a worktree (gh tries to check out `main`, which the parent repo owns); use `gh pr merge --squash` then `git push origin --delete <branch>` instead.
 - **One scope per session.** If the scope grows mid-session, stop and ask. Hot-patches for production breakage are the exception — flag the expansion.
 - **All errors and statuses surface in the UI.** Terry doesn't read browser console or server logs.
 
