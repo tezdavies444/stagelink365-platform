@@ -148,7 +148,7 @@ Out of scope for this sprint: Stripe (no payment yet — claim is just a seat re
 
 ### Guardrails learned from past lifetime-deal failures
 
-The acquisition strategy spells these out and they're worth restating: hard cap at 500/50/50, no exceptions. Don't price the recurring tier so low that the Founder give-up is trivial — Pro at $19/mo means the lifetime grant is a meaningful gift, Pro at $5/mo and the business has been given away. Don't promise features that haven't been scoped — "priority feature requests" ≠ "we'll build whatever you ask"; keep a public roadmap. One badge class, ever. Never run the offer on AppSumo or a deal site — those audiences churn at 70% and pollute the founder community.
+The acquisition strategy spells these out and they're worth restating: hard cap at 500/50/50, no exceptions. Don't price the recurring tier so low that the Founder give-up is trivial — Pro at $19/mo means the lifetime grant is a meaningful gift, Pro at $5/mo and the business has been given away. One badge class, ever. Never run the offer on AppSumo or a deal site — those audiences churn at 70% and pollute the founder community.
 
 ---
 
