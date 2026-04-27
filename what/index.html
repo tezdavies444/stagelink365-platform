@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What Is StageLink365? &mdash; The Global Marketplace for Live Entertainment</title>
+<meta name="description" content="StageLink365 is the global marketplace for live entertainment. Source anyone from a lighting tech to a headlining artist. Payments guaranteed. Insurance on every gig. Attorney-approved contracts. The real deal." />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #6C2BD9;
+  --primary-light: #8B5CF6;
+  --primary-dark: #5B21B6;
+  --accent: #F59E0B;
+  --accent-light: #FBBF24;
+  --dark: #0F0F1A;
+  --dark-card: #1A1A2E;
+  --dark-lighter: #252540;
+  --dark-border: #2D2D4A;
+  --text: #E2E2F0;
+  --text-muted: #9494B8;
+  --success: #10B981;
+  --danger: #EF4444;
+  --pro-gradient: linear-gradient(135deg, #6C2BD9, #8B5CF6);
+  --premium-gradient: linear-gradient(135deg, #F59E0B, #F97316);
+  --hero-gradient: linear-gradient(135deg, #0F0F1A 0%, #1A1A3E 50%, #2D1B69 100%);
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--dark);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+a { color: var(--primary-light); text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.fade-in { animation: fadeInUp 0.6s ease-out both; }
+.fade-in-delay-1 { animation-delay: 0.1s; }
+.fade-in-delay-2 { animation-delay: 0.2s; }
+.fade-in-delay-3 { animation-delay: 0.3s; }
+.fade-in-delay-4 { animation-delay: 0.4s; }
+
+/* Layout */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+section { padding: 80px 0; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 10px; font-weight: 600;
+  font-size: 14px; border: none; transition: all 0.3s;
+  text-decoration: none;
+}
+.btn-primary { background: var(--pro-gradient); color: #fff; }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(108,43,217,0.4); }
+.btn-accent { background: var(--premium-gradient); color: #000; }
+.btn-accent:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245,158,11,0.4); }
+.btn-outline { background: transparent; border: 2px solid var(--dark-border); color: var(--text); }
+.btn-outline:hover { border-color: var(--primary-light); color: var(--primary-light); }
+.btn-lg { padding: 16px 36px; font-size: 16px; }
+.btn-xl { padding: 20px 48px; font-size: 18px; border-radius: 14px; }
+
+/* Cards */
+.card {
+  background: var(--dark-card);
+  border: 1px solid var(--dark-border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s;
+}
+.card:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+
+/* Navbar */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(15,15,26,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--dark-border);
+  padding: 16px 0;
+}
+.navbar .container { display: flex; align-items: center; justify-content: space-between; }
+.logo { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 800; color: #fff; }
+.logo span { color: var(--accent); }
+.nav-links { display: flex; align-items: center; gap: 28px; }
+.nav-links a { color: var(--text-muted); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: #fff; }
+.nav-links a.active { color: #fff; }
+
+/* Hero */
+.hero {
+  background: var(--hero-gradient);
+  padding: 160px 0 90px;
+  position: relative; overflow: hidden; text-align: center;
+}
+.hero::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at 30% 50%, rgba(108,43,217,0.15) 0%, transparent 50%),
+              radial-gradient(circle at 70% 30%, rgba(245,158,11,0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+.hero-float {
+  position: absolute; opacity: 0.06; font-size: 120px; color: #fff;
+  animation: float 6s ease-in-out infinite; pointer-events: none;
+}
+.hero-float.f1 { top: 18%; left: 6%; animation-delay: 0s; }
+.hero-float.f2 { top: 22%; right: 7%; animation-delay: 2s; font-size: 90px; }
+.hero-float.f3 { bottom: 18%; left: 10%; animation-delay: 4s; font-size: 80px; }
+.hero-float.f4 { bottom: 22%; right: 6%; animation-delay: 1s; font-size: 100px; }
+
+.hero-content { position: relative; z-index: 1; max-width: 880px; margin: 0 auto; }
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
+  border-radius: 30px; padding: 8px 20px; font-size: 13px;
+  color: var(--accent); font-weight: 600; margin-bottom: 28px;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(38px, 5.6vw, 68px);
+  font-weight: 900; line-height: 1.05; margin-bottom: 28px; color: #fff;
+}
+.hero h1 .highlight {
+  background: var(--pro-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero h1 .highlight-accent {
+  background: var(--premium-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero-pitch {
+  font-size: clamp(17px, 2.1vw, 22px);
+  color: var(--text); max-width: 760px; margin: 0 auto 18px;
+  line-height: 1.6;
+}
+.hero-pitch strong { color: #fff; }
+.hero-sub {
+  font-size: clamp(15px, 1.7vw, 17px);
+  color: var(--text-muted); max-width: 720px; margin: 0 auto 40px;
+  line-height: 1.7;
+}
+.hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+/* Section header */
+.section-header { text-align: center; max-width: 760px; margin: 0 auto 56px; }
+.section-header h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: 800; color: #fff; margin-bottom: 16px;
+}
+.section-header p { font-size: 17px; color: var(--text-muted); line-height: 1.7; }
+
+/* Source-everything grid */
+.source-section { background: var(--dark-card); }
+.source-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px;
+  margin-top: 16px;
+}
+.source-card {
+  text-align: center; padding: 30px 18px;
+  background: var(--dark);
+  border: 1px solid var(--dark-border);
+  border-radius: 16px;
+  transition: all 0.3s;
+}
+.source-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+.source-card .icon {
+  width: 64px; height: 64px; border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; margin: 0 auto 16px;
+  background: rgba(108,43,217,0.12); color: var(--primary-light);
+  border: 1px solid rgba(108,43,217,0.2);
+  transition: all 0.3s;
+}
+.source-card:hover .icon { background: var(--pro-gradient); color: #fff; transform: scale(1.08); }
+.source-card h3 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.source-card p { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
+.source-strap {
+  text-align: center; margin-top: 36px;
+  font-size: 17px; color: var(--text); max-width: 720px; margin-left: auto; margin-right: auto;
+  line-height: 1.7;
+}
+.source-strap strong { color: #fff; }
+
+/* Guarantees grid */
+.guarantees-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;
+}
+.guarantee-card { padding: 36px; }
+.guarantee-card .g-icon {
+  width: 60px; height: 60px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; margin-bottom: 20px;
+  background: rgba(16,185,129,0.12); color: var(--success);
+  border: 1px solid rgba(16,185,129,0.25);
+}
+.guarantee-card:nth-child(2) .g-icon {
+  background: rgba(245,158,11,0.12); color: var(--accent);
+  border-color: rgba(245,158,11,0.25);
+}
+.guarantee-card:nth-child(3) .g-icon {
+  background: rgba(108,43,217,0.12); color: var(--primary-light);
+  border-color: rgba(108,43,217,0.25);
+}
+.guarantee-card:nth-child(4) .g-icon {
+  background: rgba(139,92,246,0.12); color: var(--primary-light);
+  border-color: rgba(139,92,246,0.25);
+}
+.guarantee-card h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 10px;
+}
+.guarantee-card p { font-size: 15px; color: var(--text-muted); line-height: 1.7; }
+.guarantee-card p strong { color: var(--text); }
+
+/* Compare */
+.compare-section { background: var(--dark-card); }
+.compare-callout {
+  background: linear-gradient(135deg, #1A1A3E 0%, #2D1B69 50%, #1A1A3E 100%);
+  border: 1px solid rgba(108,43,217,0.3);
+  border-radius: 24px; padding: 56px 44px;
+  text-align: center; position: relative; overflow: hidden;
+}
+.compare-callout::before {
+  content: '';
+  position: absolute; top: -50%; left: -50%; right: -50%; bottom: -50%;
+  background: radial-gradient(circle, rgba(108,43,217,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+.compare-callout .content { position: relative; z-index: 1; }
+.compare-callout h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 3.4vw, 40px);
+  font-weight: 800; color: #fff; margin-bottom: 18px;
+}
+.compare-lede {
+  font-size: 18px; color: var(--text); max-width: 720px; margin: 0 auto 36px;
+  line-height: 1.7;
+}
+.compare-lede strong { color: #fff; }
+.compare-table {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  max-width: 880px; margin: 0 auto;
+  text-align: left;
+}
+.compare-col {
+  background: rgba(15,15,26,0.55);
+  border: 1px solid var(--dark-border);
+  border-radius: 16px; padding: 26px 28px;
+}
+.compare-col.us { border-color: rgba(245,158,11,0.4); background: rgba(45,27,105,0.45); }
+.compare-col h4 {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.compare-col.us h4 { color: var(--accent); }
+.compare-col ul { list-style: none; padding: 0; margin: 0; }
+.compare-col li {
+  font-size: 14px; color: var(--text-muted); line-height: 1.6;
+  padding: 8px 0 8px 26px; position: relative;
+}
+.compare-col li::before {
+  content: '\2715';
+  position: absolute; left: 0; top: 8px;
+  color: var(--text-muted); font-weight: 700;
+}
+.compare-col.us li { color: var(--text); }
+.compare-col.us li::before {
+  content: '\2713';
+  color: var(--success); font-weight: 800;
+}
+
+/* Closer */
+.closer {
+  background: var(--hero-gradient);
+  text-align: center;
+  padding: 100px 0;
+  position: relative; overflow: hidden;
+}
+.closer::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(245,158,11,0.10) 0%, transparent 60%);
+  pointer-events: none;
+}
+.closer .content { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; }
+.closer h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(34px, 4.6vw, 56px);
+  font-weight: 900; color: #fff; line-height: 1.1; margin-bottom: 20px;
+}
+.closer h2 .accent { color: var(--accent); }
+.closer p {
+  font-size: 18px; color: var(--text-muted); max-width: 640px;
+  margin: 0 auto 36px; line-height: 1.7;
+}
+.closer-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+/* Footer */
+.footer {
+  background: var(--dark);
+  border-top: 1px solid var(--dark-border);
+  padding: 32px 0;
+}
+.footer .container {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-text { font-size: 13px; color: var(--text-muted); }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a { font-size: 13px; color: var(--text-muted); transition: color 0.2s; }
+.footer-links a:hover { color: var(--primary-light); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .source-grid { grid-template-columns: repeat(2, 1fr); }
+  .guarantees-grid { grid-template-columns: 1fr; }
+  .compare-table { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .hero { padding: 130px 0 70px; }
+  .hero-float { display: none; }
+  .compare-callout { padding: 40px 24px; }
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--dark); }
+::-webkit-scrollbar-thumb { background: var(--dark-lighter); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dark-border); }
+</style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav class="navbar">
+  <div class="container">
+    <a href="/" class="logo">StageLink<span>365</span></a>
+    <div class="nav-links">
+      <a href="/what/" class="active">What is this?</a>
+      <a href="/#benefits">Benefits</a>
+      <a href="/#how-it-works">How It Works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/app">Sign in</a>
+      <a href="/app?action=create-profile" class="btn btn-primary">Create Your Profile</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <i class="fa-solid fa-music hero-float f1"></i>
+  <i class="fa-solid fa-guitar hero-float f2"></i>
+  <i class="fa-solid fa-microphone-lines hero-float f3"></i>
+  <i class="fa-solid fa-sliders hero-float f4"></i>
+
+  <div class="container">
+    <div class="hero-content fade-in">
+      <div class="hero-eyebrow">
+        <i class="fa-solid fa-bolt"></i> What is StageLink365?
+      </div>
+      <h1>
+        Think <span class="highlight-accent">Amazon</span> &mdash;<br />
+        for <span class="highlight">live entertainment.</span>
+      </h1>
+      <p class="hero-pitch">
+        StageLink365 is the global marketplace for live entertainment. <strong>Source anything, from a lighting tech to a headlining artist &mdash; all in one place, all on one platform, all under one set of rules that protect everyone.</strong>
+      </p>
+      <p class="hero-sub">
+        The platform the industry has been waiting for. Built for venues, agencies, casinos, corporate bookers and the artists, bands, technicians and creatives who power live shows. We&rsquo;re not playing at this. We are the real deal.
+      </p>
+      <div class="hero-buttons">
+        <a href="/" class="btn btn-accent btn-xl">
+          <i class="fa-solid fa-bolt"></i> Claim a Founder seat
+        </a>
+        <a href="/app" class="btn btn-outline btn-lg">
+          <i class="fa-solid fa-magnifying-glass"></i> Browse the platform
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SOURCE EVERYTHING ═══ -->
+<section class="source-section">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Source everything. From a lighting tech to a headlining artist.</h2>
+      <p>One platform. Five worlds of talent. Every role on a modern live show, in a single roster that&rsquo;s actually verified.</p>
+    </div>
+    <div class="source-grid">
+      <div class="source-card fade-in fade-in-delay-1">
+        <div class="icon"><i class="fa-solid fa-microphone-lines"></i></div>
+        <h3>Performers</h3>
+        <p>Singers, dancers, comedians, magicians, MCs, hosts.</p>
+      </div>
+      <div class="source-card fade-in fade-in-delay-2">
+        <div class="icon"><i class="fa-solid fa-guitar"></i></div>
+        <h3>Musicians &amp; Bands</h3>
+        <p>Solo artists, duos, full bands, DJs, orchestras, residency acts.</p>
+      </div>
+      <div class="source-card fade-in fade-in-delay-3">
+        <div class="icon"><i class="fa-solid fa-sliders"></i></div>
+        <h3>Technical</h3>
+        <p>Sound engineers, lighting techs, AV crew, stage managers, riggers.</p>
+      </div>
+      <div class="source-card fade-in fade-in-delay-4">
+        <div class="icon"><i class="fa-solid fa-palette"></i></div>
+        <h3>Creative</h3>
+        <p>Choreographers, directors, designers, photographers, videographers.</p>
+      </div>
+      <div class="source-card fade-in fade-in-delay-4">
+        <div class="icon"><i class="fa-solid fa-briefcase"></i></div>
+        <h3>Business &amp; Production</h3>
+        <p>Agents, tour managers, producers, promoters, production coordinators.</p>
+      </div>
+    </div>
+    <p class="source-strap">
+      The same way Amazon lets you buy a battery or a sofa from one place &mdash; <strong>StageLink365 lets you book a sound tech for Tuesday and a headliner for New Year&rsquo;s Eve from the same place</strong>, on the same contract, with the same payment guarantee, on the same insurance.
+    </p>
+  </div>
+</section>
+
+<!-- ═══ FOUR GUARANTEES ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Four guarantees no one else gives you</h2>
+      <p>This is what separates a serious booking platform from a directory listing. Every gig, every booker, every artist &mdash; same protection, same standard, same rules.</p>
+    </div>
+    <div class="guarantees-grid">
+      <div class="card guarantee-card fade-in fade-in-delay-1">
+        <div class="g-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3>Your payments are guaranteed</h3>
+        <p><strong>Bookers fund the gig up front. Artists get paid on time, every time.</strong> No more chasing invoices three months later. No more "the cheque is in the mail." When the gig is done, the money moves &mdash; and StageLink365 stands behind it.</p>
+      </div>
+      <div class="card guarantee-card fade-in fade-in-delay-2">
+        <div class="g-icon"><i class="fa-solid fa-umbrella"></i></div>
+        <h3>You&rsquo;re covered by our insurance &mdash; on every gig</h3>
+        <p><strong>Every booking on StageLink365 is covered.</strong> Public liability, equipment, performer cover &mdash; baked in, not an add-on. Venues stop asking artists to email a certificate. Artists stop paying for a separate annual policy. The platform carries it.</p>
+      </div>
+      <div class="card guarantee-card fade-in fade-in-delay-3">
+        <div class="g-icon"><i class="fa-solid fa-file-signature"></i></div>
+        <h3>Attorney-approved contracts &mdash; on every booking</h3>
+        <p><strong>Every gig is processed through a contract drafted by entertainment lawyers.</strong> Clear deposit terms, cancellation rules, technical riders, force-majeure language &mdash; the same agreement that protects an A-list venue protects a wedding-band gig. No more 1-page Word docs. No more handshake-and-pray.</p>
+      </div>
+      <div class="card guarantee-card fade-in fade-in-delay-4">
+        <div class="g-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <h3>A roster you can actually trust</h3>
+        <p><strong>ID-verified. References-verified. Background-checked.</strong> Every profile on StageLink365 carries the trust badges it&rsquo;s earned &mdash; nothing more, nothing less. The bookers who hire for serious money see who they&rsquo;re dealing with. The artists who do serious work get the credit for it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COMPARE ═══ -->
+<section class="compare-section">
+  <div class="container">
+    <div class="compare-callout fade-in">
+      <div class="content">
+        <h2>GigSalad and The Bash are fine. StageLink365 is on another level.</h2>
+        <p class="compare-lede">
+          Those platforms are built for backyard birthdays and DIY event planners. <strong>StageLink365 is built for the rest of the industry</strong> &mdash; venues, agencies, casinos, corporate buyers, and the artists who book serious work for serious money.
+        </p>
+        <div class="compare-table">
+          <div class="compare-col">
+            <h4><i class="fa-solid fa-circle-question"></i> Other platforms</h4>
+            <ul>
+              <li>Bidding wars &mdash; your gig blasted to 10 strangers</li>
+              <li>"We don&rsquo;t verify anyone &mdash; do your own due diligence"</li>
+              <li>No payment guarantee &mdash; chase your own invoices</li>
+              <li>No platform insurance &mdash; bring your own policy</li>
+              <li>One-line booking forms instead of contracts</li>
+              <li>Built for one-off backyard parties</li>
+              <li>Performer profiles only &mdash; no agencies, no venues, no crew</li>
+            </ul>
+          </div>
+          <div class="compare-col us">
+            <h4><i class="fa-solid fa-bolt"></i> StageLink365</h4>
+            <ul>
+              <li>Quality-matched to a short list &mdash; never a bid war</li>
+              <li>Verified roster &mdash; ID, references, background checks</li>
+              <li>Payments guaranteed by the platform, on every gig</li>
+              <li>Insurance baked in, on every booking</li>
+              <li>Attorney-approved contracts on every booking</li>
+              <li>Built for casinos, corporate, venue residency, festivals, tours</li>
+              <li>Talent <em>and</em> agencies <em>and</em> venues <em>and</em> crew &mdash; the whole chain</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CLOSER ═══ -->
+<section class="closer">
+  <div class="content">
+    <h2>We&rsquo;re not playing at this.<br /><span class="accent">We are the real deal.</span></h2>
+    <p>
+      The Founder Tier is open now &mdash; 500 seats for performers, 50 for booking agencies, 50 for venues. Once they&rsquo;re claimed, the offer closes for good.
+    </p>
+    <div class="closer-buttons">
+      <a href="/" class="btn btn-accent btn-xl">
+        <i class="fa-solid fa-bolt"></i> Claim a Founder seat
+      </a>
+      <a href="/app" class="btn btn-outline btn-lg">
+        <i class="fa-solid fa-magnifying-glass"></i> Browse the platform
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-text">&copy; 2026 StageLink365. All rights reserved.</div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/app">Sign in / Browse the app</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

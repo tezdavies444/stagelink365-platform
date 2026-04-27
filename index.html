@@ -72,6 +72,18 @@ section { padding: 80px 0; }
 .btn-outline:hover { border-color: var(--primary-light); color: var(--primary-light); }
 .btn-lg { padding: 16px 36px; font-size: 16px; }
 .btn-xl { padding: 20px 48px; font-size: 18px; border-radius: 14px; }
+.btn-mega {
+  padding: 24px 56px; font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+  border-radius: 16px;
+  box-shadow: 0 14px 44px rgba(108,43,217,0.50);
+}
+.btn-mega:hover { box-shadow: 0 18px 56px rgba(108,43,217,0.70); }
+.what-is-cta { display: flex; justify-content: center; margin-bottom: 36px; }
+@media (max-width: 600px) {
+  .btn-mega { padding: 20px 28px; letter-spacing: 1.5px; width: 100%; justify-content: center; }
+  .what-is-cta { padding: 0 8px; }
+}
 
 /* ── Cards ── */
 .card {
@@ -740,6 +752,7 @@ section { padding: 80px 0; }
   <div class="container">
     <a href="/" class="logo">StageLink<span>365</span></a>
     <div class="nav-links">
+      <a href="/what/">What is this?</a>
       <a href="#benefits">Benefits</a>
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>
@@ -758,6 +771,11 @@ section { padding: 80px 0; }
 
   <div class="container">
     <div class="hero-content fade-in">
+      <div class="what-is-cta">
+        <a href="/what/" class="btn btn-primary btn-mega">
+          <i class="fa-solid fa-circle-question"></i> What is StageLink365
+        </a>
+      </div>
       <div class="hero-badge">
         <i class="fa-solid fa-bolt"></i>
         Founder Tier &middot; 600 seats total &middot; once they&rsquo;re gone, they&rsquo;re gone
