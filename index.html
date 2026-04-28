@@ -567,6 +567,25 @@ section { padding: 80px 0; }
 .founder-track-tile .pricing-btn,
 .founder-track-tile .btn { margin-top: auto; }
 
+/* Bullet lists inside Founder tiles (talent hero card + agency/venue track tiles) */
+.founder-counter-tagline p { margin: 0 0 10px; }
+.founder-counter-tagline p:last-child { margin: 0; }
+.founder-counter-tagline ul {
+  margin: 0 0 12px; padding-left: 20px;
+  font-size: 14px; line-height: 1.55;
+}
+.founder-counter-tagline ul li { margin-bottom: 6px; }
+.founder-counter-tagline ul li:last-child { margin-bottom: 0; }
+.founder-counter-tagline strong { color: var(--text); }
+
+.founder-track-tile ul {
+  margin: 0; padding-left: 20px;
+  font-size: 15px; color: var(--text-muted); line-height: 1.55;
+}
+.founder-track-tile ul li { margin-bottom: 8px; }
+.founder-track-tile ul li:last-child { margin-bottom: 0; }
+.founder-track-tile p strong, .founder-track-tile ul strong { color: var(--text); }
+
 .founder-claim-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 14px 22px; border-radius: 10px; font-weight: 700; font-size: 15px;
@@ -794,7 +813,17 @@ section { padding: 80px 0; }
           <span id="founder-talent-left">&mdash;</span><span class="of"> of 500 left</span>
         </div>
         <div class="founder-counter-bar"><div class="founder-counter-bar-fill" id="founder-talent-fill"></div></div>
-        <div class="founder-counter-tagline" id="founder-talent-tagline"><strong>Founding Member &mdash; free for life.</strong> Every Pro feature ($19/mo) free forever, a numbered &ldquo;Founding Member &middot; Seat #X of 500&rdquo; badge on your profile, and when bookings go live you pay a 2% platform fee instead of 3% &mdash; locked in for life. Plus you&rsquo;re first on the list when we pitch performers to casino, corporate, and venue bookers. <strong>500 seats. When they&rsquo;re claimed, the offer closes &mdash; no second round.</strong></div>
+        <div class="founder-counter-tagline" id="founder-talent-tagline">
+          <p><strong>Founding Member &mdash; free for life.</strong> Get every Pro feature free forever, plus the perks below &mdash; for the first 500 performers who claim a seat.</p>
+          <ul>
+            <li>Every Pro feature ($19/mo) &mdash; <strong>free for life</strong></li>
+            <li>A numbered &ldquo;Founding Member &middot; Seat #X of 500&rdquo; badge on your profile</li>
+            <li>First in line when we pitch performers to casino, corporate, and venue bookers</li>
+            <li>2% platform fee (vs 3%) when bookings go live &mdash; locked for life</li>
+            <li>Early-access vote on what we build next + extra Founder months per referral</li>
+          </ul>
+          <p><strong>500 seats. When they&rsquo;re claimed, the offer closes &mdash; no second round.</strong></p>
+        </div>
         <div class="founder-counter-status" id="founder-counter-status">Loading current seat counts&hellip;</div>
       </div>
 
@@ -822,7 +851,14 @@ section { padding: 80px 0; }
         <div class="founder-track-eyebrow">For booking agencies &middot; 50 seats</div>
         <h3>Founding Agency &mdash; run your whole roster, free for a year.</h3>
         <div class="founder-track-counter"><span id="founder-agency-claimed">&mdash;</span><span class="of">of 50 admitted</span></div>
-        <p>Built for agents who book multiple acts. One place to manage your roster, your inquiries, and your team. 12 months of the Agency tier free when it launches, then 50% off forever. We&rsquo;ll migrate your roster from a CSV ourselves. You get a private Slack channel with the SL365 team and your feature requests jump the queue.</p>
+        <p>One place to run your whole agency &mdash; your roster, your inquiries, your team &mdash; at Founder pricing for life.</p>
+        <ul>
+          <li>12 months of the Agency tier free when it launches, then <strong>50% off forever</strong></li>
+          <li>We migrate your roster from a CSV ourselves (you don&rsquo;t lift a finger)</li>
+          <li>Private Slack channel with the SL365 team</li>
+          <li>Your feature requests jump the queue</li>
+          <li>Numbered Founding Agency badge on your agency profile + every act you manage</li>
+        </ul>
         <p><strong>50 seats. Once they&rsquo;re filled, agencies join at standard pricing &mdash; no Founder track again.</strong></p>
         <button type="button" class="founder-claim-btn" id="founder-claim-agency" data-track="agency">
           <i class="fa-solid fa-bolt"></i> Claim a Founding Agency seat
@@ -832,7 +868,14 @@ section { padding: 80px 0; }
         <div class="founder-track-eyebrow">For venues, casinos &amp; corporate bookers &middot; 50 seats</div>
         <h3>Founding Venue &mdash; concierge setup, then free for a year.</h3>
         <div class="founder-track-counter"><span id="founder-venue-claimed">&mdash;</span><span class="of">of 50 admitted</span></div>
-        <p>Book entertainment without phone tag, email contracts, or paying a third party to chase artists for you. Booker Hub free for 12 months, then 50% off forever. Your logo lives on the StageLink365 homepage among the founding venues. Priority placement when performers search for venues. We&rsquo;ll build your profile end-to-end for you.</p>
+        <p>Book entertainment direct &mdash; no phone tag, no email contracts, no third-party agent chasing artists for you.</p>
+        <ul>
+          <li>Booker Hub free for 12 months, then <strong>50% off forever</strong></li>
+          <li>Your logo on the StageLink365 homepage among the founding venues</li>
+          <li>Priority placement when performers search for venues</li>
+          <li>We build your venue profile end-to-end (you review and approve)</li>
+          <li>Numbered Founding Venue badge on your booker profile</li>
+        </ul>
         <p><strong>50 seats. After that, new venues join at standard rates &mdash; no Founder track for late arrivals.</strong></p>
         <button type="button" class="founder-claim-btn" id="founder-claim-venue" data-track="venue">
           <i class="fa-solid fa-bolt"></i> Claim a Founding Venue seat
