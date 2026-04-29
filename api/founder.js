@@ -30,12 +30,13 @@ const AIRTABLE_BASE_URL = 'https://api.airtable.com/v0';
 
 const FOUNDERS_TABLE_ID_FALLBACK = 'tblwTL67NIFA2pmQG';
 
-const FIELD_SEAT_NUMBER = 'seat_number';
-const FIELD_TRACK       = 'track';
-const FIELD_STATUS      = 'status';
-const FIELD_EMAIL       = 'email';
-const FIELD_NAME        = 'name';
-const FIELD_CLAIMED_AT  = 'claimed_at';
+const FIELD_SEAT_NUMBER    = 'seat_number';
+const FIELD_TRACK          = 'track';
+const FIELD_STATUS         = 'status';
+const FIELD_EMAIL          = 'email';
+const FIELD_NAME           = 'name';
+const FIELD_REPRESENTATIVE = 'representative';
+const FIELD_CLAIMED_AT     = 'claimed_at';
 
 const TRACK_TALENT = 'talent';
 const TRACK_AGENCY = 'agency';
@@ -91,9 +92,10 @@ async function handleGetCounts(res, env) {
 
 async function handleClaim(req, res, env) {
   const body = req.body || {};
-  const track = typeof body.track === 'string' ? body.track.trim().toLowerCase() : '';
-  const email = typeof body.email === 'string' ? body.email.trim() : '';
-  const name  = typeof body.name  === 'string' ? body.name.trim()  : '';
+  const track          = typeof body.track          === 'string' ? body.track.trim().toLowerCase() : '';
+  const email          = typeof body.email          === 'string' ? body.email.trim()          : '';
+  const name           = typeof body.name           === 'string' ? body.name.trim()           : '';
+  const representative = typeof body.representative === 'string' ? body.representative.trim() : '';
 
   if (!VALID_TRACKS.includes(track)) {
     return res.status(400).json({ success: false, error: 'invalid_track' });
@@ -103,6 +105,9 @@ async function handleClaim(req, res, env) {
   }
   if (!name) {
     return res.status(400).json({ success: false, error: 'missing_name' });
+  }
+  if (!representative) {
+    return res.status(400).json({ success: false, error: 'missing_representative' });
   }
 
   const cap = CAPS[track];
@@ -139,6 +144,9 @@ async function handleClaim(req, res, env) {
     [FIELD_NAME]:        name,
     [FIELD_CLAIMED_AT]:  new Date().toISOString()
   };
+  if (representative) {
+    fields[FIELD_REPRESENTATIVE] = representative;
+  }
 
   try {
     const response = await fetch(

@@ -1273,14 +1273,52 @@ section { padding: 80px 0; }
 
       <form id="founder-form" novalidate>
         <input type="hidden" id="founder-form-track" name="track" value="" />
-        <div class="founder-form-row">
-          <label for="founder-form-name">Name</label>
-          <input type="text" id="founder-form-name" name="name" autocomplete="name" required />
+
+        <div class="founder-form-track" data-form-track="talent" style="display:none;">
+          <div class="founder-form-row">
+            <label for="founder-form-talent-fullname">Full Name</label>
+            <input type="text" id="founder-form-talent-fullname" data-field="representative" autocomplete="name" />
+          </div>
+          <div class="founder-form-row">
+            <label for="founder-form-talent-name">Stage Name</label>
+            <input type="text" id="founder-form-talent-name" data-field="name" autocomplete="nickname" />
+          </div>
+          <div class="founder-form-row">
+            <label for="founder-form-talent-email">Email</label>
+            <input type="email" id="founder-form-talent-email" data-field="email" autocomplete="email" />
+          </div>
         </div>
-        <div class="founder-form-row">
-          <label for="founder-form-email">Email</label>
-          <input type="email" id="founder-form-email" name="email" autocomplete="email" required />
+
+        <div class="founder-form-track" data-form-track="agency" style="display:none;">
+          <div class="founder-form-row">
+            <label for="founder-form-agency-name">Agency Name</label>
+            <input type="text" id="founder-form-agency-name" data-field="name" autocomplete="organization" />
+          </div>
+          <div class="founder-form-row">
+            <label for="founder-form-agency-representative">Agency Representative</label>
+            <input type="text" id="founder-form-agency-representative" data-field="representative" autocomplete="name" />
+          </div>
+          <div class="founder-form-row">
+            <label for="founder-form-agency-email">Email</label>
+            <input type="email" id="founder-form-agency-email" data-field="email" autocomplete="email" />
+          </div>
         </div>
+
+        <div class="founder-form-track" data-form-track="venue" style="display:none;">
+          <div class="founder-form-row">
+            <label for="founder-form-venue-name">Venue Name</label>
+            <input type="text" id="founder-form-venue-name" data-field="name" autocomplete="organization" />
+          </div>
+          <div class="founder-form-row">
+            <label for="founder-form-venue-representative">Venue Representative</label>
+            <input type="text" id="founder-form-venue-representative" data-field="representative" autocomplete="name" />
+          </div>
+          <div class="founder-form-row">
+            <label for="founder-form-venue-email">Email</label>
+            <input type="email" id="founder-form-venue-email" data-field="email" autocomplete="email" />
+          </div>
+        </div>
+
         <button type="submit" class="founder-modal-submit" id="founder-form-submit">
           Claim my seat
         </button>
@@ -1353,13 +1391,30 @@ function toggleBilling() {
   var pitchCTAs   = document.querySelectorAll('[data-pitch-cta]');
   var formBack    = document.getElementById('founder-form-back');
   var formView    = document.getElementById('founder-modal-form-view');
+  var formTracks  = document.querySelectorAll('[data-form-track]');
   var successView = document.getElementById('founder-modal-success-view');
   var form       = document.getElementById('founder-form');
   var trackInput = document.getElementById('founder-form-track');
-  var nameInput  = document.getElementById('founder-form-name');
-  var emailInput = document.getElementById('founder-form-email');
   var submitBtn  = document.getElementById('founder-form-submit');
   var status     = document.getElementById('founder-form-status');
+
+  function getActiveFields() {
+    var track = trackInput.value || 'talent';
+    var section = document.querySelector('[data-form-track="' + track + '"]');
+    if (!section) return { name: '', email: '', representative: '', firstInput: null };
+    var nameInput  = section.querySelector('[data-field="name"]');
+    var emailInput = section.querySelector('[data-field="email"]');
+    var repInput   = section.querySelector('[data-field="representative"]');
+    return {
+      nameInput:  nameInput,
+      emailInput: emailInput,
+      repInput:   repInput,
+      firstInput: section.querySelector('input'),
+      name:           (nameInput  && nameInput.value)  ? nameInput.value.trim()  : '',
+      email:          (emailInput && emailInput.value) ? emailInput.value.trim() : '',
+      representative: (repInput   && repInput.value)   ? repInput.value.trim()   : ''
+    };
+  }
   var successEye    = document.getElementById('founder-success-eyebrow');
   var successNumber = document.getElementById('founder-success-number');
   var successOf     = document.getElementById('founder-success-of');
@@ -1468,12 +1523,19 @@ function toggleBilling() {
   }
 
   function showFormView() {
+    var track = trackInput.value || 'talent';
     if (pitchView) pitchView.style.display = 'none';
     if (formView) formView.style.display = '';
     if (successView) successView.style.display = 'none';
+    for (var i = 0; i < formTracks.length; i++) {
+      formTracks[i].style.display = (formTracks[i].getAttribute('data-form-track') === track) ? '' : 'none';
+    }
     setStatus('', null);
     if (modalBox) modalBox.scrollTop = 0;
-    setTimeout(function () { nameInput && nameInput.focus(); }, 50);
+    setTimeout(function () {
+      var first = getActiveFields().firstInput;
+      if (first) first.focus();
+    }, 50);
   }
 
   function closeModal() {
@@ -1502,6 +1564,7 @@ function toggleBilling() {
         case 'invalid_track':   return 'That track isn’t recognised. Please refresh and try again.';
         case 'missing_email':   return 'Please enter an email address.';
         case 'missing_name':    return 'Please enter your name.';
+        case 'missing_representative': return 'Please enter your full name (or the contact name for this seat).';
         case 'server_config':   return 'The server isn’t configured yet — please try again shortly or email terry@tadshows.com.';
         case 'airtable_error':  return 'We couldn’t reach our database. Please try again in a moment.';
         case 'method_not_allowed': return 'Unexpected request type. Please refresh and try again.';
@@ -1515,24 +1578,62 @@ function toggleBilling() {
   function submitClaim(e) {
     e.preventDefault();
     var track = trackInput.value;
-    var name  = (nameInput.value || '').trim();
-    var email = (emailInput.value || '').trim();
-
-    if (!name)  { setStatus('Please enter your name.', 'error'); nameInput.focus(); return; }
-    if (!email) { setStatus('Please enter an email address.', 'error'); emailInput.focus(); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setStatus('That email doesn’t look right — please double-check.', 'error'); emailInput.focus(); return;
-    }
     if (!track) { setStatus('Please refresh the page and try again.', 'error'); return; }
+
+    var fields = getActiveFields();
+    var name = fields.name;
+    var email = fields.email;
+    var representative = fields.representative;
+
+    // Validate in visual (DOM) order. Talent shows Full Name (representative)
+    // above Stage Name (name); agency/venue show entity name above rep.
+    if (track === 'talent') {
+      if (!representative) {
+        setStatus('Please enter your full name.', 'error');
+        if (fields.repInput) fields.repInput.focus();
+        return;
+      }
+      if (!name) {
+        setStatus('Please enter your stage name.', 'error');
+        if (fields.nameInput) fields.nameInput.focus();
+        return;
+      }
+    } else {
+      var nameLabel = (track === 'agency') ? 'agency name' : 'venue name';
+      if (!name) {
+        setStatus('Please enter your ' + nameLabel + '.', 'error');
+        if (fields.nameInput) fields.nameInput.focus();
+        return;
+      }
+      var repLabel = (track === 'agency') ? 'agency representative' : 'venue representative';
+      if (!representative) {
+        setStatus('Please enter the ' + repLabel + '.', 'error');
+        if (fields.repInput) fields.repInput.focus();
+        return;
+      }
+    }
+    if (!email) {
+      setStatus('Please enter an email address.', 'error');
+      if (fields.emailInput) fields.emailInput.focus();
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setStatus('That email doesn’t look right — please double-check.', 'error');
+      if (fields.emailInput) fields.emailInput.focus();
+      return;
+    }
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Claiming…';
     setStatus('Reserving your seat…', 'info');
 
+    var body = { track: track, name: name, email: email };
+    if (representative) body.representative = representative;
+
     fetch(FOUNDER_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ track: track, name: name, email: email })
+      body: JSON.stringify(body)
     })
       .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; }); })
       .then(function (res) {
