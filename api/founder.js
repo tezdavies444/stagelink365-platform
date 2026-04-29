@@ -106,7 +106,7 @@ async function handleClaim(req, res, env) {
   if (!name) {
     return res.status(400).json({ success: false, error: 'missing_name' });
   }
-  if ((track === TRACK_AGENCY || track === TRACK_VENUE) && !representative) {
+  if (!representative) {
     return res.status(400).json({ success: false, error: 'missing_representative' });
   }
 

@@ -1276,8 +1276,12 @@ section { padding: 80px 0; }
 
         <div class="founder-form-track" data-form-track="talent" style="display:none;">
           <div class="founder-form-row">
+            <label for="founder-form-talent-fullname">Full Name</label>
+            <input type="text" id="founder-form-talent-fullname" data-field="representative" autocomplete="name" />
+          </div>
+          <div class="founder-form-row">
             <label for="founder-form-talent-name">Stage Name</label>
-            <input type="text" id="founder-form-talent-name" data-field="name" autocomplete="name" />
+            <input type="text" id="founder-form-talent-name" data-field="name" autocomplete="nickname" />
           </div>
           <div class="founder-form-row">
             <label for="founder-form-talent-email">Email</label>
@@ -1405,7 +1409,7 @@ function toggleBilling() {
       nameInput:  nameInput,
       emailInput: emailInput,
       repInput:   repInput,
-      firstInput: nameInput,
+      firstInput: section.querySelector('input'),
       name:           (nameInput  && nameInput.value)  ? nameInput.value.trim()  : '',
       email:          (emailInput && emailInput.value) ? emailInput.value.trim() : '',
       representative: (repInput   && repInput.value)   ? repInput.value.trim()   : ''
@@ -1560,7 +1564,7 @@ function toggleBilling() {
         case 'invalid_track':   return 'That track isn’t recognised. Please refresh and try again.';
         case 'missing_email':   return 'Please enter an email address.';
         case 'missing_name':    return 'Please enter your name.';
-        case 'missing_representative': return 'Please enter the contact name for this seat.';
+        case 'missing_representative': return 'Please enter your full name (or the contact name for this seat).';
         case 'server_config':   return 'The server isn’t configured yet — please try again shortly or email terry@tadshows.com.';
         case 'airtable_error':  return 'We couldn’t reach our database. Please try again in a moment.';
         case 'method_not_allowed': return 'Unexpected request type. Please refresh and try again.';
@@ -1581,19 +1585,32 @@ function toggleBilling() {
     var email = fields.email;
     var representative = fields.representative;
 
-    var nameLabel = (track === 'talent') ? 'stage name'
-                  : (track === 'agency') ? 'agency name'
-                  : 'venue name';
-    if (!name) {
-      setStatus('Please enter your ' + nameLabel + '.', 'error');
-      if (fields.nameInput) fields.nameInput.focus();
-      return;
-    }
-    if ((track === 'agency' || track === 'venue') && !representative) {
+    // Validate in visual (DOM) order. Talent shows Full Name (representative)
+    // above Stage Name (name); agency/venue show entity name above rep.
+    if (track === 'talent') {
+      if (!representative) {
+        setStatus('Please enter your full name.', 'error');
+        if (fields.repInput) fields.repInput.focus();
+        return;
+      }
+      if (!name) {
+        setStatus('Please enter your stage name.', 'error');
+        if (fields.nameInput) fields.nameInput.focus();
+        return;
+      }
+    } else {
+      var nameLabel = (track === 'agency') ? 'agency name' : 'venue name';
+      if (!name) {
+        setStatus('Please enter your ' + nameLabel + '.', 'error');
+        if (fields.nameInput) fields.nameInput.focus();
+        return;
+      }
       var repLabel = (track === 'agency') ? 'agency representative' : 'venue representative';
-      setStatus('Please enter the ' + repLabel + '.', 'error');
-      if (fields.repInput) fields.repInput.focus();
-      return;
+      if (!representative) {
+        setStatus('Please enter the ' + repLabel + '.', 'error');
+        if (fields.repInput) fields.repInput.focus();
+        return;
+      }
     }
     if (!email) {
       setStatus('Please enter an email address.', 'error');
