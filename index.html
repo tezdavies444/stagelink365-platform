@@ -735,6 +735,38 @@ section { padding: 80px 0; }
 }
 .founder-success-done:hover { border-color: var(--primary-light); color: var(--primary-light); }
 
+/* Profile-onramp block — shown only when api/founder.js auto-created a Profile (talent path) */
+.founder-success-profile { margin: 18px 0 14px; }
+.founder-success-cta {
+  display: inline-block; padding: 14px 28px; border-radius: 10px;
+  background: var(--primary); border: 1px solid var(--primary); color: #fff;
+  font-weight: 700; text-decoration: none; font-size: 15px; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.founder-success-cta:hover { background: var(--primary-light); border-color: var(--primary-light); }
+.founder-success-cta i { margin-left: 8px; }
+.founder-success-url-label {
+  font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-muted); margin: 18px 0 6px; text-align: left;
+}
+.founder-success-url-wrap { display: flex; gap: 8px; align-items: stretch; }
+.founder-success-url {
+  flex: 1; min-width: 0; padding: 10px 12px; border-radius: 8px;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--dark-border);
+  color: var(--text); font-size: 13px; font-family: inherit;
+}
+.founder-success-url:focus { outline: none; border-color: var(--primary-light); }
+.founder-success-url-copy {
+  padding: 0 14px; border-radius: 8px; background: transparent;
+  border: 1px solid var(--dark-border); color: var(--text-muted);
+  cursor: pointer; font-size: 14px; transition: color 0.15s, border-color 0.15s;
+}
+.founder-success-url-copy:hover { color: var(--primary-light); border-color: var(--primary-light); }
+.founder-success-url-status {
+  font-size: 12px; color: var(--success); margin-top: 6px;
+  min-height: 16px; text-align: left;
+}
+
 /* ═══════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════ */
@@ -1332,7 +1364,20 @@ section { padding: 80px 0; }
         <div class="founder-success-seat">Seat #<span id="founder-success-number">&mdash;</span></div>
         <div class="founder-success-of" id="founder-success-of">of 500 &middot; Talent Founders</div>
         <div class="founder-success-message" id="founder-success-message"></div>
-        <div class="founder-success-note">Save this seat number &mdash; email confirmations come in a later sprint.</div>
+        <div class="founder-success-profile" id="founder-success-profile" style="display:none;">
+          <a href="#" class="founder-success-cta" id="founder-success-continue">
+            Continue to your profile <i class="fa-solid fa-arrow-right"></i>
+          </a>
+          <div class="founder-success-url-label">Or save this &mdash; your private way back in:</div>
+          <div class="founder-success-url-wrap">
+            <input type="text" readonly class="founder-success-url" id="founder-success-url" value="" aria-label="Your private sign-in link" />
+            <button type="button" class="founder-success-url-copy" id="founder-success-url-copy" aria-label="Copy link to clipboard">
+              <i class="fa-solid fa-copy"></i>
+            </button>
+          </div>
+          <div class="founder-success-url-status" id="founder-success-url-status" aria-live="polite"></div>
+        </div>
+        <div class="founder-success-note" id="founder-success-note">Save this seat number &mdash; email confirmations come in a later sprint.</div>
         <button type="button" class="founder-success-done" id="founder-success-done">Close</button>
       </div>
     </div>
@@ -1420,6 +1465,12 @@ function toggleBilling() {
   var successOf     = document.getElementById('founder-success-of');
   var successMsg    = document.getElementById('founder-success-message');
   var successDone   = document.getElementById('founder-success-done');
+  var successProfile  = document.getElementById('founder-success-profile');
+  var successContinue = document.getElementById('founder-success-continue');
+  var successUrl      = document.getElementById('founder-success-url');
+  var successUrlCopy  = document.getElementById('founder-success-url-copy');
+  var successUrlStat  = document.getElementById('founder-success-url-status');
+  var successNote     = document.getElementById('founder-success-note');
   var counterStatus = document.getElementById('founder-counter-status');
 
   function setStatus(msg, kind) {
@@ -1545,6 +1596,7 @@ function toggleBilling() {
 
   function showSuccess(payload) {
     var seat = payload && payload.seat || {};
+    var profile = payload && payload.profile;
     var track = seat.track || trackInput.value || 'talent';
     successEye.textContent = TRACK_LABELS[track] || 'Founder Tier';
     successNumber.textContent = seat.number != null ? seat.number : '?';
@@ -1552,6 +1604,23 @@ function toggleBilling() {
     successMsg.textContent = payload && payload.message
       ? payload.message
       : 'Seat #' + (seat.number != null ? seat.number : '?') + ' claimed. When SL365 platform payments go live, your booking fee is locked at 2% (vs 3% for non-Founders) — for life.';
+
+    // Profile onramp — populated only when the handler auto-created a Profile (talent path).
+    // Server returns a path so we can build a same-origin URL that works on production AND
+    // Vercel preview deploys.
+    if (profile && profile.magicLinkPath) {
+      var fullUrl = window.location.origin + profile.magicLinkPath;
+      if (successContinue) successContinue.setAttribute('href', fullUrl);
+      if (successUrl)      successUrl.value = fullUrl;
+      if (successUrlStat)  successUrlStat.textContent = '';
+      if (successProfile)  successProfile.style.display = '';
+      if (successNote)     successNote.textContent = 'Save the link above — it’s your private way back in. Email confirmations come in a later sprint.';
+    } else {
+      if (successProfile)  successProfile.style.display = 'none';
+      if (successUrlStat)  successUrlStat.textContent = '';
+      if (successNote)     successNote.textContent = 'Save this seat number — email confirmations come in a later sprint.';
+    }
+
     if (pitchView) pitchView.style.display = 'none';
     formView.style.display    = 'none';
     successView.style.display = '';
@@ -1565,6 +1634,8 @@ function toggleBilling() {
         case 'missing_email':   return 'Please enter an email address.';
         case 'missing_name':    return 'Please enter your name.';
         case 'missing_representative': return 'Please enter your full name (or the contact name for this seat).';
+        case 'email_has_profile': return 'You already have a StageLink365 profile under this email. Check your inbox for your sign-in link — or email terry@tadshows.com and we’ll resend it.';
+        case 'profile_create_failed': return 'We couldn’t set up your profile. Please try again in a moment, or email terry@tadshows.com if it keeps happening.';
         case 'server_config':   return 'The server isn’t configured yet — please try again shortly or email terry@tadshows.com.';
         case 'airtable_error':  return 'We couldn’t reach our database. Please try again in a moment.';
         case 'method_not_allowed': return 'Unexpected request type. Please refresh and try again.';
@@ -1684,6 +1755,27 @@ function toggleBilling() {
   });
   if (modalClose)  modalClose.addEventListener('click', closeModal);
   if (successDone) successDone.addEventListener('click', closeModal);
+
+  // Copy magic-link URL to clipboard. navigator.clipboard fails on insecure
+  // contexts (rare here — production is https) so we fall back to execCommand.
+  if (successUrlCopy) {
+    successUrlCopy.addEventListener('click', function () {
+      if (!successUrl) return;
+      successUrl.focus();
+      successUrl.select();
+      successUrl.setSelectionRange(0, 99999);
+      function showCopied() { if (successUrlStat) successUrlStat.textContent = 'Copied to clipboard.'; }
+      function showFallback() { if (successUrlStat) successUrlStat.textContent = 'Press Cmd/Ctrl+C to copy.'; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(successUrl.value).then(showCopied, showFallback);
+      } else {
+        try {
+          var ok = document.execCommand('copy');
+          if (ok) showCopied(); else showFallback();
+        } catch (_) { showFallback(); }
+      }
+    });
+  }
   if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && modal && modal.classList.contains('open')) closeModal();

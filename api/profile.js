@@ -238,6 +238,9 @@ function transformProfile(record) {
     profileViews: f['Profile Views'] || 0,
     searchAppearances: f['Search Appearances'] || 0,
     accountType: f['Account Type'] ? (typeof f['Account Type'] === 'object' ? f['Account Type'].name : f['Account Type']) : 'Performer',
+    isFounder: !!f['is_founder'],
+    founderSeatNumber: f['founder_seat_number'] || null,
+    fullName: f['Full Name'] || '',
     rating: 0,
     reviews: 0,
     gigs: 0
