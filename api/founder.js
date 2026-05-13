@@ -21,6 +21,18 @@
 // of ~5 claims/day the collision risk is negligible. Revisit only if traffic
 // warrants. Do not add a separate locking table.
 //
+// Talent-only Profile auto-create (Open Item #17a):
+//   - Pre-insert: email-dedup against Profiles. If hit, return 409
+//     `email_has_profile` so the modal can prompt for sign-in instead.
+//   - On clean email: create a Profiles row with a generated magic-link
+//     token, is_founder=true, founder_seat_number=N. Then create the
+//     Founders row with status='converted' and Profile linked.
+//   - Agency/venue claims still create only the Founders row (entities, not
+//     people) — no Profile auto-create, no email dedup.
+//   - If Profile-create succeeds but Founders-insert fails, the Profile is
+//     orphaned (has founder_seat_number but no Founders row to back it).
+//     Logged as "ORPHAN PROFILE" for manual recovery.
+//
 // Field-name strings are hardcoded constants below — per-handler precedent
 // matching the existing four handlers. The cross-handler fields.js
 // consolidation (Open Item #4) stays separate; when it eventually runs, it
@@ -29,7 +41,9 @@
 const AIRTABLE_BASE_URL = 'https://api.airtable.com/v0';
 
 const FOUNDERS_TABLE_ID_FALLBACK = 'tblwTL67NIFA2pmQG';
+const PROFILES_TABLE_ID_FALLBACK = 'tblse7dXJfUjvEWQa';
 
+// Founders table fields
 const FIELD_SEAT_NUMBER    = 'seat_number';
 const FIELD_TRACK          = 'track';
 const FIELD_STATUS         = 'status';
@@ -37,6 +51,27 @@ const FIELD_EMAIL          = 'email';
 const FIELD_NAME           = 'name';
 const FIELD_REPRESENTATIVE = 'representative';
 const FIELD_CLAIMED_AT     = 'claimed_at';
+const FIELD_PROFILE_LINK   = 'Profile';
+
+// Profiles table fields (the OI #17a talent-Founder create writes the subset listed).
+// Names mirror api/profile-create.js where they overlap, but the singleSelect
+// option VALUES below are corrected to match the live Airtable schema —
+// api/profile-create.js currently writes Account Type='Performer' which is
+// NOT a valid option (live options are Talent / Booker / Admin). That's a
+// separate latent bug, deliberately NOT inherited here.
+const P_FIELD_DISPLAY_NAME        = 'Display Name';
+const P_FIELD_FULL_NAME           = 'Full Name';
+const P_FIELD_EMAIL               = 'Email';
+const P_FIELD_MAGIC_LINK_TOKEN    = 'Magic Link Token';
+const P_FIELD_ACCOUNT_TYPE        = 'Account Type';
+const P_FIELD_SUBSCRIPTION_TIER   = 'Subscription Tier';
+const P_FIELD_IS_FOUNDER          = 'is_founder';
+const P_FIELD_FOUNDER_SEAT_NUMBER = 'founder_seat_number';
+const P_FIELD_IS_AVAILABLE        = 'Is Available';
+const P_FIELD_DATE_JOINED         = 'Date Joined';
+
+const ACCOUNT_TYPE_TALENT   = 'Talent';
+const SUBSCRIPTION_TIER_PRO = 'Pro ($19/mo)';
 
 const TRACK_TALENT = 'talent';
 const TRACK_AGENCY = 'agency';
@@ -63,12 +98,13 @@ module.exports = async function handler(req, res) {
 
   const { AIRTABLE_API_TOKEN, AIRTABLE_BASE_ID } = process.env;
   const FOUNDERS_TABLE_ID = process.env.AIRTABLE_FOUNDERS_TABLE_ID || FOUNDERS_TABLE_ID_FALLBACK;
+  const PROFILES_TABLE_ID = process.env.AIRTABLE_PROFILES_TABLE_ID || PROFILES_TABLE_ID_FALLBACK;
 
   if (!AIRTABLE_API_TOKEN || !AIRTABLE_BASE_ID) {
     return res.status(500).json({ success: false, error: 'server_config' });
   }
 
-  const env = { AIRTABLE_API_TOKEN, AIRTABLE_BASE_ID, FOUNDERS_TABLE_ID };
+  const env = { AIRTABLE_API_TOKEN, AIRTABLE_BASE_ID, FOUNDERS_TABLE_ID, PROFILES_TABLE_ID };
 
   if (req.method === 'GET')  return handleGetCounts(res, env);
   if (req.method === 'POST') return handleClaim(req, res, env);
@@ -136,16 +172,61 @@ async function handleClaim(req, res, env) {
   }
 
   const seatNumber = occupied + 1;
+
+  // Talent path: email-dedup + auto-create a Profile so the claim leads to
+  // a real onramp instead of a Close button. Agency/venue claims skip both
+  // steps — they're entities, not people, and may legitimately share an
+  // email across multiple roles (one person managing two venues etc.).
+  let profile = null;
+  if (track === TRACK_TALENT) {
+    let existingProfile;
+    try {
+      existingProfile = await lookupProfileByEmail(email, env);
+    } catch (err) {
+      console.error('Founder email-dedup error:', err);
+      return res.status(502).json({
+        success: false,
+        error: 'airtable_error',
+        detail: String((err && err.message) || err)
+      });
+    }
+    if (existingProfile) {
+      return res.status(409).json({
+        success: false,
+        error: 'email_has_profile',
+        track
+      });
+    }
+
+    try {
+      profile = await createTalentFounderProfile({
+        displayName: name,
+        fullName:    representative,
+        email:       email,
+        seatNumber:  seatNumber
+      }, env);
+    } catch (err) {
+      console.error('Founder profile-create error:', err);
+      return res.status(502).json({
+        success: false,
+        error: 'profile_create_failed',
+        detail: String((err && err.message) || err)
+      });
+    }
+  }
+
+  const founderStatus = profile ? STATUS_CONVERTED : STATUS_CLAIMED;
   const fields = {
-    [FIELD_SEAT_NUMBER]: seatNumber,
-    [FIELD_TRACK]:       track,
-    [FIELD_STATUS]:      STATUS_CLAIMED,
-    [FIELD_EMAIL]:       email,
-    [FIELD_NAME]:        name,
-    [FIELD_CLAIMED_AT]:  new Date().toISOString()
+    [FIELD_SEAT_NUMBER]:    seatNumber,
+    [FIELD_TRACK]:          track,
+    [FIELD_STATUS]:         founderStatus,
+    [FIELD_EMAIL]:          email,
+    [FIELD_NAME]:           name,
+    [FIELD_REPRESENTATIVE]: representative,
+    [FIELD_CLAIMED_AT]:     new Date().toISOString()
   };
-  if (representative) {
-    fields[FIELD_REPRESENTATIVE] = representative;
+  if (profile) {
+    fields[FIELD_PROFILE_LINK] = [profile.id];
   }
 
   try {
@@ -164,6 +245,9 @@ async function handleClaim(req, res, env) {
     if (!response.ok) {
       const errText = await response.text();
       console.error('Airtable founder insert error:', errText);
+      if (profile) {
+        console.error('ORPHAN PROFILE created (Founders insert failed): id=' + profile.id + ' seat=' + seatNumber + ' email=' + email);
+      }
       return res.status(502).json({ success: false, error: 'airtable_error', detail: errText });
     }
 
@@ -172,22 +256,118 @@ async function handleClaim(req, res, env) {
     return res.status(201).json({
       success: true,
       seat: {
-        id: record.id,
+        id:     record.id,
         number: seatNumber,
-        track,
-        cap,
-        status: STATUS_CLAIMED
+        track:  track,
+        cap:    cap,
+        status: founderStatus
       },
-      message: `Seat #${seatNumber} of ${cap} claimed. When SL365 platform payments go live, your booking fee is locked at 2% (vs 3% for non-Founders) — for life.`
+      profile: profile ? {
+        id:            profile.id,
+        token:         profile.token,
+        magicLinkPath: profile.magicLinkPath
+      } : null,
+      message: 'Seat #' + seatNumber + ' of ' + cap + ' claimed. When SL365 platform payments go live, your booking fee is locked at 2% (vs 3% for non-Founders) — for life.'
     });
   } catch (err) {
     console.error('Error claiming founder seat:', err);
+    if (profile) {
+      console.error('ORPHAN PROFILE created (Founders insert threw): id=' + profile.id + ' seat=' + seatNumber + ' email=' + email);
+    }
     return res.status(500).json({
       success: false,
       error: 'server_error',
       detail: String((err && err.message) || err)
     });
   }
+}
+
+// Look up a Profile by email (case-insensitive). Returns the matching record
+// or null. Used for OI #17a talent dedup so a returning Founder can't create
+// a duplicate Profile.
+async function lookupProfileByEmail(email, env) {
+  const formula = `LOWER({${P_FIELD_EMAIL}})='${escapeFormulaString(email.toLowerCase())}'`;
+  const baseUrl = `${AIRTABLE_BASE_URL}/${env.AIRTABLE_BASE_ID}/${env.PROFILES_TABLE_ID}`;
+
+  const params = new URLSearchParams();
+  params.set('filterByFormula', formula);
+  params.set('pageSize', '1');
+  params.append('fields[]', P_FIELD_EMAIL);
+
+  const response = await fetch(`${baseUrl}?${params.toString()}`, {
+    headers: { 'Authorization': `Bearer ${env.AIRTABLE_API_TOKEN}` }
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Airtable profile lookup failed (${response.status}): ${errText}`);
+  }
+
+  const data = await response.json();
+  const records = data.records || [];
+  return records.length > 0 ? records[0] : null;
+}
+
+// Create a Profile row for a freshly-claimed talent Founder seat. Returns
+// { id, token, magicLinkPath } on success; throws on Airtable failure.
+//
+// Field shape mirrors api/profile-create.js where the values overlap, but
+// writes the correct singleSelect option names per the inspected Airtable
+// schema: Account Type='Talent' (not 'Performer'), Subscription Tier='Pro
+// ($19/mo)' (matches the OI #6 fuzzy matcher). magicLinkPath is path-only
+// so the client can build a same-origin URL that works on both production
+// and Vercel preview deploys.
+async function createTalentFounderProfile({ displayName, fullName, email, seatNumber }, env) {
+  const token = generateMagicLinkToken();
+
+  const fields = {
+    [P_FIELD_DISPLAY_NAME]:        displayName,
+    [P_FIELD_FULL_NAME]:           fullName,
+    [P_FIELD_EMAIL]:               email,
+    [P_FIELD_MAGIC_LINK_TOKEN]:    token,
+    [P_FIELD_ACCOUNT_TYPE]:        ACCOUNT_TYPE_TALENT,
+    [P_FIELD_SUBSCRIPTION_TIER]:   SUBSCRIPTION_TIER_PRO,
+    [P_FIELD_IS_FOUNDER]:          true,
+    [P_FIELD_FOUNDER_SEAT_NUMBER]: seatNumber,
+    [P_FIELD_IS_AVAILABLE]:        true,
+    [P_FIELD_DATE_JOINED]:         new Date().toISOString()
+  };
+
+  const response = await fetch(
+    `${AIRTABLE_BASE_URL}/${env.AIRTABLE_BASE_ID}/${env.PROFILES_TABLE_ID}`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.AIRTABLE_API_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ fields })
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Airtable profile create failed (${response.status}): ${errText}`);
+  }
+
+  const record = await response.json();
+  return {
+    id: record.id,
+    token: token,
+    magicLinkPath: '/app/?token=' + encodeURIComponent(token)
+  };
+}
+
+// 10-character alphanumeric token, regex /^[A-Za-z0-9]{6,32}$/ per auth.js.
+// Doubles as the public calendar URL path at calendar.stagelink365.com/c/{token}
+// — never rotate without a comms plan (CLAUDE.md hard rule).
+function generateMagicLinkToken() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let token = '';
+  for (let i = 0; i < 10; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
 }
 
 // Returns { talent: { claimed, cap }, agency: { claimed, cap }, venue: { claimed, cap } }.
