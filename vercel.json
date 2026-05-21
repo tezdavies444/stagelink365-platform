@@ -3,5 +3,11 @@
     { "source": "/personnel", "destination": "/", "permanent": true },
     { "source": "/personnel/", "destination": "/", "permanent": true },
     { "source": "/personnel/:path*", "destination": "/", "permanent": true }
-  ]
+  ],
+  "crons": [
+    { "path": "/api/calendar-sync", "schedule": "0 7 * * *" }
+  ],
+  "functions": {
+    "api/calendar-sync.js": { "maxDuration": 60 }
+  }
 }
