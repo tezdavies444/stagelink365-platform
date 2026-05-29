@@ -1,6 +1,6 @@
 // POST /api/profile-create — Create a new profile in Airtable
 // Body: { name, email, phone, category, subcategories, bio, location, state, ... }
-// Optional: adminToken in Authorization header for admin creation
+// Optional: ADMIN_TOKEN env value as `Authorization: Bearer <token>` for admin creation
 
 const AIRTABLE_BASE_URL = 'https://api.airtable.com/v0';
 
@@ -58,10 +58,17 @@ module.exports = async function handler(req, res) {
   const authHeader = req.headers.authorization;
   const isAdmin = adminToken && authHeader === `Bearer ${adminToken}`;
 
+  // An admin may set any account type explicitly; a self-serve signup defaults to
+  // 'Talent'. NOTE: the only valid Airtable 'Account Type' options are
+  // 'Talent' / 'Booker' / 'Admin' — the previous default 'Performer' is NOT a
+  // valid option, so every non-admin signup was rejected by Airtable (502). The
+  // self-serve CreateProfileModal builds a talent/supply profile, so 'Talent' is
+  // the correct default. (A future venue/booker self-signup that needs 'Booker'
+  // is a paired client+handler change — out of scope here.)
   if (isAdmin && body.accountType) {
     fields['Account Type'] = body.accountType;
   } else {
-    fields['Account Type'] = 'Performer';
+    fields['Account Type'] = 'Talent';
   }
 
   if (body.tier) {
