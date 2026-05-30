@@ -5,7 +5,7 @@
     { "source": "/personnel/:path*", "destination": "/", "permanent": true }
   ],
   "crons": [
-    { "path": "/api/calendar-sync", "schedule": "0 7 * * *" }
+    { "path": "/api/calendar-sync", "schedule": "0 */6 * * *" }
   ],
   "functions": {
     "api/calendar-sync.js": { "maxDuration": 60 }
