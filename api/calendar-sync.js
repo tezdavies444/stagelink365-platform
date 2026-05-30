@@ -191,6 +191,23 @@ module.exports = async function handler(req, res) {
   const query = req.query || {};
   const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const providedKey = bearer || query.key || '';
+  // TEMP DIAGNOSTIC (?authDebug=1) — returns ONLY lengths/booleans, never any
+  // secret value, so we can see why the cron-secret comparison fails. REMOVE
+  // before merging PR #19.
+  if (query.authDebug === '1') {
+    const cs = CRON_SECRET || '';
+    return res.status(200).json({
+      authDebug: true,
+      secretConfigured: !!CRON_SECRET,
+      expectedLen: cs.length,
+      providedVia: bearer ? 'header' : (query.key ? 'query' : 'none'),
+      providedLen: providedKey.length,
+      providedFirst: providedKey.slice(0, 1),
+      providedLast: providedKey.slice(-1),
+      match: providedKey === CRON_SECRET,
+      hasSpace: /\s/.test(providedKey),
+    });
+  }
   if (providedKey !== CRON_SECRET) {
     return res.status(401).json({ ok: false, error: 'unauthorized' });
   }
