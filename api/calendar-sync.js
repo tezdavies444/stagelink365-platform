@@ -19,10 +19,14 @@
 // STATUS mapping, and a `Source` tag it exclusively owns — a connector only
 // ever reconciles its own rows, which is what lets many sources share one
 // calendar. Connectors are direction-aware (inbound | outbound | both). Inbound
-// connectors: the two TAD sources (Land/Cruise) and the Performer Google
-// Calendar (reads each performer's own calendar via a service account, gated on
+// connectors: the two TAD sources (Land/Cruise); the Performer Google Calendar
+// (reads each performer's own calendar via a service account, gated on
 // GOOGLE_SERVICE_ACCOUNT_KEY — inert until that env var is set; its rows are
-// deduped by date+gig so duplicate source events can't accumulate).
+// deduped by date+gig so duplicate source events can't accumulate); and the
+// Cast Cascade (reads TAD's per-show cast decisions and blocks each cast
+// member's OWN individual calendar on that show's booked dates — identity is the
+// Profile's `Personnel ID`; see the cast-cascade source block below). The
+// casting decision is the client's; SL365 only reflects it onto individuals.
 //
 // OUTBOUND (Phase C, the source-of-truth model — decision record §11). StageLink
 // is canonical: after the inbound passes, an OUTBOUND connector pushes each
@@ -59,6 +63,7 @@ const PROFILE_F = {
   landActId:       'Land Act ID',
   googleCalendarId:'Google Calendar ID', // performer's GCal id, read by the Google connector
   pushEnabled:     'Google Push Enabled', // opt-in: push canonical hub rows INTO this GCal (Phase C)
+  personnelId:     'Personnel ID',   // this individual's TAD PERSONNEL rec id (cast cascade)
   availability:    'Availability',   // inverse link → this act's Availability rows
 };
 const AVAIL_F = {
@@ -83,6 +88,7 @@ const DIVISION_PERSONAL = 'Personal';
 const SOURCE_LAND      = 'Land Engagement Sync';
 const SOURCE_CRUISE    = 'Cruise Engagement Sync';
 const SOURCE_GCAL      = 'Google Calendar Sync';   // owns the per-performer Google rows
+const SOURCE_CAST      = 'Cast Cascade Sync';      // owns the per-individual cast-derived rows
 const UPDATED_BY       = 'System — Calendar Sync';
 
 // --- Performer Google Calendar connector (env GOOGLE_SERVICE_ACCOUNT_KEY) ---
@@ -147,6 +153,22 @@ const CRUISE_FID = {
   cruiseLine: 'fldDU92PhPn5oBQkU',
   ship:       'fld6LDUvh8E1cCerv',
 };
+
+// --- Cast cascade source: TAD BOOKINGS base (same env TAD_BOOKINGS_BASE_ID) ---
+// The client (TAD) decides who is cast on each booked show date in `Cast
+// Configurations`; this connector reads that decision and blocks each cast
+// member's OWN individual calendar. SL365 makes no casting decision — it only
+// reflects the client's. Identity is the Profile's `Personnel ID` (its TAD
+// PERSONNEL record id). Traversal: PERSONNEL row -> its Active Cast
+// Configurations -> those configs' booked CURRENT EVENTS. Those events live in
+// the same table the Land connector reads, classified by the same STATUS map —
+// so the per-event mapper (mapLand) and field ids (LAND_FID) are reused as-is;
+// only the routing (to the individual, not the band) and the Source tag differ.
+const PERSONNEL_TABLE          = 'tblpvTmdMoQWbpFND'; // PERSONNEL (from CP)
+const PERSONNEL_CASTCONFIG_LINK = 'fld7yPySYySUd95RR'; // -> Cast Configurations rec IDs
+const CASTCONFIG_TABLE         = 'tbllcOiDSnYlVbrGl'; // Cast Configurations
+const CASTCONFIG_ACTIVE        = 'flduJz8kCszlEJ8Wq'; // checkbox — only Active configs count
+const CASTCONFIG_EVENTS        = 'fldKB4xgkY1P7Wfoi'; // -> CURRENT EVENTS rec IDs (booked dates)
 
 // STATUS mappings (spec §6). Only booking-producing statuses are enumerated;
 // everything in the matching SKIP set is intentionally ignored. A status in
@@ -379,6 +401,20 @@ function buildConnectors() {
       map: mapCruise,
     },
     {
+      // Cast cascade (inbound). Routes a booked show's CURRENT EVENTS to each
+      // individual cast member's calendar, reconciling so a member added to a
+      // config later gets their blocks on the next run (and a removed member has
+      // theirs cleaned up). Reuses the Land mapper/fields (same events, same
+      // STATUS map) — only the identity (Personnel ID) and Source tag differ.
+      id: 'cast-cascade',
+      name: 'Cast Cascade',
+      direction: 'inbound',
+      sourceTag: SOURCE_CAST,
+      identityKey: 'personnelId',
+      read: (env, personnelId) => readCastEvents(env, personnelId),
+      map: mapLand,
+    },
+    {
       id: 'performer-google-calendar',
       name: 'Performer Google Calendar',
       direction: 'inbound',
@@ -405,14 +441,14 @@ function buildConnectors() {
 }
 
 async function listSyncableProfiles(env) {
-  const formula = `OR({${PROFILE_F.cruiseActId}}!='', {${PROFILE_F.landActId}}!='', {${PROFILE_F.googleCalendarId}}!='')`;
+  const formula = `OR({${PROFILE_F.cruiseActId}}!='', {${PROFILE_F.landActId}}!='', {${PROFILE_F.googleCalendarId}}!='', {${PROFILE_F.personnelId}}!='')`;
   const out = [];
   let offset;
   do {
     const params = new URLSearchParams();
     params.set('filterByFormula', formula);
     params.set('pageSize', '100');
-    for (const f of [PROFILE_F.displayName, PROFILE_F.cruiseActId, PROFILE_F.landActId, PROFILE_F.googleCalendarId, PROFILE_F.pushEnabled, PROFILE_F.availability]) {
+    for (const f of [PROFILE_F.displayName, PROFILE_F.cruiseActId, PROFILE_F.landActId, PROFILE_F.googleCalendarId, PROFILE_F.pushEnabled, PROFILE_F.personnelId, PROFILE_F.availability]) {
       params.append('fields[]', f);
     }
     if (offset) params.set('offset', offset);
@@ -425,6 +461,7 @@ async function listSyncableProfiles(env) {
         landActId: String(r.fields[PROFILE_F.landActId] || '').trim(),
         googleCalendarId: String(r.fields[PROFILE_F.googleCalendarId] || '').trim(),
         pushEnabled: r.fields[PROFILE_F.pushEnabled] === true,
+        personnelId: String(r.fields[PROFILE_F.personnelId] || '').trim(),
         availabilityIds: r.fields[PROFILE_F.availability] || [],
       });
     }
@@ -496,6 +533,69 @@ async function readSourceBookings(opts) {
       for (const f of bookingFields) params.append('fields[]', f);
       if (offset) params.set('offset', offset);
       const page = await airtableGet(token, `${AIRTABLE_API}/${base}/${bookingTable}?${params}`);
+      out.push(...(page.records || []));
+      offset = page.offset;
+    } while (offset);
+  }
+  return out;
+}
+
+// Cast cascade reader (GET only, read-only on TAD). Three hops on the TAD
+// BOOKINGS base: PERSONNEL(personnelId) -> its Active Cast Configurations ->
+// the union of those configs' booked CURRENT EVENTS. Returns the CURRENT EVENTS
+// records (fields-by-id), which mapLand then classifies exactly as it does the
+// band's own land bookings. Any failed read throws (caught per-act in runSync),
+// so reconcile never deletes a member's cast rows on a transient read failure.
+async function readCastEvents(env, personnelId) {
+  // hop 1: the person's Cast Configurations links
+  const pParams = new URLSearchParams();
+  pParams.set('filterByFormula', `RECORD_ID()='${personnelId}'`);
+  pParams.set('returnFieldsByFieldId', 'true');
+  pParams.append('fields[]', PERSONNEL_CASTCONFIG_LINK);
+  const pPage = await airtableGet(env.tadToken, `${AIRTABLE_API}/${env.landBase}/${PERSONNEL_TABLE}?${pParams}`);
+  const pRec = (pPage.records || [])[0];
+  if (!pRec) throw new Error(`cast: personnel record not found: ${personnelId}`);
+  const configIds = (pRec.fields && pRec.fields[PERSONNEL_CASTCONFIG_LINK]) || [];
+  if (!configIds.length) return [];
+
+  // hop 2: Active cast configs -> union of their CURRENT EVENTS ids
+  const eventIds = new Set();
+  for (const chunk of chunkArray(configIds, 40)) {
+    const formula = 'OR(' + chunk.map(id => `RECORD_ID()='${id}'`).join(',') + ')';
+    let offset;
+    do {
+      const params = new URLSearchParams();
+      params.set('filterByFormula', formula);
+      params.set('returnFieldsByFieldId', 'true');
+      params.set('pageSize', '100');
+      params.append('fields[]', CASTCONFIG_ACTIVE);
+      params.append('fields[]', CASTCONFIG_EVENTS);
+      if (offset) params.set('offset', offset);
+      const page = await airtableGet(env.tadToken, `${AIRTABLE_API}/${env.landBase}/${CASTCONFIG_TABLE}?${params}`);
+      for (const r of (page.records || [])) {
+        if (!(r.fields && r.fields[CASTCONFIG_ACTIVE] === true)) continue; // Active only
+        for (const ev of (r.fields[CASTCONFIG_EVENTS] || [])) {
+          eventIds.add(typeof ev === 'object' ? ev.id : ev);
+        }
+      }
+      offset = page.offset;
+    } while (offset);
+  }
+  if (!eventIds.size) return [];
+
+  // hop 3: the CURRENT EVENTS rows themselves (same fields the Land mapper reads)
+  const out = [];
+  for (const chunk of chunkArray([...eventIds], 40)) {
+    const formula = 'OR(' + chunk.map(id => `RECORD_ID()='${id}'`).join(',') + ')';
+    let offset;
+    do {
+      const params = new URLSearchParams();
+      params.set('filterByFormula', formula);
+      params.set('returnFieldsByFieldId', 'true');
+      params.set('pageSize', '100');
+      for (const fId of Object.values(LAND_FID)) params.append('fields[]', fId);
+      if (offset) params.set('offset', offset);
+      const page = await airtableGet(env.tadToken, `${AIRTABLE_API}/${env.landBase}/${LAND_TABLE}?${params}`);
       out.push(...(page.records || []));
       offset = page.offset;
     } while (offset);
