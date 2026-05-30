@@ -595,7 +595,7 @@ onViewProfile={viewProfile}
 profiles={profiles} loading={loadingProfiles} isLiveData={isLiveData}
 />
 )}
-{page === 'profile' && selectedProfile && <ProfilePage profile={selectedProfile} onBack={() => setPage('browse')} currentUser={currentUser} onEdit={() => { setEditingProfileId(selectedProfile.id); setShowEditProfile(true); }} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
+{page === 'profile' && selectedProfile && <ProfilePage profile={selectedProfile} filterDate={filterDate} onBack={() => setPage('browse')} currentUser={currentUser} onEdit={() => { setEditingProfileId(selectedProfile.id); setShowEditProfile(true); }} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
 {page === 'gigs' && <GigsPage onViewGig={viewGig} />}
 {page === 'pricing' && <PricingPage onCreateProfile={() => setShowCreateProfile(true)} />}
 {page === 'dashboard' && <DashboardPage onViewProfile={viewProfile} currentUser={currentUser} profiles={profiles} onEditProfile={(profileId) => { setEditingProfileId(profileId); setShowEditProfile(true); }} onLogin={() => setShowLogin(true)} onViewCalendar={(url) => setCalendarPopupUrl(url)} />}
@@ -1175,7 +1175,30 @@ dateBadge={<span className="badge badge-free">Unconfirmed</span>} />
 // PROFILE PAGE
 // ===========================
 
-function ProfilePage({ profile: p, onBack, currentUser, onEdit, onViewCalendar }) {
+function ProfilePage({ profile: p, filterDate, onBack, currentUser, onEdit, onViewCalendar }) {
+// Cast panel data. A show profile fetched with a date carries castStatus +
+// castLineup (server-derived from the Show Cast role->pool — see api/profiles.js).
+// We render the full role-by-role breakdown for that date; absent a date (or for
+// non-show profiles) the panel simply doesn't appear. No extra fetch: this reuses
+// what Browse already loaded onto the profile object.
+const castDate = (p.castStatus && filterDate)
+  ? new Date(filterDate + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  : '';
+const castHead = p.castStatus === 'bookable'
+  ? { label: 'Bookable', color: 'var(--success)', bg: 'rgba(16,185,129,0.12)', icon: 'fa-circle-check' }
+  : p.castStatus === 'castConflict'
+  ? { label: 'Cast conflict', color: '#ef4444', bg: 'rgba(239,68,68,0.12)', icon: 'fa-triangle-exclamation' }
+  : { label: 'Cast unknown', color: 'var(--text-muted)', bg: 'var(--dark-lighter)', icon: 'fa-circle-question' };
+// Per-role display: resolves each lineup entry to a status pill + member text.
+const roleView = (r) => {
+  if (r.status === 'filled') return r.isSub
+    ? { color: 'var(--accent)', icon: 'fa-circle-dot', text: `${r.member}`, note: 'sub' }
+    : { color: 'var(--success)', icon: 'fa-circle', text: `${r.member}`, note: '' };
+  if (!r.required) return { color: 'var(--text-muted)', icon: 'fa-circle-question', text: 'Open', note: 'sub needed' };
+  if (r.status === 'blocked') return { color: '#ef4444', icon: 'fa-circle-xmark', text: 'No one available', note: 'conflict' };
+  return { color: 'var(--text-muted)', icon: 'fa-circle-question', text: 'Unconfirmed', note: 'unknown' };
+};
+
 const calDays = useMemo(() => {
 const days = [];
 ['S','M','T','W','T','F','S'].forEach(d => days.push({ type: 'header', label: d }));
@@ -1226,6 +1249,37 @@ return (
 {currentUser && (currentUser.activeRole === 'admin' || (currentUser.roles && currentUser.roles.includes('admin')) || currentUser.id === p.id) && <button className="btn btn-outline" onClick={onEdit}><i className="fa-solid fa-pen"></i> Edit Profile</button>}
 </div>
 </div>
+
+{/* Cast & availability (shows only, when a date is active) */}
+{p.castStatus && p.castLineup && p.castLineup.length > 0 && (
+<div className="card" style={{ marginBottom: 20 }}>
+<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 4, flexWrap: 'wrap' }}>
+<h3 style={{ fontSize: 16, fontWeight: 700 }}><i className="fa-solid fa-people-group" style={{ marginRight: 8, color: 'var(--text-muted)' }}></i>Cast &amp; availability{castDate ? ` — ${castDate}` : ''}</h3>
+<span className="badge" style={{ background: castHead.bg, color: castHead.color }}><i className={`fa-solid ${castHead.icon}`}></i> {castHead.label}</span>
+</div>
+<p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
+{p.castStatus === 'bookable' ? 'Every required role can be filled on this date — here’s the would-be lineup.'
+: p.castStatus === 'castConflict' ? 'A required role can’t be filled on this date. The blocking role is flagged below.'
+: 'We can’t confirm one or more required roles on this date (a pool member has no synced calendar). Reach out to check.'}
+</p>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+{p.castLineup.map((r, i) => {
+const v = roleView(r);
+return (
+<div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--dark-lighter)', borderRadius: 8 }}>
+<div style={{ width: 92, flexShrink: 0, fontSize: 13, fontWeight: 600 }}>{r.instrument || r.role}</div>
+<div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+<i className={`fa-solid ${v.icon}`} style={{ color: v.color, fontSize: 10 }}></i>
+<span>{v.text}</span>
+{v.note && <span className="badge" style={{ fontSize: 11, background: 'transparent', color: v.color, border: `1px solid ${v.color}`, padding: '1px 8px' }}>{v.note}</span>}
+</div>
+<div style={{ flexShrink: 0, fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{r.roleType}</div>
+</div>
+);
+})}
+</div>
+</div>
+)}
 
 {/* Bio */}
 <div className="card" style={{ marginBottom: 20 }}>
