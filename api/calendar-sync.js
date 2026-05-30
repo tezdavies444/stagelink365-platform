@@ -19,10 +19,14 @@
 // STATUS mapping, and a `Source` tag it exclusively owns — a connector only
 // ever reconciles its own rows, which is what lets many sources share one
 // calendar. Connectors are direction-aware (inbound | outbound | both). Inbound
-// connectors: the two TAD sources (Land/Cruise) and the Performer Google
-// Calendar (reads each performer's own calendar via a service account, gated on
+// connectors: the two TAD sources (Land/Cruise); the Performer Google Calendar
+// (reads each performer's own calendar via a service account, gated on
 // GOOGLE_SERVICE_ACCOUNT_KEY — inert until that env var is set; its rows are
-// deduped by date+gig so duplicate source events can't accumulate).
+// deduped by date+gig so duplicate source events can't accumulate); and the
+// Cast Cascade (reads TAD's per-show cast decisions and blocks each cast
+// member's OWN individual calendar on that show's booked dates — identity is the
+// Profile's `Personnel ID`; see the cast-cascade source block below). The
+// casting decision is the client's; SL365 only reflects it onto individuals.
 //
 // OUTBOUND (Phase C, the source-of-truth model — decision record §11). StageLink
 // is canonical: after the inbound passes, an OUTBOUND connector pushes each
@@ -59,6 +63,8 @@ const PROFILE_F = {
   landActId:       'Land Act ID',
   googleCalendarId:'Google Calendar ID', // performer's GCal id, read by the Google connector
   pushEnabled:     'Google Push Enabled', // opt-in: push canonical hub rows INTO this GCal (Phase C)
+  personnelId:     'Personnel ID',   // (legacy) TAD PERSONNEL rec id — superseded by email match
+  email:           'Email',          // cast cascade identity: matched to CAST MEMBERS emails
   availability:    'Availability',   // inverse link → this act's Availability rows
 };
 const AVAIL_F = {
@@ -83,6 +89,7 @@ const DIVISION_PERSONAL = 'Personal';
 const SOURCE_LAND      = 'Land Engagement Sync';
 const SOURCE_CRUISE    = 'Cruise Engagement Sync';
 const SOURCE_GCAL      = 'Google Calendar Sync';   // owns the per-performer Google rows
+const SOURCE_CAST      = 'Cast Cascade Sync';      // owns the per-individual cast-derived rows
 const UPDATED_BY       = 'System — Calendar Sync';
 
 // --- Performer Google Calendar connector (env GOOGLE_SERVICE_ACCOUNT_KEY) ---
@@ -148,6 +155,28 @@ const CRUISE_FID = {
   ship:       'fld6LDUvh8E1cCerv',
 };
 
+// --- Cast cascade source: CLIENT PORTAL base (env CLIENT_PORTAL_BASE_ID), read-only ---
+// The client (TAD) records who actually plays each date in CLIENT PORTAL's
+// CURRENT EVENTS `CAST MEMBERS` field — true PER-EVENT casting (full band, real
+// subs), unlike the config-level lineup. This connector reads that decision and
+// blocks each cast member's OWN individual calendar on the dates they're cast.
+// SL365 makes no casting decision — it only reflects the client's.
+//
+// Identity is by EMAIL: each event exposes its cast members' emails via the
+// `Email (from CAST MEMBERS)` lookup; we match those against each StageLink
+// Profile's Email. (Cross-base record ids differ, so email is the stable key.)
+// Read-only on CLIENT PORTAL; writes only the StageLink Availability hub, under
+// the `Cast Cascade Sync` Source tag this connector exclusively owns.
+const CP_EVENTS_TABLE = 'tbl66IV24wJaMGJCB';   // CLIENT PORTAL CURRENT EVENTS
+const CP_CE_FID = {
+  startDate:  'fldc2Chmex5wwZoW0',
+  endDate:    'fldqemJEkJtxlaXvZ',
+  status:     'fld0d9QyUNJNUVkpP',
+  venue:      'fld5YnWOlCf2lIJmp',   // singleLineText venue name
+};
+// filterByFormula references fields by NAME, not id — this is the cast-emails lookup.
+const CP_CE_CAST_EMAILS_NAME = 'Email (from CAST MEMBERS)';
+
 // STATUS mappings (spec §6). Only booking-producing statuses are enumerated;
 // everything in the matching SKIP set is intentionally ignored. A status in
 // neither set is genuinely unrecognised and is surfaced in the run summary so a
@@ -206,6 +235,9 @@ module.exports = async function handler(req, res) {
     // the TAD sync keeps working before Google is wired up.
     gcalKey:    process.env.GOOGLE_SERVICE_ACCOUNT_KEY || null,
     gcalToken:  null, // cached access token for this run (set on first use)
+    // Optional — the Cast Cascade connector is skipped entirely if absent, so
+    // the rest of the sync keeps working before CLIENT PORTAL is wired up.
+    clientPortalBase: process.env.CLIENT_PORTAL_BASE_ID || null,
   };
 
   try {
@@ -246,6 +278,8 @@ async function runSync(env, { dryRun }) {
         if (connector.direction !== 'inbound' && connector.direction !== 'both') continue;
         // The Google connector is inert until GOOGLE_SERVICE_ACCOUNT_KEY is set.
         if (connector.requiresGcalKey && !env.gcalKey) continue;
+        // The Cast Cascade connector is inert until CLIENT_PORTAL_BASE_ID is set.
+        if (connector.requiresClientPortal && !env.clientPortalBase) continue;
         const actId = profile[connector.identityKey];
         if (!actId) continue;
 
@@ -379,6 +413,21 @@ function buildConnectors() {
       map: mapCruise,
     },
     {
+      // Cast cascade (inbound). Reads CLIENT PORTAL CURRENT EVENTS where this
+      // person is in CAST MEMBERS (matched by email) and blocks their own
+      // calendar on those dates. Per-event, so it captures real lineups incl.
+      // one-off subs; reconciling, so being added to / dropped from a future
+      // event's cast is reflected on the next run. Inert unless CLIENT_PORTAL_BASE_ID is set.
+      id: 'cast-cascade',
+      name: 'Cast Cascade',
+      direction: 'inbound',
+      sourceTag: SOURCE_CAST,
+      identityKey: 'email',
+      requiresClientPortal: true,
+      read: (env, email) => readCastEvents(env, email),
+      map: mapCastEvent,
+    },
+    {
       id: 'performer-google-calendar',
       name: 'Performer Google Calendar',
       direction: 'inbound',
@@ -405,14 +454,14 @@ function buildConnectors() {
 }
 
 async function listSyncableProfiles(env) {
-  const formula = `OR({${PROFILE_F.cruiseActId}}!='', {${PROFILE_F.landActId}}!='', {${PROFILE_F.googleCalendarId}}!='')`;
+  const formula = `OR({${PROFILE_F.cruiseActId}}!='', {${PROFILE_F.landActId}}!='', {${PROFILE_F.googleCalendarId}}!='', {${PROFILE_F.email}}!='')`;
   const out = [];
   let offset;
   do {
     const params = new URLSearchParams();
     params.set('filterByFormula', formula);
     params.set('pageSize', '100');
-    for (const f of [PROFILE_F.displayName, PROFILE_F.cruiseActId, PROFILE_F.landActId, PROFILE_F.googleCalendarId, PROFILE_F.pushEnabled, PROFILE_F.availability]) {
+    for (const f of [PROFILE_F.displayName, PROFILE_F.cruiseActId, PROFILE_F.landActId, PROFILE_F.googleCalendarId, PROFILE_F.pushEnabled, PROFILE_F.email, PROFILE_F.availability]) {
       params.append('fields[]', f);
     }
     if (offset) params.set('offset', offset);
@@ -425,6 +474,7 @@ async function listSyncableProfiles(env) {
         landActId: String(r.fields[PROFILE_F.landActId] || '').trim(),
         googleCalendarId: String(r.fields[PROFILE_F.googleCalendarId] || '').trim(),
         pushEnabled: r.fields[PROFILE_F.pushEnabled] === true,
+        email: String(r.fields[PROFILE_F.email] || '').trim(),
         availabilityIds: r.fields[PROFILE_F.availability] || [],
       });
     }
@@ -501,6 +551,73 @@ async function readSourceBookings(opts) {
     } while (offset);
   }
   return out;
+}
+
+// Cast cascade reader (GET only, read-only on CLIENT PORTAL). Fetches the
+// CURRENT EVENTS this person is cast on, matched by email against the event's
+// `Email (from CAST MEMBERS)` lookup. The email is wrapped in commas on both
+// sides so the FIND is a whole-address match (never a substring of a longer
+// address). Returns CURRENT EVENTS records (fields-by-id) for mapCastEvent.
+// A failed read throws (caught per-act in runSync), so reconcile never deletes
+// a member's cast rows on a transient read failure.
+async function readCastEvents(env, email) {
+  const lc = String(email || '').trim().toLowerCase();
+  if (!lc) return [];
+  const safe = lc.replace(/'/g, "\\'");
+  // ',a@b,' inside ',' & joined-emails & ',' → exact membership test.
+  const formula =
+    `AND(` +
+      `{${CP_CE_FID.startDate}},` +
+      `FIND(',${safe},', ',' & LOWER(ARRAYJOIN({${CP_CE_CAST_EMAILS_NAME}}, ',')) & ',')` +
+    `)`;
+
+  const out = [];
+  let offset;
+  do {
+    const params = new URLSearchParams();
+    params.set('filterByFormula', formula);
+    params.set('returnFieldsByFieldId', 'true');
+    params.set('pageSize', '100');
+    for (const fId of Object.values(CP_CE_FID)) params.append('fields[]', fId);
+    if (offset) params.set('offset', offset);
+    const page = await airtableGet(env.tadToken, `${AIRTABLE_API}/${env.clientPortalBase}/${CP_EVENTS_TABLE}?${params}`);
+    out.push(...(page.records || []));
+    offset = page.offset;
+  } while (offset);
+  return out;
+}
+
+// Classifies one CLIENT PORTAL CURRENT EVENTS row to a canonical Availability
+// candidate, or null to ignore. Reuses the Land STATUS sets (option names are
+// shared between the two bases): Confirmed/Complete → Booked, BLOCKED/TRAVEL DAY
+// → Unavailable, everything in the skip set ignored; an unrecognised status is
+// surfaced rather than fabricated into a booking. Keyed per (person, event) so
+// the same event reconciles cleanly on each profile.
+function mapCastEvent(rec, ctx) {
+  const f = rec.fields || {};
+  const status = f[CP_CE_FID.status];
+  const start = f[CP_CE_FID.startDate];
+  if (!status || !start) return null;
+
+  let type;
+  if (LAND_BOOKED.has(status)) type = TYPE_BOOKED;
+  else if (LAND_BLOCKED.has(status)) type = TYPE_UNAVAILABLE;
+  else {
+    if (!isLandSkip(status)) bump(ctx.unrecognizedStatuses, `cast: ${status}`);
+    return null;
+  }
+
+  const end = f[CP_CE_FID.endDate] || start;
+  if (end < ctx.today) return null;   // today-forward only
+
+  const venue = String(f[CP_CE_FID.venue] || '').trim();
+  return {
+    engagementRef: `cast:${rec.id}`,    // stable per (person, event)
+    startDate: start, endDate: end,
+    type, division: DIVISION_LAND,
+    venue,
+    label: buildLabel(ctx.profile.name, venue || (type === TYPE_BOOKED ? 'Cast booking' : 'Cast block'), start),
+  };
 }
 
 // ---------------------------------------------------------------------------
