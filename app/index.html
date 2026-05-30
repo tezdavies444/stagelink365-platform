@@ -935,7 +935,7 @@ return (
 <h3 style={{ fontSize: 16, fontWeight: 700 }}>{p.name}</h3>
 {p.verified && <i className="fa-solid fa-circle-check" style={{ color: 'var(--success)', fontSize: 14 }}></i>}
 </div>
-<p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{p.location}, {p.state}</p>
+<p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{[p.location, p.state].filter(Boolean).join(', ')}</p>
 </div>
 </div>
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
@@ -949,7 +949,10 @@ return (
 <span><Stars rating={p.rating} /> {p.rating}</span>
 <span>{p.gigs} gigs</span>
 </div>
-{p.available ? <span className="badge badge-available"><i className="fa-solid fa-circle" style={{ fontSize: 6 }}></i> Available</span> : <span className="badge badge-free">Booked</span>}
+{/* In date mode the date/cast badge at the top of the card is authoritative;
+    suppress the generic Is-Available footer badge so it can't contradict it
+    (e.g. a 'Bookable' show whose Is-Available toggle is off). */}
+{!dateBadge && (p.available ? <span className="badge badge-available"><i className="fa-solid fa-circle" style={{ fontSize: 6 }}></i> Available</span> : <span className="badge badge-free">Booked</span>)}
 </div>
 </div>
 );
