@@ -1176,6 +1176,11 @@ dateBadge={<span className="badge badge-free">Unconfirmed</span>} />
 // ===========================
 
 function ProfilePage({ profile: p, filterDate, onBack, currentUser, onEdit, onViewCalendar }) {
+const [showRequest, setShowRequest] = React.useState(false);
+// Booking origination: a signed-in booker can request a free act / bookable show
+// on the active date. Writes a Marketplace Hold + a Booking Request (api/bookings).
+const canRequest = !!currentUser && !!filterDate && currentUser.id !== p.id &&
+  (p.availabilityStatus === 'available' || p.castStatus === 'bookable');
 // Cast panel data. A show profile fetched with a date carries castStatus +
 // castLineup (server-derived from the Show Cast role->pool — see api/profiles.js).
 // We render the full role-by-role breakdown for that date; absent a date (or for
@@ -1245,9 +1250,11 @@ return (
 <button className="btn btn-primary"><i className="fa-solid fa-paper-plane"></i> Contact</button>
 <button className="btn btn-outline"><i className="fa-regular fa-bookmark"></i> Save</button>
 <button className="btn btn-outline"><i className="fa-solid fa-share-nodes"></i> Share</button>
+{canRequest && <button className="btn btn-accent" onClick={() => setShowRequest(true)}><i className="fa-solid fa-calendar-check"></i> Request this date</button>}
 {p.calendarToken && <button className="btn btn-accent" onClick={() => onViewCalendar(`${CALENDAR_BASE}/${p.calendarToken}`)}><i className="fa-solid fa-calendar"></i> View Calendar</button>}
 {currentUser && (currentUser.activeRole === 'admin' || (currentUser.roles && currentUser.roles.includes('admin')) || currentUser.id === p.id) && <button className="btn btn-outline" onClick={onEdit}><i className="fa-solid fa-pen"></i> Edit Profile</button>}
 </div>
+{showRequest && <BookingRequestModal act={p} date={filterDate} currentUser={currentUser} onClose={() => setShowRequest(false)} />}
 </div>
 
 {/* Cast & availability (shows only, when a date is active) */}
@@ -1586,6 +1593,97 @@ For venues, production companies, agencies, and bookers. Advanced search, roster
 // ADMIN DASHBOARD
 // ===========================
 
+// Admin Booking Requests — the confirmer surface. Lists the open Marketplace
+// Holds (pending requests) and lets TAD Confirm (Hold→Booked) or Decline
+// (release the hold). All states surface in the UI. (api/bookings, action list/respond.)
+function BookingRequestsPanel({ adminToken }) {
+const [requests, setRequests] = React.useState(null); // null = loading
+const [error, setError] = React.useState(null);
+const [acting, setActing] = React.useState({}); // holdId -> 'accept' | 'decline'
+
+const load = React.useCallback(async () => {
+setError(null);
+try {
+const data = await apiPost('/bookings', { action: 'list' }, adminToken);
+setRequests(data.requests || []);
+} catch (e) {
+setError('Could not load booking requests.');
+setRequests([]);
+}
+}, [adminToken]);
+
+React.useEffect(() => { load(); }, [load]);
+
+const respond = async (holdId, decision) => {
+setActing(prev => ({ ...prev, [holdId]: decision }));
+setError(null);
+try {
+await apiPost('/bookings', { action: 'respond', holdId, decision }, adminToken);
+setRequests(prev => prev.filter(r => r.holdId !== holdId));
+} catch (e) {
+setError('Action failed. Please try again.');
+} finally {
+setActing(prev => { const n = { ...prev }; delete n[holdId]; return n; });
+}
+};
+
+const fmt = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+return (
+<div>
+<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+<div>
+<h3 style={{ fontSize: 16, fontWeight: 700 }}>Pending booking requests</h3>
+<p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Each request holds the act’s date. Confirm to lock it in as Booked, or decline to release the hold.</p>
+</div>
+<button className="btn btn-outline btn-sm" onClick={load}><i className="fa-solid fa-rotate"></i> Refresh</button>
+</div>
+
+{error && <div style={{ background: 'rgba(239,68,68,0.12)', color: 'var(--danger)', borderRadius: 8, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}><i className="fa-solid fa-triangle-exclamation" style={{ marginRight: 8 }}></i>{error}</div>}
+
+{requests === null ? (
+<div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}><i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 22 }}></i></div>
+) : requests.length === 0 ? (
+<div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)', background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 14 }}>
+<div style={{ fontSize: 40, marginBottom: 12, opacity: 0.5 }}><i className="fa-solid fa-calendar-check"></i></div>
+<p style={{ fontSize: 14 }}>No pending booking requests right now.</p>
+</div>
+) : (
+<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+{requests.map(r => {
+const busy = acting[r.holdId];
+const range = r.end && r.end !== r.start ? `${fmt(r.start)} – ${fmt(r.end)}` : fmt(r.start);
+return (
+<div key={r.holdId} style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)', borderRadius: 14, padding: '18px 20px', display: 'flex', gap: 16, alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+<div style={{ flex: 1, minWidth: 220 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+<span style={{ fontSize: 16, fontWeight: 700 }}>{r.actName}</span>
+<span className="badge" style={{ background: 'rgba(245,158,11,0.18)', color: '#F59E0B' }}><i className="fa-solid fa-clock" style={{ fontSize: 10 }}></i> Hold</span>
+</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>
+<i className="fa-solid fa-calendar" style={{ marginRight: 6 }}></i>{range}
+<span style={{ margin: '0 8px' }}>·</span>
+<i className="fa-solid fa-user" style={{ marginRight: 6 }}></i>Requested by {r.bookerName}
+</div>
+{r.notes && <div style={{ fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-line', background: 'var(--dark-lighter)', borderRadius: 8, padding: '8px 12px' }}>{r.notes}</div>}
+</div>
+<div style={{ display: 'flex', gap: 8 }}>
+<button className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => respond(r.holdId, 'accept')}>
+{busy === 'accept' ? <i className="fa-solid fa-spinner fa-spin"></i> : <span><i className="fa-solid fa-check"></i> Confirm</span>}
+</button>
+<button className="btn btn-outline btn-sm" disabled={!!busy} onClick={() => respond(r.holdId, 'decline')}>
+{busy === 'decline' ? <i className="fa-solid fa-spinner fa-spin"></i> : <span><i className="fa-solid fa-xmark"></i> Decline</span>}
+</button>
+</div>
+</div>
+);
+})}
+</div>
+)}
+</div>
+);
+}
+
 function AdminDashboard({ currentUser, profiles, setPage }) {
 const [adminTab, setAdminTab] = useState('overview');
 
@@ -1618,6 +1716,7 @@ const ADMIN_TABS = [
   { key: 'overview', label: 'Overview', icon: 'fa-chart-line' },
   { key: 'users', label: 'Users & Profiles', icon: 'fa-users' },
   { key: 'gigs', label: 'Gigs & Bookings', icon: 'fa-clipboard-list' },
+  { key: 'bookings', label: 'Booking Requests', icon: 'fa-calendar-check' },
   { key: 'activity', label: 'Recent Activity', icon: 'fa-clock-rotate-left' },
 ];
 
@@ -1673,6 +1772,9 @@ return (
       </button>
     ))}
   </div>
+
+  {/* BOOKING REQUESTS TAB */}
+  {adminTab === 'bookings' && <BookingRequestsPanel adminToken={currentUser.token} />}
 
   {/* OVERVIEW TAB */}
   {adminTab === 'overview' && (
@@ -2453,6 +2555,80 @@ onClick={() => { toggleArrayItem('category', k); update('subcategories', []); }}
 {saving ? <><i className="fa-solid fa-spinner fa-spin"></i> Saving...</> : <><i className="fa-solid fa-check"></i> Save Changes</>}
 </button>
 </div>
+</div>
+</div>
+);
+}
+
+// Booking origination — the "Request this date" form. Posts a marketplace
+// booking request (creates a Hold on the act + a Booking Request message) and
+// surfaces every state (sending / sent / error) in the UI per the feedback rule.
+function BookingRequestModal({ act, date, currentUser, onClose }) {
+const [message, setMessage] = React.useState('');
+const [offer, setOffer] = React.useState('');
+const [status, setStatus] = React.useState(null); // null | 'sending' | 'done' | <error string>
+const niceDate = date ? new Date(date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '';
+
+const submit = async () => {
+setStatus('sending');
+try {
+await apiPost('/bookings', {
+action: 'request',
+actProfileId: act.id,
+bookerProfileId: currentUser.id,
+date,
+message: message.trim() || undefined,
+offer: offer.trim() || undefined,
+}, currentUser.token);
+setStatus('done');
+} catch (e) {
+setStatus('We couldn’t send your request. Please try again.');
+}
+};
+
+const isError = status && status !== 'sending' && status !== 'done';
+
+return (
+<div className="modal-overlay" onClick={onClose}>
+<div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+<h2 style={{ fontSize: 20, fontWeight: 700 }}>Request this date</h2>
+<button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fa-solid fa-xmark"></i></button>
+</div>
+
+{status === 'done' ? (
+<div style={{ textAlign: 'center', padding: '12px 0' }}>
+<div style={{ fontSize: 44, color: 'var(--success)', marginBottom: 12 }}><i className="fa-solid fa-circle-check"></i></div>
+<h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>Request sent</h3>
+<p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.6 }}>We’ve placed a hold on <strong style={{ color: 'var(--text)' }}>{act.name}</strong> for {niceDate} and notified the StageLink team to confirm. You’ll be updated when it’s accepted.</p>
+<button className="btn btn-primary" style={{ marginTop: 18 }} onClick={onClose}>Done</button>
+</div>
+) : (
+<div>
+<div style={{ background: 'var(--dark-lighter)', borderRadius: 10, padding: '12px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+<i className="fa-solid fa-calendar-check" style={{ color: 'var(--accent)' }}></i>
+<div>
+<div style={{ fontWeight: 600 }}>{act.name}</div>
+<div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{niceDate}</div>
+</div>
+</div>
+
+<label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Message (optional)</label>
+<textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Tell them about the event, set, or any details…" rows={3} style={{ width: '100%', marginBottom: 14, background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 8, color: 'var(--text)', padding: '10px 12px', fontSize: 14, resize: 'vertical' }} />
+
+<label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Offer (optional)</label>
+<input value={offer} onChange={e => setOffer(e.target.value)} placeholder="e.g. $1,500" style={{ width: '100%', marginBottom: 16, background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', borderRadius: 8, color: 'var(--text)', padding: '10px 12px', fontSize: 14 }} />
+
+{isError && <div style={{ background: 'rgba(239,68,68,0.12)', color: 'var(--danger)', borderRadius: 8, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}><i className="fa-solid fa-triangle-exclamation" style={{ marginRight: 8 }}></i>{status}</div>}
+
+<div style={{ display: 'flex', gap: 10 }}>
+<button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={status === 'sending'} onClick={submit}>
+{status === 'sending' ? <span><i className="fa-solid fa-spinner fa-spin"></i> Sending…</span> : <span><i className="fa-solid fa-paper-plane"></i> Send request</span>}
+</button>
+<button className="btn btn-outline" onClick={onClose}>Cancel</button>
+</div>
+</div>
+)}
 </div>
 </div>
 );
