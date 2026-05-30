@@ -14,9 +14,13 @@ If any of these three files are missing, stop and ask — do not guess. Those th
 
 ## Scope
 
-**In scope:** only this repo (`stagelink365-platform`). The root `index.html`, `personnel/index.html`, and the handlers under `api/` (`auth.js`, `profile.js`, `profiles.js`, `profile-create.js`, `founder.js`, `calendar-sync.js`). Data lives in an Airtable base addressed via environment variables (`AIRTABLE_API_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_PROFILES_TABLE_ID` — default `tblse7dXJfUjvEWQa`, `ADMIN_TOKEN`). The calendar sync additionally *reads* two TAD Airtable bases (`TAD_BOOKINGS_BASE_ID`, `CRUISE_ENGAGEMENTS_BASE_ID`) — read-only; it never writes to them.
+This project spans **two repos, both in scope** — consolidated 2026-05-30 so there is no project-switching (the unified calendar is the core of StageLink, and self-entry of availability belongs in the performer's own calendar).
 
-**Out of scope:** Cruise Avails (`cruiseavails.tadmgmt.com`), ShoreMatch, the new TAD Management website (`newsite.tadmgmt.com`), QuickBooks / QBO invoicing, and the external calendar service at `calendar.stagelink365.com` (its source is not in this repo). Do not read, reference, edit, or suggest changes to any of them from here.
+**Repo 1 — the platform (`stagelink365-platform`, this repo).** The root `index.html`, `personnel/index.html`, and the handlers under `api/` (`auth.js`, `profile.js`, `profiles.js`, `profile-create.js`, `founder.js`, `calendar-sync.js`). Data lives in an Airtable base addressed via environment variables (`AIRTABLE_API_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_PROFILES_TABLE_ID` — default `tblse7dXJfUjvEWQa`, `ADMIN_TOKEN`). The calendar sync additionally *reads* two TAD Airtable bases (`TAD_BOOKINGS_BASE_ID`, `CRUISE_ENGAGEMENTS_BASE_ID`) — read-only; it never writes to them.
+
+**Repo 2 — the calendar app (`stagelink-calendar` → `calendar.stagelink365.com`).** Brought in scope 2026-05-30. A **separate Next.js 16 / React / TypeScript / Tailwind app with its own build step and its own deploy** — on disk at `~/Documents/Claude/Projects/Calendars Sync/stagelink-calendar`, GitHub repo `tezdavies444/stagelink-calendar`. The bare domain shows a token-gateway; a performer's calendar renders at `/c/{token}` where `{token}` is their `Magic Link Token`. It shares the **one StageLink Airtable base** with the platform and reads the `Availability` table (`tblxJ9U0Anai6911A`). **Its internals have not yet been audited from here — read the repo (read-only) before editing it.** The no-build / no-`package.json` hard rule below applies ONLY to the platform repo; the calendar app keeps its own Next.js toolchain — do not cross conventions between the two repos, and keep their PRs separate.
+
+**Out of scope:** Cruise Avails (`cruiseavails.tadmgmt.com`), ShoreMatch, the new TAD Management website (`newsite.tadmgmt.com`), and QuickBooks / QBO invoicing. Do not read, reference, edit, or suggest changes to any of them from here.
 
 ## How the code is structured (quick map)
 
@@ -80,7 +84,7 @@ The working agreement, fixed 2026-04-25 after a session reset.
 2. One component per session. If the scope wants to grow, stop and ask.
 3. Before producing code: state what will change, where, and why, in one short paragraph.
 4. All feedback (errors, statuses, admin messages) must surface in the UI. Do not rely on browser console, dev tools, or server logs — Terry does not use them.
-5. Do not propose introducing a build step, bundler, package manager, or framework (Vite, Next.js, TypeScript, etc.) to `index.html`. The in-browser Babel approach is intentional.
+5. Do not propose introducing a build step, bundler, package manager, or framework (Vite, Next.js, TypeScript, etc.) to `index.html` / the platform repo. The in-browser Babel approach is intentional. *(This applies to the platform repo only — the in-scope calendar app `stagelink-calendar` is a Next.js/TypeScript app and keeps its own toolchain.)*
 6. Do not propose Airtable schema changes without a paired update across every handler that references the affected fields.
 7. At the end of every real work session, append a one-line entry to `01_CURRENT_STATE.md`'s session log, move any items between "working today" / "open items" / "in progress" as needed, bump the file's minor version, and commit. That update is the most important habit.
 
@@ -92,4 +96,4 @@ The working agreement, fixed 2026-04-25 after a session reset.
 
 ## Out-of-scope deflection
 
-If asked to work on Cruise Avails, ShoreMatch, the new TAD Management website, QBO invoicing, or the external calendar service, stop and say: "That's a separate project — switch Cowork Projects (or open a different Claude Code session in the right repo) and I'll pick it up there." Do not touch their files even if they appear on disk.
+If asked to work on Cruise Avails, ShoreMatch, the new TAD Management website, or QBO invoicing, stop and say: "That's a separate project — switch Cowork Projects (or open a different Claude Code session in the right repo) and I'll pick it up there." Do not touch their files even if they appear on disk. *(The calendar app `stagelink-calendar` / `calendar.stagelink365.com` is no longer on this list — it is now in scope; see the Scope section.)*
