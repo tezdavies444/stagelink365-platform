@@ -935,7 +935,7 @@ return (
 <h3 style={{ fontSize: 16, fontWeight: 700 }}>{p.name}</h3>
 {p.verified && <i className="fa-solid fa-circle-check" style={{ color: 'var(--success)', fontSize: 14 }}></i>}
 </div>
-<p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{p.location}, {p.state}</p>
+<p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{[p.location, p.state].filter(Boolean).join(', ')}</p>
 </div>
 </div>
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
@@ -949,7 +949,10 @@ return (
 <span><Stars rating={p.rating} /> {p.rating}</span>
 <span>{p.gigs} gigs</span>
 </div>
-{p.available ? <span className="badge badge-available"><i className="fa-solid fa-circle" style={{ fontSize: 6 }}></i> Available</span> : <span className="badge badge-free">Booked</span>}
+{/* In date mode the date/cast badge at the top of the card is authoritative;
+    suppress the generic Is-Available footer badge so it can't contradict it
+    (e.g. a 'Bookable' show whose Is-Available toggle is off). */}
+{!dateBadge && (p.available ? <span className="badge badge-available"><i className="fa-solid fa-circle" style={{ fontSize: 6 }}></i> Available</span> : <span className="badge badge-free">Booked</span>)}
 </div>
 </div>
 );
@@ -1009,14 +1012,39 @@ const dateActive = !!filterDate;
 const prettyDate = filterDate
   ? new Date(filterDate + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
   : '';
-const freeList = dateActive ? filtered.filter(p => p.availabilityStatus === 'available') : filtered;
-const unknownList = dateActive ? filtered.filter(p => !p.availabilityStatus || p.availabilityStatus === 'unknown') : [];
-const bookedCount = dateActive ? filtered.filter(p => p.availabilityStatus === 'booked').length : 0;
+// Multi-person shows (a Show Cast spec) are derived server-side into castStatus
+// + lineup; pull them into their own section so a cast conflict stays visible
+// (never folded into the booked-out count) and individuals partition cleanly.
+const castShows = dateActive ? filtered.filter(p => p.castStatus) : [];
+const people = dateActive ? filtered.filter(p => !p.castStatus) : filtered;
+const freeList = dateActive ? people.filter(p => p.availabilityStatus === 'available') : filtered;
+const unknownList = dateActive ? people.filter(p => !p.availabilityStatus || p.availabilityStatus === 'unknown') : [];
+const bookedCount = dateActive ? people.filter(p => p.availabilityStatus === 'booked').length : 0;
 const freeBadge = (p) => (
   <span className="badge badge-available">
     <i className="fa-solid fa-circle" style={{ fontSize: 6 }}></i> {p.availabilityHold ? 'Free (hold)' : 'Free'}
   </span>
 );
+const castBadge = (p) => {
+  if (p.castStatus === 'bookable') return (
+    <span className="badge badge-available"><i className="fa-solid fa-circle-check" style={{ fontSize: 10 }}></i> Bookable</span>
+  );
+  if (p.castStatus === 'castConflict') return (
+    <span className="badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}><i className="fa-solid fa-triangle-exclamation"></i> Cast conflict</span>
+  );
+  return (
+    <span className="badge badge-free"><i className="fa-solid fa-circle-question"></i> Cast unknown</span>
+  );
+};
+// Renders the would-be lineup: a default member as a bare first name, a sub as
+// "Name on role", an unfilled optional role as "role TBD", a blocked/unknown
+// required role as "role ✕" / "role ?".
+const castLineupText = (p) => (p.castLineup || []).map(r => {
+  if (r.status === 'filled') return r.isSub ? `${r.member} on ${r.role.toLowerCase()}` : r.member;
+  if (!r.required) return `${r.role.toLowerCase()} TBD`;
+  if (r.status === 'blocked') return `${r.role.toLowerCase()} ✕`;
+  return `${r.role.toLowerCase()} ?`;
+}).join(', ');
 
 return (
 <div style={{ padding: '32px 0', minHeight: '100vh' }}>
@@ -1076,6 +1104,33 @@ return (
 : <span><strong style={{ color: 'var(--text)' }}>{freeList.length}</strong> free on {prettyDate}{bookedCount > 0 ? ` · ${bookedCount} booked-out hidden` : ''}</span>}
 </p>
 
+{!loading && castShows.length > 0 && (
+<div style={{ marginBottom: 36 }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+<i className="fa-solid fa-users" style={{ color: 'var(--text-muted)' }}></i>
+<h3 style={{ fontSize: 16, fontWeight: 700 }}>Shows — castable on {prettyDate}?</h3>
+</div>
+<p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>
+Multi-person acts, rolled up from each role's eligible pool: a core role blocked = cast conflict; a substitutable role names the available sub; optional roles never block.
+</p>
+<div className="grid-3">
+{castShows.map(p => (
+<ProfileCard key={p.id} profile={p} onClick={() => onViewProfile(p)}
+dateBadge={
+<div>
+{castBadge(p)}
+{p.castLineup && p.castLineup.length > 0 && (
+<div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+<i className="fa-solid fa-people-group" style={{ marginRight: 6, opacity: 0.6 }}></i>{castLineupText(p)}
+</div>
+)}
+</div>
+} />
+))}
+</div>
+</div>
+)}
+
 {!loading && freeList.length > 0 && (
 <div className="grid-3">
 {freeList.map(p => (
@@ -1084,7 +1139,7 @@ return (
 </div>
 )}
 
-{!loading && freeList.length === 0 && (
+{!loading && freeList.length === 0 && castShows.length === 0 && (
 <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
 <i className="fa-solid fa-calendar-xmark" style={{ fontSize: 44, marginBottom: 16, opacity: 0.3 }}></i>
 <p style={{ fontSize: 18 }}>No acts with connected calendars are confirmed free on {prettyDate}.</p>

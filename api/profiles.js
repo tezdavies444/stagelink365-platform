@@ -29,6 +29,26 @@ const TYPE_BLOCKING = ['Booked', 'Unavailable']; // these hide an act on the dat
 const TYPE_HOLD = 'Hold';                        // soft flag only, does not hide
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+// StageLink-owned Show Cast role->pool table (same base). Drives show-level
+// "is this show castable on date X?" derivation: one row per (show, role); the
+// show is a Profile, each role has an ordered Eligible Pool of member Profiles
+// (first = default, the rest are subs). When ?availableFrom is set, a profile
+// that owns Active Show Cast rows gets a cast-derived status rolled up from its
+// pool members' individual hub availability — see decision record §7 +
+// 01_CURRENT_STATE.md OI #2. Read-only, same base as Profiles/Availability.
+const SHOW_CAST_TABLE = 'tblkyFM9jYF8Bt4Zw';
+const CAST_F = {
+  show:         'Show',          // link -> Profiles (the band/show)
+  role:         'Role',          // text, e.g. 'Bass'
+  roleType:     'Role Type',     // singleSelect: Core | Substitutable | Optional
+  instrument:   'Instrument',    // singleSelect, for display
+  pool:         'Eligible Pool', // ordered link -> Profiles; first = default
+  displayOrder: 'Display Order', // number
+  active:       'Active',        // checkbox; only Active rows count
+};
+// Required roles must be fillable for a show to be bookable; Optional never blocks.
+const ROLE_REQUIRED = ['Core', 'Substitutable'];
+
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -104,6 +124,30 @@ module.exports = async function handler(req, res) {
           p.availabilityStatus = 'unknown';
         }
       }
+      // Show-level cast derivation. Profiles that own Active Show Cast rows get a
+      // cast-derived status (bookable / castConflict / unknown) rolled up from
+      // their pool members' individual availability — reusing the blocked/covered
+      // Sets above (pool members are themselves Profiles). Honest-unknown: a
+      // required role we can't evaluate makes the show unknown, never "free". Only
+      // attempted when the hub read succeeded (otherwise every act is already
+      // 'unknown'). A Show Cast read failure leaves shows un-annotated (they fall
+      // back to their own row-based status) rather than guessing.
+      if (ok) {
+        const nameById = new Map(
+          allRecords
+            .filter(r => r.fields['Display Name'])
+            .map(r => [r.id, r.fields['Display Name']])
+        );
+        const castByShow = await fetchShowCast(AIRTABLE_API_TOKEN, AIRTABLE_BASE_ID);
+        if (castByShow) {
+          const byId = new Map(profiles.map(p => [p.id, p]));
+          for (const [showId, roles] of castByShow) {
+            const p = byId.get(showId);
+            if (p) annotateCast(p, roles, blocked, covered, nameById);
+          }
+        }
+      }
+
       availabilityOk = ok;
     }
 
@@ -210,6 +254,124 @@ async function fetchOverlappingCommitments(token, baseId, from, to) {
   } while (offset);
 
   return { blocked, held, ok };
+}
+
+// Reads the Show Cast table (Active rows only) and groups roles by show Profile
+// id. Returns Map(showId -> [{role, instrument, roleType, order, pool:[ids]}])
+// or null if the read fails (caller then leaves shows un-annotated rather than
+// guessing). One small StageLink-owned table — fetched whole, paginated
+// defensively. Read-only, same base as Profiles.
+async function fetchShowCast(token, baseId) {
+  const byShow = new Map();
+  let offset = null;
+  do {
+    const url = new URL(`${AIRTABLE_BASE_URL}/${baseId}/${SHOW_CAST_TABLE}`);
+    url.searchParams.set('pageSize', '100');
+    url.searchParams.set('filterByFormula', `{${CAST_F.active}}`);
+    for (const fld of [CAST_F.show, CAST_F.role, CAST_F.roleType, CAST_F.instrument, CAST_F.pool, CAST_F.displayOrder]) {
+      url.searchParams.append('fields[]', fld);
+    }
+    if (offset) url.searchParams.set('offset', offset);
+
+    const response = await fetch(url.toString(), {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('Show Cast query error:', errText);
+      return null;
+    }
+    const data = await response.json();
+    for (const rec of (data.records || [])) {
+      const f = rec.fields;
+      const showLinks = f[CAST_F.show] || [];
+      const first = showLinks[0];
+      const showId = first ? (typeof first === 'object' ? first.id : first) : null;
+      if (!showId) continue;
+      const rt = f[CAST_F.roleType];
+      const roleType = rt && typeof rt === 'object' ? rt.name : rt;
+      const inst = f[CAST_F.instrument];
+      const instrument = inst && typeof inst === 'object' ? inst.name : inst;
+      const pool = (f[CAST_F.pool] || []).map(l => (typeof l === 'object' ? l.id : l));
+      const order = typeof f[CAST_F.displayOrder] === 'number' ? f[CAST_F.displayOrder] : 999;
+      const role = {
+        role: f[CAST_F.role] || instrument || 'Role',
+        instrument: instrument || '',
+        roleType: roleType || 'Core',
+        order,
+        pool,
+      };
+      if (!byShow.has(showId)) byShow.set(showId, []);
+      byShow.get(showId).push(role);
+    }
+    offset = data.offset || null;
+  } while (offset);
+  return byShow;
+}
+
+// Rolls a show's roles up into a cast-derived status on the profile object.
+// blocked/covered are Profile-id Sets already computed for the date window;
+// pool members are Profiles, so a member is "free" iff covered (has hub data)
+// AND not blocked. A member with no hub data is unevaluable -> the role can only
+// be 'unknown', never silently "free". Status precedence: castConflict (a
+// required role provably all-blocked) > unknown (a required role unevaluable) >
+// bookable. Optional roles never block bookability (flagged 'sub needed' if no
+// one is free). The would-be lineup names the chosen member per role, marking
+// any non-default pick as a sub.
+function annotateCast(p, roles, blocked, covered, nameById) {
+  const firstName = (id) => {
+    const n = nameById.get(id) || '';
+    return n.split(' ')[0] || n;
+  };
+  const ordered = roles.slice().sort((a, b) => a.order - b.order);
+  const lineup = [];
+  const conflicts = [];
+  const unknowns = [];
+  const subsNeeded = [];
+
+  for (const r of ordered) {
+    const required = ROLE_REQUIRED.includes(r.roleType);
+    let chosen = null, isSub = false;
+    for (let i = 0; i < r.pool.length; i++) {
+      const m = r.pool[i];
+      if (covered.has(m) && !blocked.has(m)) { chosen = m; isSub = i > 0; break; }
+    }
+
+    let status;
+    if (chosen) status = 'filled';
+    else if (r.pool.length === 0) status = 'unknown';
+    else if (r.pool.every(m => blocked.has(m))) status = 'blocked';
+    else status = 'unknown'; // some member unevaluable, none provably free
+
+    if (required && status === 'blocked') conflicts.push(r.role);
+    if (required && status === 'unknown') unknowns.push(r.role);
+    if (!required && status !== 'filled') subsNeeded.push(r.role);
+
+    lineup.push({
+      role: r.role,
+      instrument: r.instrument,
+      roleType: r.roleType,
+      required,
+      status,
+      member: chosen ? firstName(chosen) : null,
+      memberFull: chosen ? (nameById.get(chosen) || null) : null,
+      isSub,
+    });
+  }
+
+  const castStatus = conflicts.length ? 'castConflict'
+                   : unknowns.length ? 'unknown'
+                   : 'bookable';
+  p.castStatus = castStatus;
+  p.castLineup = lineup;
+  p.castConflicts = conflicts;
+  p.castUnknowns = unknowns;
+  p.castSubsNeeded = subsNeeded;
+  // Mirror onto availabilityStatus so any generic consumer sees a sane value;
+  // the Browse UI routes show cards by castStatus, not this field.
+  p.availabilityStatus = castStatus === 'bookable' ? 'available'
+                       : castStatus === 'castConflict' ? 'booked'
+                       : 'unknown';
 }
 
 function transformProfile(record) {
