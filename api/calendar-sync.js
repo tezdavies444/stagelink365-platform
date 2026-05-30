@@ -18,9 +18,12 @@
 // resolver (a Profiles field holding the act's record ID in that source), a
 // STATUS mapping, and a `Source` tag it exclusively owns — a connector only
 // ever reconciles its own rows, which is what lets many sources share one
-// calendar. Connectors are direction-aware (inbound | outbound | both); Phase 1
-// ships the two inbound TAD connectors. Outbound write-back to Cruise Avails is
-// Phase 3 — designed-for here, not built.
+// calendar. Connectors are direction-aware (inbound | outbound | both). Inbound
+// connectors: the two TAD sources (Land/Cruise) and the Performer Google
+// Calendar (reads each performer's own calendar via a service account, gated on
+// GOOGLE_SERVICE_ACCOUNT_KEY — inert until that env var is set; its rows are
+// deduped by date+gig so duplicate source events can't accumulate). Outbound
+// write-back to Cruise Avails is Phase 3 — designed-for here, not built.
 //
 // TRIGGER. A Vercel cron (see vercel.json) GETs this route once daily. Requests
 // must carry the cron secret — `Authorization: Bearer <CRON_SECRET>` (what
@@ -30,6 +33,8 @@
 // Field-name / field-id constants are hardcoded at the top, per the existing
 // per-handler precedent (api/founder.js). Base IDs are env vars per CLAUDE.md.
 
+const crypto = require('crypto'); // Node built-in (NOT a dependency) — signs the Google service-account JWT.
+
 const AIRTABLE_API = 'https://api.airtable.com/v0';
 
 // --- StageLink hub: the ONLY base this sync writes to (env AIRTABLE_BASE_ID) ---
@@ -38,10 +43,11 @@ const AVAILABILITY_TABLE = 'tblxJ9U0Anai6911A';
 
 // Hub fields are referenced by NAME (repo convention — CLAUDE.md schema rules).
 const PROFILE_F = {
-  displayName:  'Display Name',
-  cruiseActId:  'Cruise Act ID',
-  landActId:    'Land Act ID',
-  availability: 'Availability',   // inverse link → this act's Availability rows
+  displayName:     'Display Name',
+  cruiseActId:     'Cruise Act ID',
+  landActId:       'Land Act ID',
+  googleCalendarId:'Google Calendar ID', // performer's GCal id, read by the Google connector
+  availability:    'Availability',   // inverse link → this act's Availability rows
 };
 const AVAIL_F = {
   recordLabel:   'Record Label',
@@ -61,9 +67,26 @@ const TYPE_BOOKED      = 'Booked';
 const TYPE_UNAVAILABLE = 'Unavailable';
 const DIVISION_LAND    = 'Land';
 const DIVISION_CRUISE  = 'Cruise';
+const DIVISION_PERSONAL = 'Personal';
 const SOURCE_LAND      = 'Land Engagement Sync';
 const SOURCE_CRUISE    = 'Cruise Engagement Sync';
+const SOURCE_GCAL      = 'Google Calendar Sync';   // owns the per-performer Google rows
 const UPDATED_BY       = 'System — Calendar Sync';
+
+// --- Performer Google Calendar connector (env GOOGLE_SERVICE_ACCOUNT_KEY) ---
+// Read-only inbound. A Google service account (shared into each performer's
+// calendar) reads events; we classify them to canonical Availability rows.
+const GCAL_SCOPE      = 'https://www.googleapis.com/auth/calendar.readonly';
+const GCAL_TOKEN_URL  = 'https://oauth2.googleapis.com/token';
+const GCAL_API        = 'https://www.googleapis.com/calendar/v3';
+const GCAL_HORIZON_MONTHS = 24;
+// An all-day event whose summary contains one of these (as a WHOLE WORD, so
+// "OFF" doesn't trip on "Coffee"/"Office") = an availability block.
+const GCAL_BLOCK_RE = /\b(CRUISE|BLOCK|UNAVAILABLE|HOLD|VACATION|TRAVEL|OUT OF TOWN|OFF|LEAVE|PERSONAL)\b/i;
+// "CONFIRMED — Show @ Venue" = a real TAD booking pushed to the calendar → Booked.
+const GCAL_CONFIRMED_RE = /^\s*CONFIRMED\s*[—–-]/i;
+// StageLink's own future outbound writes — never re-ingest (loop prevention).
+const GCAL_OWN_ECHO_RE  = /^\s*SL365\b/i;
 
 // --- Land source: TAD BOOKINGS base (env TAD_BOOKINGS_BASE_ID), read-only ---
 // Identity resolves act -> bookings via the act record's inverse-link field, so
@@ -144,6 +167,10 @@ module.exports = async function handler(req, res) {
     tadToken:   TAD_TOKEN,
     landBase:   TAD_BOOKINGS_BASE_ID,
     cruiseBase: CRUISE_ENGAGEMENTS_BASE_ID,
+    // Optional — the Google connector is skipped entirely if this is absent, so
+    // the TAD sync keeps working before Google is wired up.
+    gcalKey:    process.env.GOOGLE_SERVICE_ACCOUNT_KEY || null,
+    gcalToken:  null, // cached access token for this run (set on first use)
   };
 
   try {
@@ -182,6 +209,8 @@ async function runSync(env, { dryRun }) {
 
       for (const connector of connectors) {
         if (connector.direction !== 'inbound' && connector.direction !== 'both') continue;
+        // The Google connector is inert until GOOGLE_SERVICE_ACCOUNT_KEY is set.
+        if (connector.requiresGcalKey && !env.gcalKey) continue;
         const actId = profile[connector.identityKey];
         if (!actId) continue;
 
@@ -197,23 +226,36 @@ async function runSync(env, { dryRun }) {
             landIntervals.push({ start: mapped.startDate, end: mapped.endDate });
           }
         }
-        candidatesByConnector[connector.id] = { connector, candidates };
+        candidatesByConnector[connector.id] = { connector, candidates, rawCount: rawRecords.length };
       }
 
       for (const cid of Object.keys(candidatesByConnector)) {
-        const { connector, candidates } = candidatesByConnector[cid];
+        const { connector, candidates, rawCount } = candidatesByConnector[cid];
+        // Some connectors (Google) can see duplicate source events; collapse to
+        // one canonical row per commitment before reconciling so duplication
+        // can never accumulate in the hub.
+        const cands = connector.dedupe ? connector.dedupe(candidates) : candidates;
         const existing = existingRows.filter(r => r.source === connector.sourceTag);
-        const plan = reconcile(candidates, existing, profile);
+        const plan = reconcile(cands, existing, profile);
         if (!dryRun) await applyPlan(env, plan);
         totals.created += plan.create.length;
         totals.updated += plan.update.length;
         totals.deleted += plan.delete.length;
-        actSummary.connectors[connector.id] = {
-          sourceRows: candidates.length,
+        const summary = {
+          rawRows: rawCount,
+          classified: candidates.length,
+          deduped: cands.length,
           created: plan.create.length,
           updated: plan.update.length,
           deleted: plan.delete.length,
         };
+        // On a dry run, attach a sample so a human can eyeball the classification
+        // before any write — especially for Google, to confirm what's really in
+        // the calendars (e.g. whether duplicate events live there).
+        if (dryRun && connector.dedupe) {
+          summary.sample = cands.slice(0, 15).map(c => ({ start: c.startDate, end: c.endDate, type: c.type, label: c.label }));
+        }
+        actSummary.connectors[connector.id] = summary;
       }
 
       actSummary.conflicts = detectConflicts(candidatesByConnector);
@@ -265,18 +307,29 @@ function buildConnectors() {
       }),
       map: mapCruise,
     },
+    {
+      id: 'performer-google-calendar',
+      name: 'Performer Google Calendar',
+      direction: 'inbound',
+      sourceTag: SOURCE_GCAL,
+      identityKey: 'googleCalendarId',
+      requiresGcalKey: true,
+      read: (env, calId) => readGoogleCalendar(env, calId),
+      map: mapGoogle,
+      dedupe: dedupeGoogle,
+    },
   ];
 }
 
 async function listSyncableProfiles(env) {
-  const formula = `OR({${PROFILE_F.cruiseActId}}!='', {${PROFILE_F.landActId}}!='')`;
+  const formula = `OR({${PROFILE_F.cruiseActId}}!='', {${PROFILE_F.landActId}}!='', {${PROFILE_F.googleCalendarId}}!='')`;
   const out = [];
   let offset;
   do {
     const params = new URLSearchParams();
     params.set('filterByFormula', formula);
     params.set('pageSize', '100');
-    for (const f of [PROFILE_F.displayName, PROFILE_F.cruiseActId, PROFILE_F.landActId, PROFILE_F.availability]) {
+    for (const f of [PROFILE_F.displayName, PROFILE_F.cruiseActId, PROFILE_F.landActId, PROFILE_F.googleCalendarId, PROFILE_F.availability]) {
       params.append('fields[]', f);
     }
     if (offset) params.set('offset', offset);
@@ -287,6 +340,7 @@ async function listSyncableProfiles(env) {
         name: r.fields[PROFILE_F.displayName] || '(unnamed)',
         cruiseActId: String(r.fields[PROFILE_F.cruiseActId] || '').trim(),
         landActId: String(r.fields[PROFILE_F.landActId] || '').trim(),
+        googleCalendarId: String(r.fields[PROFILE_F.googleCalendarId] || '').trim(),
         availabilityIds: r.fields[PROFILE_F.availability] || [],
       });
     }
@@ -363,6 +417,152 @@ async function readSourceBookings(opts) {
     } while (offset);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Performer Google Calendar connector
+// ---------------------------------------------------------------------------
+
+// Service-account auth: sign a JWT (RS256) with Node crypto and exchange it for
+// an access token. No external dependency. Cached per run on env.gcalToken.
+async function getGoogleAccessToken(env) {
+  if (env.gcalToken) return env.gcalToken;
+  let key;
+  try { key = JSON.parse(env.gcalKey); }
+  catch (e) { throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON'); }
+  if (!key.client_email || !key.private_key) {
+    throw new Error('service account key missing client_email/private_key');
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const enc = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const signingInput =
+    `${enc({ alg: 'RS256', typ: 'JWT' })}.` +
+    `${enc({ iss: key.client_email, scope: GCAL_SCOPE, aud: GCAL_TOKEN_URL, iat: now, exp: now + 3600 })}`;
+  const signature = crypto.createSign('RSA-SHA256').update(signingInput).sign(key.private_key, 'base64url');
+  const resp = await fetchWithRetry(GCAL_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: `${signingInput}.${signature}`,
+    }).toString(),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data.access_token) {
+    throw new Error(`Google token ${resp.status}: ${JSON.stringify(data).slice(0, 200)}`);
+  }
+  env.gcalToken = data.access_token;
+  return env.gcalToken;
+}
+
+// Reads today-forward events for one calendar (GET only). Recurring events are
+// expanded (singleEvents=true); paginates.
+async function readGoogleCalendar(env, calendarId) {
+  const token = await getGoogleAccessToken(env);
+  const today = todayInPhoenix();
+  const timeMin = `${today}T00:00:00Z`;
+  const timeMax = `${addMonths(today, GCAL_HORIZON_MONTHS)}T00:00:00Z`;
+  const out = [];
+  let pageToken;
+  do {
+    const params = new URLSearchParams();
+    params.set('singleEvents', 'true');
+    params.set('orderBy', 'startTime');
+    params.set('showDeleted', 'false');
+    params.set('maxResults', '2500');
+    params.set('timeMin', timeMin);
+    params.set('timeMax', timeMax);
+    if (pageToken) params.set('pageToken', pageToken);
+    const url = `${GCAL_API}/calendars/${encodeURIComponent(calendarId)}/events?${params}`;
+    const resp = await fetchWithRetry(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Google events ${resp.status} for ${calendarId}: ${txt.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    out.push(...(data.items || []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  return out;
+}
+
+// Classifies one Google event to a canonical Availability candidate, or null to
+// ignore. "CONFIRMED — …" = a real TAD booking (Booked); all-day keyword/busy
+// blocks = Unavailable; plain timed events and free all-day events do not block;
+// our own "SL365 …" echoes are skipped (loop prevention).
+function mapGoogle(event, ctx) {
+  if (!event || event.status === 'cancelled') return null;
+  const summary = (event.summary || '').trim();
+  if (!summary) return null;
+  if (GCAL_OWN_ECHO_RE.test(summary)) return null;
+
+  const isAllDay = !!(event.start && event.start.date);
+  const start = isAllDay ? event.start.date : ((event.start && event.start.dateTime) || '').slice(0, 10);
+  if (!start) return null;
+  // Google all-day end.date is exclusive (day after) — make it inclusive.
+  let end;
+  if (isAllDay) end = (event.end && event.end.date) ? addDays(event.end.date, -1) : start;
+  else end = (((event.end && event.end.dateTime) || event.start.dateTime) || '').slice(0, 10) || start;
+  if (end < start) end = start;
+  if (end < ctx.today) return null; // today-forward only
+
+  let type, division;
+  if (GCAL_CONFIRMED_RE.test(summary)) {
+    type = TYPE_BOOKED; division = DIVISION_LAND;
+  } else if (isAllDay) {
+    const keyword = GCAL_BLOCK_RE.test(summary);
+    const busy = event.transparency !== 'transparent'; // opaque = busy
+    if (keyword || busy) { type = TYPE_UNAVAILABLE; division = DIVISION_PERSONAL; }
+    else return null; // free all-day, no keyword → ignore
+  } else {
+    return null; // plain timed event → never blocks (standard rule)
+  }
+
+  return {
+    // Stable synthetic key (date+gig) so duplicate source events collapse to one
+    // row and the reference doesn't churn when a duplicate is added/removed.
+    engagementRef: `gcal:${start}:${end}:${gcalNormGig(summary)}`,
+    startDate: start, endDate: end,
+    type, division,
+    venue: gcalVenue(summary),
+    label: buildLabel(ctx.profile.name, summary, start),
+  };
+}
+
+// Collapse candidates sharing a synthetic key to one — prefer Booked, then the
+// richer (longer) label.
+function dedupeGoogle(candidates) {
+  const best = new Map();
+  for (const c of candidates) {
+    const cur = best.get(c.engagementRef);
+    if (!cur || gcalRank(c) < gcalRank(cur)) best.set(c.engagementRef, c);
+  }
+  return [...best.values()];
+}
+function gcalRank(c) {
+  // lower is better: Booked beats Unavailable; longer label preferred
+  return (c.type === TYPE_BOOKED ? 0 : 1e6) - (c.label ? c.label.length : 0);
+}
+function gcalVenue(summary) {
+  const s = summary.replace(GCAL_CONFIRMED_RE, '').trim();
+  const at = s.indexOf(' @ ');
+  return at >= 0 ? s.slice(at + 3).trim() : '';
+}
+function gcalNormGig(summary) {
+  let s = summary.replace(GCAL_CONFIRMED_RE, '').trim();
+  const at = s.indexOf(' @ ');
+  if (at >= 0) s = s.slice(0, at);
+  return s.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+function addDays(dateStr, n) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+function addMonths(dateStr, n) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 function mapLand(rec, ctx) {
