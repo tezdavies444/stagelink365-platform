@@ -22,8 +22,19 @@
 // connectors: the two TAD sources (Land/Cruise) and the Performer Google
 // Calendar (reads each performer's own calendar via a service account, gated on
 // GOOGLE_SERVICE_ACCOUNT_KEY — inert until that env var is set; its rows are
-// deduped by date+gig so duplicate source events can't accumulate). Outbound
-// write-back to Cruise Avails is Phase 3 — designed-for here, not built.
+// deduped by date+gig so duplicate source events can't accumulate).
+//
+// OUTBOUND (Phase C, the source-of-truth model — decision record §11). StageLink
+// is canonical: after the inbound passes, an OUTBOUND connector pushes each
+// opted-in person's canonical hub rows INTO their *own* Google calendar as
+// StageLink-owned, deterministically-id'd events ("enter once → reflected
+// everywhere"). Google is write-only here — never read back in this model — so
+// there is no classification/dedup problem. Gated on the SAME
+// GOOGLE_SERVICE_ACCOUNT_KEY (scope widened to calendar.events) AND a per-person
+// `Google Push Enabled` opt-in AND a `Google Calendar ID`. We only ever touch
+// events in our own `sl365…` id namespace, and a failed/empty hub read SKIPS the
+// push (never wipes) — see the deletion-safety invariants on pushToGoogle().
+// Outbound write-back to TAD/Cruise (Phase D) is still designed-for, not built.
 //
 // TRIGGER. A Vercel cron (see vercel.json) GETs this route once daily. Requests
 // must carry the cron secret — `Authorization: Bearer <CRON_SECRET>` (what
@@ -47,6 +58,7 @@ const PROFILE_F = {
   cruiseActId:     'Cruise Act ID',
   landActId:       'Land Act ID',
   googleCalendarId:'Google Calendar ID', // performer's GCal id, read by the Google connector
+  pushEnabled:     'Google Push Enabled', // opt-in: push canonical hub rows INTO this GCal (Phase C)
   availability:    'Availability',   // inverse link → this act's Availability rows
 };
 const AVAIL_F = {
@@ -74,9 +86,13 @@ const SOURCE_GCAL      = 'Google Calendar Sync';   // owns the per-performer Goo
 const UPDATED_BY       = 'System — Calendar Sync';
 
 // --- Performer Google Calendar connector (env GOOGLE_SERVICE_ACCOUNT_KEY) ---
-// Read-only inbound. A Google service account (shared into each performer's
-// calendar) reads events; we classify them to canonical Availability rows.
-const GCAL_SCOPE      = 'https://www.googleapis.com/auth/calendar.readonly';
+// A Google service account (shared into each performer's calendar) reads events
+// inbound, and — for opted-in profiles — writes StageLink-owned events outbound
+// (Phase C). One key, one access token per run, serves both directions.
+// Scope is calendar.events (read + write on events); the broader scope still
+// satisfies the inbound read. Outbound stays inert per calendar until the person
+// shares it at "Make changes to events" AND ticks `Google Push Enabled`.
+const GCAL_SCOPE      = 'https://www.googleapis.com/auth/calendar.events';
 const GCAL_TOKEN_URL  = 'https://oauth2.googleapis.com/token';
 const GCAL_API        = 'https://www.googleapis.com/calendar/v3';
 const GCAL_HORIZON_MONTHS = 24;
@@ -85,8 +101,27 @@ const GCAL_HORIZON_MONTHS = 24;
 const GCAL_BLOCK_RE = /\b(CRUISE|BLOCK|UNAVAILABLE|HOLD|VACATION|TRAVEL|OUT OF TOWN|OFF|LEAVE|PERSONAL)\b/i;
 // "CONFIRMED — Show @ Venue" = a real TAD booking pushed to the calendar → Booked.
 const GCAL_CONFIRMED_RE = /^\s*CONFIRMED\s*[—–-]/i;
-// StageLink's own future outbound writes — never re-ingest (loop prevention).
+// StageLink's own outbound writes — never re-ingest inbound (loop prevention).
 const GCAL_OWN_ECHO_RE  = /^\s*SL365\b/i;
+
+// --- Outbound push (Phase C): hub → the person's own Google calendar ---
+// Every pushed event lives in this id namespace and carries this summary prefix
+// + an extendedProperty, so the push is an idempotent upsert and deletion is
+// provably scoped to events WE authored (deletion-safety invariants on
+// pushToGoogle()). The prefix chars 's','l','3','6','5' are all valid Google
+// event-id chars (lowercase a–v + digits 0–9, the base32hex alphabet).
+const SL365_ID_PREFIX      = 'sl365';
+const SL365_SUMMARY_PREFIX = 'SL365 — ';
+const SL365_SOURCE_TAG     = 'stagelink'; // extendedProperties.private.source — second ownership guard
+// Decision §11.8 Q2: push only hard commitments; Hold stays a StageLink-internal soft flag.
+const GCAL_PUSH_TYPES = new Set([TYPE_BOOKED, TYPE_UNAVAILABLE]);
+// Decision §11.8 Q5: never echo a calendar's own data back at it. Rows that
+// ORIGINATED from a Google calendar are excluded from the push. Covers both the
+// current connector tag and the legacy `Google Cal Sync` option still in the base.
+const GCAL_ORIGIN_SOURCES = new Set([SOURCE_GCAL, 'Google Cal Sync']);
+// Decision §11.8 Q4: encode type via Google colorId, mirroring the hub's own
+// colours (Booked green, Unavailable red) — plus the mandatory summary prefix.
+const GCAL_COLOR_BY_TYPE = { [TYPE_BOOKED]: '2', [TYPE_UNAVAILABLE]: '11' };
 
 // --- Land source: TAD BOOKINGS base (env TAD_BOOKINGS_BASE_ID), read-only ---
 // Identity resolves act -> bookings via the act record's inverse-link field, so
@@ -259,6 +294,42 @@ async function runSync(env, { dryRun }) {
       }
 
       actSummary.conflicts = detectConflicts(candidatesByConnector);
+
+      // --- OUTBOUND pass (Phase C). Runs after inbound, reusing existingRows —
+      // the hub rows we already read for this act. Because a failed hub read
+      // throws above (into the catch) before we reach here, by this point
+      // existingRows is guaranteed to be a SUCCESSFUL read — so an empty array
+      // here means "genuinely no commitments", not "couldn't read" (invariant 3).
+      // Using existingRows (run-start hub state) — not this run's freshly-applied
+      // inbound writes — makes the dry-run plan identical to the real-run plan.
+      for (const connector of connectors) {
+        if (connector.direction !== 'outbound' && connector.direction !== 'both') continue;
+        if (connector.requiresGcalKey && !env.gcalKey) continue;
+        if (connector.optInKey && !profile[connector.optInKey]) continue;
+        if (connector.identityKey && !profile[connector.identityKey]) continue;
+        try {
+          const plan = await connector.push(env, profile, existingRows, { today, dryRun });
+          totals.created += plan.create.length;
+          totals.updated += plan.update.length;
+          totals.deleted += plan.delete.length;
+          const psummary = {
+            desired: plan.desiredCount,
+            created: plan.create.length,
+            updated: plan.update.length,
+            deleted: plan.delete.length,
+          };
+          if (dryRun) {
+            psummary.sample = [...plan.create, ...plan.update].slice(0, 15).map(ev => ({
+              id: ev.id, summary: ev.summary, start: ev.start.date, end: ev.end.date, colorId: ev.colorId,
+            }));
+            psummary.deleteSample = plan.delete.slice(0, 15);
+          }
+          actSummary.connectors[connector.id] = psummary;
+        } catch (err) {
+          console.error(`calendar-sync push ${profile.id} (${profile.name}):`, err);
+          errors.push({ profileId: profile.id, name: profile.name, phase: 'outbound', detail: String((err && err.message) || err) });
+        }
+      }
     } catch (err) {
       console.error(`calendar-sync act ${profile.id} (${profile.name}):`, err);
       errors.push({ profileId: profile.id, name: profile.name, detail: String((err && err.message) || err) });
@@ -318,6 +389,18 @@ function buildConnectors() {
       map: mapGoogle,
       dedupe: dedupeGoogle,
     },
+    {
+      // Phase C — the outbound spoke. Pushes canonical hub rows INTO the person's
+      // own Google calendar. Has no read/map (it consumes the hub rows the
+      // inbound pass already fetched); runSync drives it via `push`.
+      id: 'performer-google-push',
+      name: 'Performer Google Calendar (outbound)',
+      direction: 'outbound',
+      requiresGcalKey: true,
+      identityKey: 'googleCalendarId', // also the write target
+      optInKey: 'pushEnabled',
+      push: (env, profile, hubRows, ctx) => pushToGoogle(env, profile, hubRows, ctx),
+    },
   ];
 }
 
@@ -329,7 +412,7 @@ async function listSyncableProfiles(env) {
     const params = new URLSearchParams();
     params.set('filterByFormula', formula);
     params.set('pageSize', '100');
-    for (const f of [PROFILE_F.displayName, PROFILE_F.cruiseActId, PROFILE_F.landActId, PROFILE_F.googleCalendarId, PROFILE_F.availability]) {
+    for (const f of [PROFILE_F.displayName, PROFILE_F.cruiseActId, PROFILE_F.landActId, PROFILE_F.googleCalendarId, PROFILE_F.pushEnabled, PROFILE_F.availability]) {
       params.append('fields[]', f);
     }
     if (offset) params.set('offset', offset);
@@ -341,6 +424,7 @@ async function listSyncableProfiles(env) {
         cruiseActId: String(r.fields[PROFILE_F.cruiseActId] || '').trim(),
         landActId: String(r.fields[PROFILE_F.landActId] || '').trim(),
         googleCalendarId: String(r.fields[PROFILE_F.googleCalendarId] || '').trim(),
+        pushEnabled: r.fields[PROFILE_F.pushEnabled] === true,
         availabilityIds: r.fields[PROFILE_F.availability] || [],
       });
     }
@@ -563,6 +647,190 @@ function addMonths(dateStr, n) {
   const d = new Date(`${dateStr}T00:00:00Z`);
   d.setUTCMonth(d.getUTCMonth() + n);
   return d.toISOString().slice(0, 10);
+}
+
+// ---------------------------------------------------------------------------
+// Outbound push: hub → the person's own Google calendar (Phase C)
+// ---------------------------------------------------------------------------
+//
+// DELETION-SAFETY INVARIANTS (decision record §11.4 — must hold in review):
+//   1. We only ever create/patch/delete events whose id is in our `sl365…`
+//      namespace — verified by id prefix AND by the `source=stagelink`
+//      extendedProperty filter when listing. We never touch a foreign event.
+//   2. The delete set is {our existing sl365 events} − {sl365 ids derived from
+//      current hub rows}. We never "clear the calendar".
+//   3. A failed hub read aborts the push for this person (the read throws into
+//      runSync's per-act catch before we get here), so an empty `hubRows` means
+//      genuinely-no-commitments — never "couldn't read".
+//   4. Create before delete, so a mid-run failure leaves a recoverable duplicate,
+//      never a gap.
+//   5. Every event carries the `SL365 — ` summary prefix and the
+//      `source=stagelink` extendedProperty.
+async function pushToGoogle(env, profile, hubRows, ctx) {
+  const { today, dryRun } = ctx;
+  const horizonEnd = addMonths(today, GCAL_HORIZON_MONTHS);
+
+  // Desired set: hub rows that are (a) Booked/Unavailable, (b) NOT originated
+  // from a Google calendar (no echo — Q5), (c) today-forward within the horizon.
+  const desired = new Map(); // sl365 id -> Google event resource
+  for (const row of hubRows) {
+    if (!GCAL_PUSH_TYPES.has(row.type)) continue;
+    if (GCAL_ORIGIN_SOURCES.has(row.source)) continue;
+    if (!row.startDate) continue;
+    const end = row.endDate || row.startDate;
+    if (end < today) continue;            // today-forward only
+    if (row.startDate >= horizonEnd) continue; // within push horizon
+    const id = sl365EventId(row.id);
+    desired.set(id, buildGoogleEvent(id, row));
+  }
+
+  // Enumerate the events WE already own on this calendar, bounded to the same
+  // today-forward horizon (we never reconcile past events — leave history alone).
+  const existingOurs = await listOwnGoogleEvents(env, profile.googleCalendarId, today, horizonEnd);
+
+  const plan = { create: [], update: [], delete: [], desiredCount: desired.size };
+  for (const [id, ev] of desired) {
+    const cur = existingOurs.get(id);
+    if (!cur) plan.create.push(ev);
+    else if (googleEventDiffers(cur, ev)) plan.update.push(ev);
+  }
+  for (const id of existingOurs.keys()) {       // invariant 2: only delete our own, only when no longer desired
+    if (!desired.has(id)) plan.delete.push(id);
+  }
+
+  if (!dryRun) await applyGooglePlan(env, profile.googleCalendarId, plan);
+  return plan;
+}
+
+// All-day Google event mirroring one hub row. Google all-day end.date is
+// EXCLUSIVE, so end = hubEnd + 1 day (the exact inverse of the inbound -1).
+function buildGoogleEvent(id, row) {
+  const end = row.endDate || row.startDate;
+  return {
+    id,
+    summary: SL365_SUMMARY_PREFIX + (row.label || row.type),
+    start: { date: row.startDate },
+    end:   { date: addDays(end, 1) },
+    colorId: GCAL_COLOR_BY_TYPE[row.type],
+    transparency: 'opaque', // both Booked and Unavailable mean "not free" → show busy
+    reminders: { useDefault: false }, // informational mirrors — don't nag the person
+    extendedProperties: { private: { source: SL365_SOURCE_TAG, slType: row.type, slRecordId: row.id } },
+  };
+}
+
+// Lists the events we authored on a calendar, scoped two ways: the
+// `source=stagelink` private extendedProperty filter AND (belt-and-suspenders,
+// invariant 1) an id-namespace check before we ever return one. Bounded to the
+// push horizon so historical SL365 events are never reconciled/deleted.
+async function listOwnGoogleEvents(env, calendarId, today, horizonEnd) {
+  const token = await getGoogleAccessToken(env);
+  const out = new Map();
+  let pageToken;
+  do {
+    const params = new URLSearchParams();
+    params.set('singleEvents', 'true');
+    params.set('showDeleted', 'false');
+    params.set('maxResults', '2500');
+    params.set('timeMin', `${today}T00:00:00Z`);
+    params.set('timeMax', `${horizonEnd}T00:00:00Z`);
+    params.set('privateExtendedProperty', `source=${SL365_SOURCE_TAG}`);
+    if (pageToken) params.set('pageToken', pageToken);
+    const url = `${GCAL_API}/calendars/${encodeURIComponent(calendarId)}/events?${params}`;
+    const resp = await fetchWithRetry(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Google list(own) ${resp.status} for ${calendarId}: ${txt.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    for (const ev of (data.items || [])) {
+      if (ev.id && ev.id.startsWith(SL365_ID_PREFIX)) out.set(ev.id, ev); // invariant 1
+    }
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  return out;
+}
+
+function googleEventDiffers(cur, ev) {
+  return (cur.summary || '') !== ev.summary ||
+    (cur.start && cur.start.date) !== ev.start.date ||
+    (cur.end && cur.end.date) !== ev.end.date ||
+    (cur.colorId || '') !== (ev.colorId || '');
+}
+
+// Applies the plan to one Google calendar. Create before delete (invariant 4).
+async function applyGooglePlan(env, calendarId, plan) {
+  const token = await getGoogleAccessToken(env);
+  const base = `${GCAL_API}/calendars/${encodeURIComponent(calendarId)}/events`;
+
+  for (const ev of plan.create) {
+    // insert with our explicit id = idempotent upsert. A 409 (id already there
+    // from a prior partial run) degrades to patch rather than erroring.
+    const resp = await fetchWithRetry(base, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(ev),
+    });
+    if (resp.status === 409) {
+      await patchGoogleEvent(env, calendarId, ev, token);
+    } else if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Google insert ${resp.status}: ${txt.slice(0, 200)}`);
+    }
+  }
+  for (const ev of plan.update) {
+    await patchGoogleEvent(env, calendarId, ev, token);
+  }
+  for (const id of plan.delete) {
+    if (!id.startsWith(SL365_ID_PREFIX)) continue; // invariant 1 — never delete a foreign id
+    const resp = await fetchWithRetry(`${base}/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    // 404/410 = already gone — idempotent, fine.
+    if (!resp.ok && resp.status !== 404 && resp.status !== 410) {
+      const txt = await resp.text();
+      throw new Error(`Google delete ${resp.status}: ${txt.slice(0, 200)}`);
+    }
+  }
+}
+
+async function patchGoogleEvent(env, calendarId, ev, token) {
+  const url = `${GCAL_API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(ev.id)}`;
+  const resp = await fetchWithRetry(url, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(ev),
+  });
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error(`Google patch ${resp.status}: ${txt.slice(0, 200)}`);
+  }
+}
+
+// Deterministic, namespaced Google event id from the Availability record id.
+// Google event ids allow lowercase a–v + digits 0–9, length 5–1024 — exactly the
+// base32hex alphabet — so this is a natural, collision-free, idempotent key.
+function sl365EventId(recordId) {
+  return SL365_ID_PREFIX + base32hex(Buffer.from(String(recordId), 'utf8'));
+}
+
+// RFC 4648 base32hex (extended-hex alphabet), lowercase, no padding. `value` is
+// masked to its live bit-width each byte so it never overflows JS's 32-bit
+// bitwise range over a long input.
+function base32hex(buf) {
+  const A = '0123456789abcdefghijklmnopqrstuv';
+  let bits = 0, value = 0, out = '';
+  for (let i = 0; i < buf.length; i++) {
+    value = (value << 8) | buf[i];
+    bits += 8;
+    while (bits >= 5) {
+      bits -= 5;
+      out += A[(value >>> bits) & 31];
+    }
+    value &= (1 << bits) - 1;
+  }
+  if (bits > 0) out += A[(value << (5 - bits)) & 31];
+  return out;
 }
 
 function mapLand(rec, ctx) {
