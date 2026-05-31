@@ -54,7 +54,18 @@ const MESSAGES_TABLE_ID     = 'tbl4fCSBIDubx6PvC';
 
 const MARKETPLACE_SOURCE = 'Marketplace Booking';
 
+// The calendar app (calendar.stagelink365.com) calls this handler cross-origin so
+// an act can accept/decline a marketplace Hold from their own magic-link calendar.
+// CORS headers are set on EVERY response (incl. the OPTIONS preflight) so the
+// browser will let that cross-origin POST through.
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', 'https://calendar.stagelink365.com');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
 module.exports = async function handler(req, res) {
+  setCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -78,7 +89,7 @@ module.exports = async function handler(req, res) {
   try {
     if (action === 'request')    return await handleRequest(req, res, env, bearer, isAdmin);
     if (action === 'list')       return await handleList(req, res, env, isAdmin);
-    if (action === 'respond')    return await handleRespond(req, res, env, isAdmin);
+    if (action === 'respond')    return await handleRespond(req, res, env, bearer, isAdmin);
     if (action === 'myRequests') return await handleMyRequests(req, res, env, bearer);
     return res.status(400).json({ error: 'Unknown or missing action' });
   } catch (err) {
@@ -199,13 +210,26 @@ async function handleList(req, res, env, isAdmin) {
   return res.status(200).json({ requests });
 }
 
-// --- action: respond (admin) ------------------------------------------------
-async function handleRespond(req, res, env, isAdmin) {
-  if (!isAdmin) return res.status(401).json({ error: 'Admin authentication required' });
+// --- action: respond (admin OR the owning act's magic-link) -----------------
+// Two confirmers, both allowed: TAD/admin (ADMIN_TOKEN) and the act being booked,
+// via their own magic-link token. The act path resolves the profile FROM the token
+// (never trusting a client-supplied id) and then requires the Hold's `Profile` to
+// equal that profile id — the same ownership check the calendar app's
+// confirmBooking uses for own-rows-only writes. So one act cannot respond to
+// another act's request.
+async function handleRespond(req, res, env, bearer, isAdmin) {
   const { holdId, decision } = req.body;
   if (!holdId) return res.status(400).json({ error: 'Missing holdId' });
   if (decision !== 'accept' && decision !== 'decline') {
     return res.status(400).json({ error: "decision must be 'accept' or 'decline'" });
+  }
+
+  // Non-admin must present a valid magic-link token; resolve the act from it.
+  let tokenProfile = null;
+  if (!isAdmin) {
+    if (!/^[A-Za-z0-9]{6,32}$/.test(bearer)) return res.status(401).json({ error: 'Authentication required' });
+    tokenProfile = await getProfileByToken(env, bearer);
+    if (!tokenProfile) return res.status(401).json({ error: 'Invalid token' });
   }
 
   const hold = await getRecord(env, AVAILABILITY_TABLE_ID, holdId);
@@ -216,6 +240,11 @@ async function handleRespond(req, res, env, isAdmin) {
   }
   const conversationId = hf['Engagement Reference'] || null;
   const actId = (hf['Profile'] || [])[0] || null;
+
+  // Ownership: a non-admin may only respond to a Hold on their OWN profile.
+  if (!isAdmin && (!actId || actId !== tokenProfile.id)) {
+    return res.status(403).json({ error: 'You can only respond to your own booking requests' });
+  }
   const label = hf['Record Label'] || 'Booking';
   const actName = label.split(' — ')[0] || 'the act';
   const reqDate = hf['Start Date'] || '';
