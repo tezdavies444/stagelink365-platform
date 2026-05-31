@@ -1073,9 +1073,11 @@ return (
 <div onClick={() => setFilterAvailability(!filterAvailability)} className={`pill ${filterAvailability ? 'active' : ''}`}>
 <i className="fa-solid fa-circle" style={{ fontSize: 7 }}></i> Available Now
 </div>
-<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-<i className="fa-solid fa-calendar-day" style={{ color: 'var(--text-muted)', fontSize: 13 }} title="Find acts free on a date"></i>
-<input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} title="Find acts free on this date" style={{ width: 'auto', minWidth: 150 }} />
+<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>
+<i className="fa-solid fa-calendar-day" style={{ color: 'var(--accent-light)', fontSize: 15 }}></i> Free on
+</span>
+<input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} title="Find acts free on this date" style={{ width: 'auto', minWidth: 150, background: '#fff', color: '#111', border: '2px solid #fff', borderRadius: 8, fontWeight: 600, colorScheme: 'light' }} />
 {filterDate && <button className="btn btn-outline btn-sm" onClick={() => setFilterDate('')} title="Clear date"><i className="fa-solid fa-xmark"></i></button>}
 </div>
 </div>
