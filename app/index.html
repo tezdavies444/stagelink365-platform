@@ -1593,6 +1593,58 @@ For venues, production companies, agencies, and bookers. Advanced search, roster
 // ADMIN DASHBOARD
 // ===========================
 
+// A booker's own requests with live status (pending / confirmed / declined), read
+// from the durable Conversation record (survives a decline). Renders nothing when
+// the user has no requests. (api/bookings, action myRequests.)
+function MyBookingRequests({ token }) {
+const [requests, setRequests] = React.useState(null);
+const [error, setError] = React.useState(null);
+
+React.useEffect(() => {
+let alive = true;
+(async () => {
+try {
+const data = await apiPost('/bookings', { action: 'myRequests' }, token);
+if (alive) setRequests(data.requests || []);
+} catch (e) {
+if (alive) { setError('Could not load your requests.'); setRequests([]); }
+}
+})();
+return () => { alive = false; };
+}, [token]);
+
+// Stay invisible unless there's something to show (a performer with no requests
+// shouldn't see an empty box).
+if (requests === null || (requests.length === 0 && !error)) return null;
+
+const badge = (s) => s === 'confirmed'
+? { t: 'Confirmed', c: 'var(--success)', bg: 'rgba(16,185,129,0.15)', i: 'fa-circle-check' }
+: s === 'declined'
+? { t: 'Declined', c: 'var(--danger)', bg: 'rgba(239,68,68,0.12)', i: 'fa-circle-xmark' }
+: { t: 'Pending', c: '#F59E0B', bg: 'rgba(245,158,11,0.15)', i: 'fa-clock' };
+const fmt = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+return (
+<div className="card" style={{ marginBottom: 20 }}>
+<h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}><i className="fa-solid fa-calendar-check" style={{ marginRight: 8, color: 'var(--accent)' }}></i>My booking requests</h3>
+<p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 14 }}>Dates you’ve requested and where each stands.</p>
+{error && <div style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 10 }}>{error}</div>}
+{requests.map((r, i) => {
+const b = badge(r.status);
+return (
+<div key={r.conversationId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 0', borderBottom: i < requests.length - 1 ? '1px solid var(--dark-border)' : 'none' }}>
+<div style={{ minWidth: 0 }}>
+<div style={{ fontWeight: 600, fontSize: 14 }}>{r.actName || 'Act'}</div>
+<div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmt(r.date) || '—'}</div>
+</div>
+<span className="badge" style={{ background: b.bg, color: b.c }}><i className={`fa-solid ${b.i}`} style={{ fontSize: 10 }}></i> {b.t}</span>
+</div>
+);
+})}
+</div>
+);
+}
+
 // Admin Booking Requests — the confirmer surface. Lists the open Marketplace
 // Holds (pending requests) and lets TAD Confirm (Hold→Booked) or Decline
 // (release the hold). All states surface in the UI. (api/bookings, action list/respond.)
@@ -1983,6 +2035,9 @@ return (
 </div>
 ))}
 </div>
+
+{/* Booker: my booking requests + their live status */}
+{!isAdmin && <MyBookingRequests token={currentUser.token} />}
 
 {/* Admin: All profiles list */}
 {isAdmin && (
