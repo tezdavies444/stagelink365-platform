@@ -15,7 +15,18 @@
 //   { action: 'respond', holdId, decision: 'accept' | 'decline' }
 //       Admin-authed. accept → the HOLD flips to Booked; decline → the HOLD is
 //       deleted. Either way the linked Conversation + a Booking Response Message
-//       are updated.
+//       are updated, and the booker is emailed the outcome.
+//
+//   { action: 'myRequests' }
+//       Booker-authed (their magic-link token). Returns the booker's own
+//       requests with live status (pending / confirmed / declined), read from
+//       the durable Conversation record (which survives a decline; the Hold does
+//       not). One read — the act + date are parsed from the Conversation Label.
+//
+// Email notifications use Resend's REST API via fetch (no SDK — fits the no-build
+// rule) and are INERT unless RESEND_API_KEY is set: a new request emails
+// BOOKING_NOTIFY_EMAIL (the TAD inbox); a response emails the booker. A failed
+// or unconfigured send never breaks the booking write (best-effort, swallowed).
 //
 // Why HOLD rows are the pending-request store: api/profiles.js already reads the
 // Availability hub by `Availability Type` (Hold = soft flag, Booked = blocking),
@@ -52,15 +63,23 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
-  const env = { token: AIRTABLE_API_TOKEN, base: AIRTABLE_BASE_ID };
+  const env = {
+    token: AIRTABLE_API_TOKEN,
+    base: AIRTABLE_BASE_ID,
+    // Email config — all optional; absence makes the email layer a no-op.
+    resendKey: process.env.RESEND_API_KEY || '',
+    resendFrom: process.env.RESEND_FROM || 'StageLink365 <bookings@stagelink365.com>',
+    notifyEmail: process.env.BOOKING_NOTIFY_EMAIL || '',
+  };
   const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const isAdmin = !!ADMIN_TOKEN && bearer === ADMIN_TOKEN;
   const action = (req.body && req.body.action) || '';
 
   try {
-    if (action === 'request') return await handleRequest(req, res, env, bearer, isAdmin);
-    if (action === 'list')    return await handleList(req, res, env, isAdmin);
-    if (action === 'respond') return await handleRespond(req, res, env, isAdmin);
+    if (action === 'request')    return await handleRequest(req, res, env, bearer, isAdmin);
+    if (action === 'list')       return await handleList(req, res, env, isAdmin);
+    if (action === 'respond')    return await handleRespond(req, res, env, isAdmin);
+    if (action === 'myRequests') return await handleMyRequests(req, res, env, bearer);
     return res.status(400).json({ error: 'Unknown or missing action' });
   } catch (err) {
     console.error('bookings handler error:', err);
@@ -101,7 +120,9 @@ async function handleRequest(req, res, env, bearer, isAdmin) {
 
   // 1) Conversation FIRST — we read its real record id back before referencing it.
   const convRec = await airtableCreate(env, CONVERSATIONS_TABLE_ID, {
-    'Conversation Label': `${bookerName} ↔ ${actName}`,
+    // Date appended so the booker's "My requests" view needs only this one read
+    // (the Hold carries the date too but is deleted on decline).
+    'Conversation Label': `${bookerName} ↔ ${actName} · ${date}`,
     'Status': 'Booking',
     'Participant 1': [booker.id],
     'Participant 2': [act.id],
@@ -138,6 +159,13 @@ async function handleRequest(req, res, env, bearer, isAdmin) {
     'Engagement Reference': conversationId,
     'Notes': notes,
   }, true);
+
+  // Notify the TAD inbox (best-effort; inert without RESEND_API_KEY + notifyEmail).
+  await sendEmail(env, env.notifyEmail, `New booking request — ${actName} (${date})`,
+    `<p><strong>${escapeHtml(bookerName)}</strong> requested <strong>${escapeHtml(actName)}</strong> for <strong>${escapeHtml(end !== date ? `${date} – ${end}` : date)}</strong>.</p>`
+    + (offer ? `<p>Offer: ${escapeHtml(String(offer))}</p>` : '')
+    + (message && message.trim() ? `<p>Message: ${escapeHtml(message.trim())}</p>` : '')
+    + `<p>Confirm or decline in the StageLink365 admin → Booking Requests tab.</p>`);
 
   return res.status(201).json({ success: true, holdId: holdRec.id, conversationId });
 }
@@ -189,6 +217,8 @@ async function handleRespond(req, res, env, isAdmin) {
   const conversationId = hf['Engagement Reference'] || null;
   const actId = (hf['Profile'] || [])[0] || null;
   const label = hf['Record Label'] || 'Booking';
+  const actName = label.split(' — ')[0] || 'the act';
+  const reqDate = hf['Start Date'] || '';
 
   if (decision === 'accept') {
     await airtableUpdate(env, AVAILABILITY_TABLE_ID, holdId, {
@@ -216,9 +246,88 @@ async function handleRespond(req, res, env, isAdmin) {
       'Sent At': new Date().toISOString(),
       'Is Read': false,
     });
+
+    // Email the booker (Participant 1) the outcome — best-effort, inert without Resend.
+    const conv = await getRecord(env, CONVERSATIONS_TABLE_ID, conversationId);
+    const bookerId = conv && (conv.fields['Participant 1'] || [])[0];
+    if (bookerId) {
+      const booker = await getProfile(env, bookerId);
+      if (booker && booker.email) {
+        const confirmed = decision === 'accept';
+        await sendEmail(env, booker.email,
+          `Your booking request for ${actName} was ${confirmed ? 'confirmed' : 'declined'}`,
+          `<p>Your request to book <strong>${escapeHtml(actName)}</strong>${reqDate ? ` for <strong>${escapeHtml(reqDate)}</strong>` : ''} was <strong>${confirmed ? 'confirmed' : 'declined'}</strong>.</p>`
+          + (confirmed
+              ? `<p>The date is now held for you. The StageLink365 team will be in touch with next steps.</p>`
+              : `<p>The hold has been released. You can browse other available acts on StageLink365.</p>`));
+      }
+    }
   }
 
   return res.status(200).json({ success: true, holdId, decision });
+}
+
+// --- action: myRequests (booker) --------------------------------------------
+async function handleMyRequests(req, res, env, bearer) {
+  if (!/^[A-Za-z0-9]{6,32}$/.test(bearer)) return res.status(401).json({ error: 'Authentication required' });
+  const booker = await getProfileByToken(env, bearer);
+  if (!booker) return res.status(401).json({ error: 'Invalid token' });
+
+  // Conversations where this booker is Participant 1 (requests they originated).
+  // A link field stringifies to the linked record's primary value (Display Name)
+  // in a formula, so we match by name. v1 limitation: two profiles sharing an
+  // exact Display Name would see each other's requests — acceptable at pilot scale.
+  const safeName = (booker.name || '').replace(/'/g, "\\'");
+  const formula = `AND({Participant 1}='${safeName}',OR({Status}='Booking',{Status}='Confirmed',{Status}='Closed'))`;
+  const convs = await airtableList(env, CONVERSATIONS_TABLE_ID, formula);
+
+  const STATUS_MAP = { 'Booking': 'pending', 'Confirmed': 'confirmed', 'Closed': 'declined' };
+  const requests = convs.map(c => {
+    const f = c.fields;
+    const status = STATUS_MAP[selName(f['Status'])] || 'pending';
+    // Label = "Booker ↔ Act · YYYY-MM-DD"
+    const label = f['Conversation Label'] || '';
+    const dotIdx = label.lastIndexOf(' · ');
+    const date = dotIdx >= 0 ? label.slice(dotIdx + 3).trim() : '';
+    const left = dotIdx >= 0 ? label.slice(0, dotIdx) : label;
+    const actName = left.includes(' ↔ ') ? left.split(' ↔ ')[1].trim() : '';
+    return {
+      conversationId: c.id,
+      actName,
+      date,
+      status,
+      lastTime: f['Last Message Time'] || null,
+      lastPreview: f['Last Message Preview'] || '',
+    };
+  }).sort((a, b) => (b.lastTime || '').localeCompare(a.lastTime || ''));
+
+  return res.status(200).json({ requests });
+}
+
+// --- Email (Resend REST; best-effort, inert without RESEND_API_KEY) ----------
+async function sendEmail(env, to, subject, html) {
+  try {
+    if (!env.resendKey || !to) return { skipped: true };
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${env.resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: env.resendFrom, to: [to], subject, html }),
+    });
+    if (!resp.ok) { console.error('Resend send failed', resp.status, (await resp.text()).slice(0, 200)); return { ok: false }; }
+    return { ok: true };
+  } catch (e) {
+    console.error('Resend send error', e && e.message);
+    return { ok: false };
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function selName(v) {
+  if (!v) return '';
+  return typeof v === 'object' ? (v.name || '') : v;
 }
 
 // --- Airtable helpers -------------------------------------------------------
@@ -274,7 +383,7 @@ async function getRecord(env, tableId, recordId) {
 async function getProfile(env, id) {
   const rec = await getRecord(env, PROFILES_TABLE_ID, id);
   if (!rec) return null;
-  return { id: rec.id, name: rec.fields['Display Name'] || '' };
+  return { id: rec.id, name: rec.fields['Display Name'] || '', email: rec.fields['Email'] || '' };
 }
 
 async function getProfileByToken(env, token) {
