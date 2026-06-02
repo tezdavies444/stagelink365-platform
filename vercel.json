@@ -2,7 +2,12 @@
   "redirects": [
     { "source": "/personnel", "destination": "/", "permanent": true },
     { "source": "/personnel/", "destination": "/", "permanent": true },
-    { "source": "/personnel/:path*", "destination": "/", "permanent": true }
+    { "source": "/personnel/:path*", "destination": "/", "permanent": true },
+    { "source": "/charts/:path*", "has": [{ "type": "host", "value": "stagelink365.com" }], "destination": "/", "permanent": false },
+    { "source": "/charts/:path*", "has": [{ "type": "host", "value": "www.stagelink365.com" }], "destination": "/", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/(.*)", "has": [{ "type": "host", "value": "charts.stagelink365.com" }], "destination": "/charts/index.html" }
   ],
   "crons": [
     { "path": "/api/calendar-sync", "schedule": "0 */6 * * *" }
