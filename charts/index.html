@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stagelink Charts — Strategic Proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,400..600&family=Hanken+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0a08;
+    --bg2:#13110d;
+    --panel:#1a1712;
+    --panel2:#211d16;
+    --ink:#f3ece0;
+    --ink-soft:#bdb3a2;
+    --ink-dim:#8a8170;
+    --gold:#e0a84e;
+    --gold-bright:#f3c474;
+    --gold-deep:#a9762c;
+    --rose:#cf7b6a;
+    --teal:#6fa89a;
+    --line:rgba(224,168,78,0.18);
+    --line-soft:rgba(243,236,224,0.08);
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Hanken Grotesk',sans-serif;
+    font-weight:400;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+    position:relative;
+  }
+  /* grain + spotlight atmosphere */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(224,168,78,0.10) 0%, rgba(224,168,78,0.0) 55%),
+      radial-gradient(90% 60% at 85% 10%, rgba(111,168,154,0.05) 0%, rgba(0,0,0,0) 60%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative;z-index:2;max-width:var(--maxw);margin:0 auto;padding:0 28px}
+  .mono{font-family:'JetBrains Mono',monospace;font-weight:500;letter-spacing:0.04em}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.32em;
+    text-transform:uppercase;color:var(--gold);font-weight:500;
+  }
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;line-height:1.05;letter-spacing:-0.01em}
+  a{color:var(--gold-bright);text-decoration:none}
+
+  /* ===== HERO ===== */
+  header{padding:92px 0 70px;border-bottom:1px solid var(--line)}
+  .brandline{display:flex;align-items:center;gap:14px;margin-bottom:54px}
+  .brandline .dot{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 18px 3px rgba(224,168,78,0.6)}
+  .brandline .t{font-family:'JetBrains Mono',monospace;font-size:12.5px;letter-spacing:0.28em;text-transform:uppercase;color:var(--ink-soft)}
+  h1{font-size:clamp(42px,7vw,86px);font-weight:400}
+  h1 em{font-style:italic;color:var(--gold);font-weight:400}
+  .lede{font-size:clamp(18px,2.2vw,23px);color:var(--ink-soft);max-width:680px;margin-top:26px;font-weight:300}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:34px;margin-top:46px}
+  .hero-meta div{min-width:120px}
+  .hero-meta .k{font-family:'JetBrains Mono',monospace;font-size:30px;color:var(--ink);font-weight:700}
+  .hero-meta .l{font-size:12.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim);margin-top:4px}
+
+  section{padding:74px 0;border-bottom:1px solid var(--line-soft)}
+  .sec-head{display:flex;align-items:baseline;gap:18px;margin-bottom:38px}
+  .sec-num{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold-deep);font-weight:700;padding-top:8px}
+  h2{font-size:clamp(28px,4vw,44px)}
+  .sub{color:var(--ink-soft);max-width:720px;margin-top:14px;font-weight:300;font-size:17.5px}
+  p{color:var(--ink-soft);font-weight:300}
+  p.body{font-size:16.5px;max-width:760px;margin-top:16px}
+  strong{color:var(--ink);font-weight:600}
+  .gold{color:var(--gold)}
+
+  /* market cards */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px}
+  .card{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line-soft);border-radius:14px;padding:26px 24px;position:relative;overflow:hidden}
+  .card .tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-deep);font-weight:700}
+  .card h3{font-size:21px;margin:10px 0 4px;color:var(--ink)}
+  .card .who{font-size:13px;color:var(--ink-dim);margin-bottom:14px;font-style:italic;font-family:'Fraunces',serif}
+  .card ul{list-style:none}
+  .card li{font-size:13.5px;color:var(--ink-soft);padding:5px 0 5px 18px;position:relative;font-weight:300;line-height:1.45}
+  .card li::before{content:"";position:absolute;left:0;top:11px;width:6px;height:6px;border:1px solid var(--gold-deep);transform:rotate(45deg)}
+  .card .price{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft)}
+
+  /* gap callout */
+  .gap{margin-top:42px;background:radial-gradient(140% 120% at 0% 0%,rgba(224,168,78,0.12),rgba(224,168,78,0.02));border:1px solid var(--line);border-radius:16px;padding:36px 34px}
+  .gap .eyebrow{margin-bottom:14px;display:block}
+  .gap h3{font-size:clamp(22px,3vw,30px);color:var(--ink);font-weight:400;line-height:1.18}
+  .gap h3 em{font-style:italic;color:var(--gold)}
+
+  /* matrix */
+  .matrix{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+  .matrix th,.matrix td{text-align:left;padding:13px 14px;border-bottom:1px solid var(--line-soft)}
+  .matrix thead th{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);font-weight:500}
+  .matrix td:first-child{color:var(--ink);font-weight:500}
+  .matrix .yes{color:var(--gold);font-weight:600}
+  .matrix .no{color:var(--ink-dim)}
+  .matrix tr.us{background:linear-gradient(90deg,rgba(224,168,78,0.10),transparent)}
+  .matrix tr.us td:first-child{color:var(--gold-bright);font-weight:700}
+
+  /* pillars */
+  .pillars{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:8px}
+  .pillar{padding:24px 26px;border-left:2px solid var(--gold-deep);background:linear-gradient(90deg,rgba(224,168,78,0.05),transparent)}
+  .pillar h3{font-size:19px;color:var(--ink);font-weight:500;margin-bottom:8px}
+  .pillar h3 span{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold-deep);margin-right:10px}
+  .pillar p{font-size:14.5px}
+
+  /* pricing */
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:8px;align-items:stretch}
+  .tier{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line-soft);border-radius:16px;padding:30px 26px;display:flex;flex-direction:column}
+  .tier.feature{border:1px solid var(--gold);box-shadow:0 0 0 1px rgba(224,168,78,0.25),0 24px 60px -30px rgba(224,168,78,0.5);position:relative}
+  .tier.feature::before{content:"Most Popular";position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1a1206;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;padding:4px 12px;border-radius:20px}
+  .tier .tname{font-family:'Fraunces',serif;font-size:23px;color:var(--ink);font-weight:500}
+  .tier .twho{font-size:12.5px;color:var(--ink-dim);margin:4px 0 18px;font-style:italic;font-family:'Fraunces',serif}
+  .tier .amt{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:40px;color:var(--ink);line-height:1}
+  .tier .amt span{font-size:15px;color:var(--ink-dim);font-weight:400}
+  .tier .annual{font-size:12px;color:var(--gold);margin-top:8px;font-family:'JetBrains Mono',monospace}
+  .tier ul{list-style:none;margin-top:20px;flex:1}
+  .tier li{font-size:13.5px;color:var(--ink-soft);padding:7px 0 7px 22px;position:relative;font-weight:300;line-height:1.4;border-bottom:1px solid rgba(255,255,255,0.03)}
+  .tier li::before{content:"♪";position:absolute;left:0;top:6px;color:var(--gold-deep);font-size:12px}
+  .tier.feature li::before{color:var(--gold)}
+
+  /* calculator */
+  .calc{margin-top:40px;background:linear-gradient(180deg,var(--panel2),var(--bg2));border:1px solid var(--line);border-radius:18px;padding:34px}
+  .calc h3{font-size:22px;color:var(--ink);font-weight:400;margin-bottom:6px}
+  .calc .note{font-size:13px;color:var(--ink-dim);margin-bottom:26px;font-weight:300}
+  .ctrl{margin-bottom:24px}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13.5px;color:var(--ink-soft);margin-bottom:10px;font-weight:400}
+  .ctrl label b{font-family:'JetBrains Mono',monospace;color:var(--gold-bright);font-weight:700}
+  input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:rgba(224,168,78,0.22);border-radius:3px;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 0 14px 2px rgba(224,168,78,0.6);border:2px solid #1a1206}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid #1a1206}
+  .calc-out{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px;padding-top:28px;border-top:1px solid var(--line)}
+  .calc-out .o .v{font-family:'JetBrains Mono',monospace;font-size:30px;color:var(--gold-bright);font-weight:700}
+  .calc-out .o .lbl{font-size:11.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);margin-top:4px}
+
+  /* integration flow */
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px}
+  .node{background:var(--panel);border:1px solid var(--line-soft);border-radius:13px;padding:22px 18px;position:relative}
+  .node .n{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold-deep);font-weight:700;letter-spacing:0.1em}
+  .node h3{font-size:16px;color:var(--ink);margin:8px 0 6px;font-weight:500}
+  .node p{font-size:13px;line-height:1.45}
+  .node:not(:last-child)::after{content:"→";position:absolute;right:-11px;top:50%;transform:translateY(-50%);color:var(--gold-deep);font-size:16px;z-index:3}
+
+  /* roadmap */
+  .road{margin-top:8px;position:relative;padding-left:30px}
+  .road::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:1px;background:var(--line)}
+  .phase{position:relative;padding:0 0 30px 0}
+  .phase::before{content:"";position:absolute;left:-27px;top:6px;width:13px;height:13px;border-radius:50%;background:var(--bg);border:2px solid var(--gold)}
+  .phase .ph{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold)}
+  .phase h3{font-size:19px;color:var(--ink);font-weight:500;margin:6px 0 6px}
+  .phase p{font-size:14.5px}
+  .phase .when{font-size:12px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;margin-top:6px}
+
+  /* needs / next */
+  .needs{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:8px}
+  .needs .col h3{font-size:18px;color:var(--gold);font-weight:500;margin-bottom:14px}
+  .needs ul{list-style:none}
+  .needs li{font-size:14.5px;color:var(--ink-soft);padding:9px 0 9px 24px;position:relative;font-weight:300;border-bottom:1px solid var(--line-soft)}
+  .needs li::before{content:"▸";position:absolute;left:2px;color:var(--gold-deep)}
+
+  footer{padding:64px 0 80px;text-align:center}
+  footer .mark{font-family:'Fraunces',serif;font-style:italic;font-size:26px;color:var(--ink)}
+  footer p{font-size:13px;color:var(--ink-dim);margin-top:14px;font-weight:300}
+
+  .aside{margin-top:26px;background:var(--panel);border:1px dashed var(--line);border-radius:12px;padding:22px 24px}
+  .aside .eyebrow{display:block;margin-bottom:10px}
+  .aside p{font-size:14px}
+  .aside .opts{font-family:'JetBrains Mono',monospace;color:var(--ink);font-size:14px;margin-top:8px}
+
+  @media(max-width:860px){
+    .cards,.tiers,.flow,.calc-out,.needs,.pillars{grid-template-columns:1fr}
+    .node:not(:last-child)::after{display:none}
+    .matrix{font-size:12.5px}
+    .matrix th,.matrix td{padding:10px 8px}
+    .hero-meta{gap:24px}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header>
+    <div class="brandline">
+      <span class="dot"></span>
+      <span class="t">A Stagelink Company · Confidential Strategy Brief</span>
+    </div>
+    <div class="eyebrow">Working title — Stagelink Charts</div>
+    <h1 style="margin-top:18px">The world's first <em>all-access</em> chart &amp; click-track library for working entertainers.</h1>
+    <p class="lede">A subscription platform that turns a 600-strong professional chart catalogue — seven-piece, in any key, with matched click tracks — into a recurring-revenue product, wired directly into the Stagelink ecosystem.</p>
+    <div class="hero-meta">
+      <div><div class="k">600</div><div class="l">Charts at launch</div></div>
+      <div><div class="k">7-pc</div><div class="l">Full arrangements</div></div>
+      <div><div class="k">Any key</div><div class="l">On demand</div></div>
+      <div><div class="k">3 tiers</div><div class="l">Free · $29 · $49</div></div>
+    </div>
+  </header>
+
+  <!-- 01 MARKET -->
+  <section id="market">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <div>
+        <h2>The market, as it stands today</h2>
+        <p class="sub">I scanned the field across the three things this product touches — chart catalogues, backing/click-track platforms, and performance apps. It splits cleanly into three camps, and not one of them does all three jobs for our audience.</p>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <span class="tag">Camp 1 — The Catalogues</span>
+        <h3>Chart sellers</h3>
+        <div class="who">Go-Charts · PepperHorn · Horn Band Charts · Liam Hardwick · Major Score</div>
+        <ul>
+          <li>Genuine pro arrangements for cover, function, cabaret, cruise &amp; horn bands</li>
+          <li>Serve our exact audience — including ship guest-entertainers &amp; tribute acts</li>
+          <li>Sold <strong>à la carte</strong>: pay per chart, pay again per key, pay again for a click track</li>
+          <li>No app, no playback, no unlimited access, no recurring relationship</li>
+        </ul>
+        <div class="price mono">£15–£40+ per single chart</div>
+      </div>
+      <div class="card">
+        <span class="tag">Camp 2 — The Platforms</span>
+        <h3>Track &amp; sub services</h3>
+        <div class="who">MultiTracks.com · Loop Community · SongSelect</div>
+        <ul>
+          <li>The subscription + app model already <strong>proven</strong> and scaled</li>
+          <li>Unlimited transposable charts &amp; click tracks under one fee</li>
+          <li>Locked almost entirely to the <strong>worship / church</strong> vertical</li>
+          <li>Per-track economics get expensive fast (≈$1,200/yr for 30 songs a month)</li>
+        </ul>
+        <div class="price mono">$15–$100+/mo · tracks $8–$39 each</div>
+      </div>
+      <div class="card">
+        <span class="tag">Camp 3 — The Containers</span>
+        <h3>Performance apps</h3>
+        <div class="who">iReal Pro · OnSong · BandHelper · forScore</div>
+        <ul>
+          <li>Excellent for organising setlists, transposing, running tracks live</li>
+          <li>iReal Pro: huge reach, any-key — but <strong>chord charts + synth band</strong>, not real parts</li>
+          <li>They hold <strong>your</strong> content — they don't supply a pro catalogue</li>
+          <li>Empty vessels waiting for someone to fill them with quality material</li>
+        </ul>
+        <div class="price mono">$14 once · or low monthly sub</div>
+      </div>
+    </div>
+
+    <div class="gap">
+      <span class="eyebrow">The white space</span>
+      <h3>The subscription model is <em>proven</em> — but only the church market has it. The secular working-entertainer world still buys charts one at a time, by hand, with no app and no library. <em>Nobody has built the MultiTracks of the function-band, showband, cabaret and cruise world.</em></h3>
+    </div>
+  </section>
+
+  <!-- 02 POSITIONING -->
+  <section id="position">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <div>
+        <h2>How we take the top of the market</h2>
+        <p class="sub">We don't enter as "another chart shop." We enter as the category-defining platform — owning the model the catalogues never built and the content the apps never had. Four pillars.</p>
+      </div>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <h3><span>I.</span>Catalogue + model, fused</h3>
+        <p>We pair a curated professional library with all-you-can-play subscription access. A single Go-Charts arrangement can cost more than a month of our service. For a working musician, that comparison ends the conversation.</p>
+      </div>
+      <div class="pillar">
+        <h3><span>II.</span>The any-key engine</h3>
+        <p>"Available in any key" is our headline weapon. Singers change keys constantly; competitors sell each key as a separate purchase. We make it a button. One chart, every key, instantly — plus the matched click track.</p>
+      </div>
+      <div class="pillar">
+        <h3><span>III.</span>Built for our world, not the church</h3>
+        <p>Pop, soul, swing, Motown, Latin, tribute, lounge, showband — the repertoire of real function and cruise work. The incumbents' content libraries simply don't speak this language.</p>
+      </div>
+      <div class="pillar">
+        <h3><span>IV.</span>Distribution we already own</h3>
+        <p>Stagelink's global talent network plus the TAD roster across Land and Cruise is a launch audience no competitor can match. We don't have to find the musicians — they're already in the building.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:40px">
+      <table class="matrix">
+        <thead>
+          <tr><th>Capability</th><th>Catalogues</th><th>MultiTracks</th><th>iReal&nbsp;Pro</th><th>Stagelink&nbsp;Charts</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Pro 7-piece arrangements</td><td class="yes">Yes</td><td class="no">Worship</td><td class="no">Chords only</td><td class="yes">Yes</td></tr>
+          <tr><td>Any-key, one tap</td><td class="no">Paid re-buy</td><td class="no">3 keys</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Matched click tracks</td><td class="no">Add-on</td><td class="yes">Yes</td><td class="no">MIDI</td><td class="yes">Yes</td></tr>
+          <tr><td>Unlimited subscription</td><td class="no">No</td><td class="yes">Yes</td><td class="no">One-off</td><td class="yes">Yes</td></tr>
+          <tr><td>Secular / function repertoire</td><td class="yes">Yes</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Integrated booking ecosystem</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td></tr>
+          <tr class="us"><td>Built-in talent network</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Stagelink</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="aside">
+      <span class="eyebrow">A note on the name</span>
+      <p>I've used <strong>Stagelink Charts</strong> throughout to lean on Stagelink's brand equity and cross-sell. If you'd rather it stand alone as a subsidiary with its own identity, strong candidates:</p>
+      <p class="opts">ANYKEY · ENCORE · THE CHART ROOM · BANDSTAND · SETLIST</p>
+    </div>
+  </section>
+
+  <!-- 03 PRODUCT -->
+  <section id="product">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <div>
+        <h2>The product &amp; pricing</h2>
+        <p class="sub">Your structure — Free, $29, $49, with 20% off annual — is well-judged against the market. Here's how I'd package each tier so every step up sells itself.</p>
+      </div>
+    </div>
+
+    <div class="tiers">
+      <div class="tier">
+        <div class="tname">Open Mic</div>
+        <div class="twho">the funnel — free forever</div>
+        <div class="amt">$0</div>
+        <div class="annual">&nbsp;</div>
+        <ul>
+          <li>Browse the full 600-chart catalogue</li>
+          <li>5 starter charts, lead-sheet view, original key</li>
+          <li>In-app viewer + one saved setlist</li>
+          <li>Stagelink profile link</li>
+          <li>Designed to convert: they see everything they're missing</li>
+        </ul>
+      </div>
+      <div class="tier feature">
+        <div class="tname">Resident</div>
+        <div class="twho">the solo MD, singer &amp; bandleader</div>
+        <div class="amt">$29<span>/mo</span></div>
+        <div class="annual">$278/yr — save 20% (≈$23/mo)</div>
+        <ul>
+          <li>Unlimited access — all 600 charts</li>
+          <li>Any-key transposition engine</li>
+          <li>Matched click tracks, every song</li>
+          <li>Full 7-piece parts + rhythm/condensed</li>
+          <li>PDF download + multi-device viewer</li>
+          <li>Setlists, tempo &amp; count-in control</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <div class="tname">Headliner</div>
+        <div class="twho">the band, showband &amp; cruise act</div>
+        <div class="amt">$49<span>/mo</span></div>
+        <div class="annual">$470/yr — save 20% (≈$39/mo)</div>
+        <ul>
+          <li>Everything in Resident, for the whole band</li>
+          <li>Up to 7 shared seats + sub-player access</li>
+          <li>Click-track customisation: stems, cues, click on/off</li>
+          <li>Priority custom-key &amp; new-arrangement requests</li>
+          <li>Offline mode for ships &amp; weak signal</li>
+          <li>Stagelink sync: push setlists &amp; EPKs to gigs</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- CALCULATOR -->
+    <div class="calc">
+      <h3>Recurring-revenue model</h3>
+      <p class="note">Illustrative only — move the sliders to pressure-test the model. Assumes a 70/30 split between Resident and Headliner subscribers and a blended annual-plan uptake.</p>
+      <div class="ctrl">
+        <label>Paying subscribers <b id="subsV">1,500</b></label>
+        <input type="range" id="subs" min="100" max="10000" value="1500" step="100">
+      </div>
+      <div class="ctrl">
+        <label>On the annual plan (20% off) <b id="annV">40%</b></label>
+        <input type="range" id="ann" min="0" max="100" value="40" step="5">
+      </div>
+      <div class="ctrl">
+        <label>Headliner mix (vs Resident) <b id="mixV">30%</b></label>
+        <input type="range" id="mix" min="0" max="100" value="30" step="5">
+      </div>
+      <div class="calc-out">
+        <div class="o"><div class="v" id="mrr">—</div><div class="lbl">Monthly recurring</div></div>
+        <div class="o"><div class="v" id="arr">—</div><div class="lbl">Annual run-rate</div></div>
+        <div class="o"><div class="v" id="arpu">—</div><div class="lbl">Blended / user / mo</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 INTEGRATION -->
+  <section id="integration">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <div>
+        <h2>Cross-integration with Stagelink</h2>
+        <p class="sub">This is the moat. A standalone chart library is a nice business. A chart library wired into where the work, the bookings and the talent already live is a category. The catalogues and platforms have no answer to this.</p>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="node">
+        <div class="n">01 · IDENTITY</div>
+        <h3>One login</h3>
+        <p>A single Stagelink account opens Charts. Profiles, billing and roster data flow through once.</p>
+      </div>
+      <div class="node">
+        <div class="n">02 · BOOKING</div>
+        <h3>Gig → setlist</h3>
+        <p>An act booked through Stagelink lands with charts and click tracks already attached to the engagement.</p>
+      </div>
+      <div class="node">
+        <div class="n">03 · ROSTER</div>
+        <h3>Sub-player ready</h3>
+        <p>Need a dep? Grant a sub instant access to exactly the charts and keys for that show.</p>
+      </div>
+      <div class="node">
+        <div class="n">04 · EPK</div>
+        <h3>Repertoire as proof</h3>
+        <p>An act's live chart library becomes a credibility signal on their Stagelink EPK — sell the booking.</p>
+      </div>
+    </div>
+    <p class="body">It also plugs straight into the wider TAD Operating System: the Routing Dashboard, ShoreMatch and the Cruise Avails hub all gain a new data point — what an act can actually <em>play</em> — and Charts becomes a recurring-revenue subscriber engine feeding the whole platform.</p>
+  </section>
+
+  <!-- 05 BUILD -->
+  <section id="build">
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <div>
+        <h2>The build — desktop app &amp; beyond</h2>
+        <p class="sub">You asked for a full working desktop app. That's the destination, and it's very buildable — but it's a phased engineering effort, not a one-shot. Honest sequencing below so we ship value early and de-risk as we go.</p>
+      </div>
+    </div>
+    <div class="road">
+      <div class="phase">
+        <div class="ph">Phase 0 — Now</div>
+        <h3>Clickable prototype</h3>
+        <p>I build a fully interactive demo of the platform — catalogue, any-key viewer, click-track player, pricing, the Stagelink tie-in — so you can see, click and show it before a line of production code. Deployable to a subdomain like your other tools.</p>
+        <div class="when">~ this week, on request</div>
+      </div>
+      <div class="phase">
+        <div class="ph">Phase 1 — MVP</div>
+        <h3>Web app + the 600</h3>
+        <p>Catalogue, auth, Stripe subscriptions (Free/$29/$49 + annual), chart viewer with transposition, click-track playback, setlists. Web-first so it runs on any desktop or tablet day one. Built on the Airtable-backed infrastructure you already run.</p>
+        <div class="when">the real launch product</div>
+      </div>
+      <div class="phase">
+        <div class="ph">Phase 2 — Native &amp; live</div>
+        <h3>Desktop &amp; iPad performance mode</h3>
+        <p>Packaged desktop app, offline library, foot-switch / hands-free page turns, on-stage click routing — the features ships and gigging bands need that live in BandHelper and Playback today.</p>
+        <div class="when">post-MVP</div>
+      </div>
+      <div class="phase">
+        <div class="ph">Phase 3 — Network effects</div>
+        <h3>Deep Stagelink fusion</h3>
+        <p>Booking-to-setlist automation, sub-player sharing, EPK repertoire, and an arranger marketplace where vetted writers add charts and earn — turning the catalogue into a self-growing flywheel.</p>
+        <div class="when">scale phase</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 NEXT -->
+  <section id="next" style="border-bottom:none">
+    <div class="sec-head">
+      <span class="sec-num">06</span>
+      <div>
+        <h2>Decisions &amp; what I'd need</h2>
+        <p class="sub">To move from proposal to prototype, a few calls from you and a few assets from the catalogue.</p>
+      </div>
+    </div>
+    <div class="needs">
+      <div class="col">
+        <h3>Your calls</h3>
+        <ul>
+          <li>Standalone brand, or "Stagelink Charts"?</li>
+          <li>Confirm tier names &amp; the feature splits above</li>
+          <li>Free-tier generosity — 5 charts? a time-limited full trial?</li>
+          <li>Licensing posture on the catalogue (the one real risk — see note)</li>
+          <li>Build order: prototype first, or straight to MVP scoping?</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Assets to point me at</h3>
+        <ul>
+          <li>A sample of the 600 charts (format: PDF? MusicXML? Sibelius/Finale?)</li>
+          <li>How keys are currently produced — engraved per key, or transposed live?</li>
+          <li>The click-track files &amp; how they're generated</li>
+          <li>Catalogue metadata if it lives in Airtable already</li>
+          <li>Stagelink's current stack / where its data sits</li>
+        </ul>
+      </div>
+    </div>
+    <p class="body" style="margin-top:34px"><strong>One flag worth raising now:</strong> the only real risk in this model is publishing/mechanical licensing for arrangements of copyrighted songs sold by subscription. The à la carte sellers each handle this differently, and it's worth a clear position before scale. Not a blocker — but I'd build the licensing question into Phase 1 rather than discover it at Phase 3.</p>
+  </section>
+
+  <footer>
+    <div class="mark">Let's put it at the top of the market.</div>
+    <p>Stagelink Charts · Strategic Proposal · Prepared for Terry Davies, TAD Management</p>
+  </footer>
+
+</div>
+
+<script>
+  const f = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
+  const subs=document.getElementById('subs'), ann=document.getElementById('ann'), mix=document.getElementById('mix');
+  const subsV=document.getElementById('subsV'), annV=document.getElementById('annV'), mixV=document.getElementById('mixV');
+  const mrrE=document.getElementById('mrr'), arrE=document.getElementById('arr'), arpuE=document.getElementById('arpu');
+  function calc(){
+    const n=+subs.value, a=+ann.value/100, m=+mix.value/100;
+    subsV.textContent=n.toLocaleString(); annV.textContent=(a*100)+'%'; mixV.textContent=(m*100)+'%';
+    const resident=n*(1-m), headliner=n*m;
+    // annual plans effectively bill at 0.8x the monthly rate (20% off)
+    const rRate=29*(1-a)+29*0.8*a;
+    const hRate=49*(1-a)+49*0.8*a;
+    const mrr=resident*rRate+headliner*hRate;
+    const arpu=mrr/n;
+    mrrE.textContent=f.format(mrr);
+    arrE.textContent=f.format(mrr*12);
+    arpuE.textContent=f.format(arpu);
+  }
+  [subs,ann,mix].forEach(el=>el.addEventListener('input',calc));
+  calc();
+</script>
+</body>
+</html>
