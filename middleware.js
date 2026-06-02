@@ -1,4 +1,5 @@
-// Edge Middleware — host-based routing for the charts.stagelink365.com subdomain.
+// Edge Middleware — host-based routing for the charts.stagelink365.com subdomain,
+// plus the clean /calendar/{token}.ics availability-feed URL.
 //
 // Why this exists (and not a vercel.json rewrite): vercel.json `rewrites` are
 // skipped whenever the request path already matches a real file. The request
@@ -23,6 +24,18 @@ export default function middleware(request) {
   // 1) Charts subdomain → always serve the proposal page (clean URL).
   if (host === 'charts.stagelink365.com') {
     url.pathname = '/charts/index.html';
+    return new Response(null, {
+      headers: { 'x-middleware-rewrite': url.toString() },
+    });
+  }
+
+  // 1.5) Clean availability-feed URL: /calendar/{token}.ics → /api/ics?token={token}
+  //      (the raw /api/ics?token= path also works; this just gives a tidy,
+  //      .ics-suffixed URL calendar apps are happy to subscribe to).
+  const icsMatch = url.pathname.match(/^\/calendar\/([A-Za-z0-9]{6,32})\.ics$/);
+  if (icsMatch) {
+    url.pathname = '/api/ics';
+    url.search = `?token=${icsMatch[1]}`;
     return new Response(null, {
       headers: { 'x-middleware-rewrite': url.toString() },
     });
