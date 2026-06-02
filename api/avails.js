@@ -11,10 +11,16 @@
 // SL365 ever writing into their system. ICS serves human calendar apps; this
 // serves machines.
 //
+// FORMATS. Defaults to JSON. `?format=csv` returns text/csv (header row
+// start,end,type) so a spreadsheet user can pull it straight in —
+// =IMPORTDATA("…/calendar/{token}.csv") in Google Sheets, or an Excel Web Query.
+// Same read logic and same blocks-only / type-only fields either way.
+//
 // READ-ONLY. Talks only to the StageLink base (AIRTABLE_BASE_ID); no writes, no
 // schema change. Auth is the existing magic-link token (the token IS the access
 // key). CORS is open (GET only) so browser dashboards can fetch it cross-origin.
-// Clean URL via middleware.js: /calendar/{token}.json -> /api/avails?token={token}.
+// Clean URLs via middleware.js: /calendar/{token}.json -> /api/avails?token={token};
+// /calendar/{token}.csv -> /api/avails?token={token}&format=csv.
 //
 // PRIVACY: same as the ICS feed — each block carries only its TYPE
 // ("Booked"/"Unavailable"/"Hold"), never the venue/gig label, Division, or
@@ -98,6 +104,14 @@ module.exports = async function handler(req, res) {
     blocks.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
 
     res.setHeader('Cache-Control', 'public, max-age=3600');
+
+    const format = String((req.query && req.query.format) || '').toLowerCase();
+    if (format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `inline; filename="${token}.csv"`);
+      return res.status(200).end(buildCsv(blocks));
+    }
+
     return res.status(200).json({
       token,
       name,
@@ -111,6 +125,21 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// RFC 4180 CSV: header + one row per block. CRLF line endings. The current
+// fields (ISO dates + a fixed type word) never contain a comma/quote/newline,
+// but csvField() escapes defensively so this stays correct if fields ever change.
+function buildCsv(blocks) {
+  const lines = ['start,end,type'];
+  for (const b of blocks) {
+    lines.push([b.start, b.end, b.type].map(csvField).join(','));
+  }
+  return lines.join('\r\n') + '\r\n';
+}
+function csvField(v) {
+  const s = String(v == null ? '' : v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
 
 // Batch-fetch the linked Availability rows by record id (chunked OR(), paginated).
 async function fetchAvailability(apiToken, base, ids) {

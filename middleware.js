@@ -1,5 +1,5 @@
 // Edge Middleware — host-based routing for the charts.stagelink365.com subdomain,
-// plus the clean /calendar/{token}.ics and /calendar/{token}.json availability-feed URLs.
+// plus the clean /calendar/{token}.ics, .json and .csv availability-feed URLs.
 //
 // Why this exists (and not a vercel.json rewrite): vercel.json `rewrites` are
 // skipped whenever the request path already matches a real file. The request
@@ -46,6 +46,16 @@ export default function middleware(request) {
   if (availMatch) {
     url.pathname = '/api/avails';
     url.search = `?token=${availMatch[1]}`;
+    return new Response(null, {
+      headers: { 'x-middleware-rewrite': url.toString() },
+    });
+  }
+
+  // 1.7) Clean availability-feed URL (CSV): /calendar/{token}.csv → /api/avails?token={token}&format=csv
+  const csvMatch = url.pathname.match(/^\/calendar\/([A-Za-z0-9]{6,32})\.csv$/);
+  if (csvMatch) {
+    url.pathname = '/api/avails';
+    url.search = `?token=${csvMatch[1]}&format=csv`;
     return new Response(null, {
       headers: { 'x-middleware-rewrite': url.toString() },
     });
