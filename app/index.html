@@ -2402,7 +2402,62 @@ Don't have a token? Contact TAD Shows or <a href="#" style={{ color: 'var(--prim
 // CalendarModal Component
 // ===========================
 
+// Copy text to clipboard with a graceful fallback for older/insecure contexts.
+// Returns a promise so callers can surface success/failure in the UI (no console).
+function copyText(text) {
+if (navigator.clipboard && navigator.clipboard.writeText) {
+  return navigator.clipboard.writeText(text);
+}
+return new Promise((resolve, reject) => {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    resolve();
+  } catch (e) { reject(e); }
+});
+}
+
+// A read-only feed URL row with a Copy button that confirms in-UI ("Copied!").
+function CopyableUrl({ label, url }) {
+const [copied, setCopied] = useState(false);
+const [failed, setFailed] = useState(false);
+const handleCopy = () => {
+  copyText(url).then(() => {
+    setFailed(false); setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  }).catch(() => {
+    setCopied(false); setFailed(true);
+    setTimeout(() => setFailed(false), 2400);
+  });
+};
+return (
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+<span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', width: 40, flexShrink: 0 }}>{label}</span>
+<input readOnly value={url} onFocus={e => e.target.select()} style={{ flex: 1, minWidth: 0, fontSize: 12, padding: '6px 8px', background: 'var(--dark)', border: '1px solid var(--dark-border)', borderRadius: 6, color: 'var(--text)', fontFamily: 'monospace' }} />
+<button onClick={handleCopy} className="btn btn-outline btn-sm" style={{ flexShrink: 0, minWidth: 88 }}>
+<i className={`fa-solid ${copied ? 'fa-check' : failed ? 'fa-triangle-exclamation' : 'fa-copy'}`}></i> {copied ? 'Copied!' : failed ? 'Copy failed' : 'Copy'}
+</button>
+</div>
+);
+}
+
 function CalendarModal({ url, onClose }) {
+// The calendar URL carries the magic-link token (calendar.stagelink365.com/c/{token}).
+// The read-only availability feeds live on this app's own origin via middleware
+// (/calendar/{token}.ics|.json|.csv) — same token, same exposure as "View Calendar".
+const tokenMatch = (url || '').match(/\/c\/([A-Za-z0-9]{6,32})/);
+const token = tokenMatch ? tokenMatch[1] : null;
+const origin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'https://www.stagelink365.com';
+const icsUrl = token ? `${origin}/calendar/${token}.ics` : null;
+const jsonUrl = token ? `${origin}/calendar/${token}.json` : null;
+const csvUrl = token ? `${origin}/calendar/${token}.csv` : null;
+const webcalUrl = icsUrl ? icsUrl.replace(/^https?:/, 'webcal:') : null;
 return (
 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={onClose}>
 <div style={{ background: 'var(--dark-card)', borderRadius: 16, width: '100%', maxWidth: 900, height: '85vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--dark-border)', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
@@ -2410,9 +2465,29 @@ return (
 <h3 style={{ fontSize: 16, fontWeight: 700 }}><i className="fa-solid fa-calendar" style={{ marginRight: 8, color: 'var(--accent)' }}></i>Availability Calendar</h3>
 <button onClick={onClose} style={{ background: 'var(--dark-lighter)', border: '1px solid var(--dark-border)', color: 'var(--text)', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}><i className="fa-solid fa-xmark"></i></button>
 </div>
-<div style={{ flex: 1, padding: 0 }}>
-<iframe src={url} style={{ width: '100%', height: '100%', border: 'none', borderRadius: '0 0 16px 16px' }} title="Availability Calendar" />
+<div style={{ flex: 1, padding: 0, minHeight: 0 }}>
+<iframe src={url} style={{ width: '100%', height: '100%', border: 'none' }} title="Availability Calendar" />
 </div>
+{token && (
+<div style={{ borderTop: '1px solid var(--dark-border)', padding: '14px 20px', background: 'var(--dark-lighter)', flexShrink: 0 }}>
+<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+<div style={{ minWidth: 0 }}>
+<div style={{ fontSize: 13, fontWeight: 700 }}><i className="fa-solid fa-rss" style={{ marginRight: 8, color: 'var(--accent)' }}></i>Subscribe to this calendar</div>
+<div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>A live, read-only availability feed — busy dates only, no booking details.</div>
+</div>
+<a href={webcalUrl} className="btn btn-accent btn-sm" style={{ flexShrink: 0 }}><i className="fa-solid fa-calendar-plus"></i> Add to calendar (iCal)</a>
+</div>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+<CopyableUrl label="iCal" url={icsUrl} />
+<CopyableUrl label="JSON" url={jsonUrl} />
+<CopyableUrl label="CSV" url={csvUrl} />
+</div>
+<div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10 }}>
+<i className="fa-solid fa-circle-info" style={{ marginRight: 6 }}></i>
+Apple Calendar &amp; Outlook: use <strong>Add to calendar</strong>. Google Calendar: <strong>+ &rarr; From URL</strong> with the iCal link. JSON/CSV are for dashboards &amp; spreadsheets (<code>=IMPORTDATA</code> in Sheets).
+</div>
+</div>
+)}
 </div>
 </div>
 );
