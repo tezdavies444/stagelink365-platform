@@ -298,6 +298,37 @@ async function runSync(env, { dryRun }) {
         candidatesByConnector[connector.id] = { connector, candidates, rawCount: rawRecords.length };
       }
 
+      // Cast wins over Google for the same TAD show. A person who is BOTH
+      // cast-synced and Google-synced otherwise lands every cast show twice —
+      // once from Cast Cascade (`cast:<eventId>`) and once from the Google
+      // "CONFIRMED — …" echo (`gcal:<date>:<gig>`) — keyed differently, so
+      // neither connector can de-dup the other (each reconciles only its own
+      // Source). Cast Cascade is authoritative for TAD cast decisions, so we
+      // drop the Google Booked echo wherever it overlaps a cast Booked date.
+      // Scoped automatically: no cast candidates → no suppression, so non-cast
+      // performers and the Land/Cruise connectors are untouched. Mutating the
+      // Google candidate list here means reconcile() both skips re-creating the
+      // echo AND deletes any pre-existing echo rows (their ref drops out of the
+      // candidate set) — so historical duplicates self-heal on the next run.
+      // NOTE: a Google booking that only partially overlaps a cast day is still
+      // fully suppressed; both sides are single-day in practice, so this is safe.
+      let googleSuppressedByCast = 0;
+      const castConn = candidatesByConnector['cast-cascade'];
+      const googleConn = candidatesByConnector['performer-google-calendar'];
+      if (castConn && googleConn) {
+        const castBooked = castConn.candidates
+          .filter(c => c.type === TYPE_BOOKED)
+          .map(c => ({ start: c.startDate, end: c.endDate }));
+        if (castBooked.length) {
+          const before = googleConn.candidates.length;
+          googleConn.candidates = googleConn.candidates.filter(c =>
+            !(c.type === TYPE_BOOKED &&
+              castBooked.some(b => rangesOverlap(c.startDate, c.endDate, b.start, b.end)))
+          );
+          googleSuppressedByCast = before - googleConn.candidates.length;
+        }
+      }
+
       for (const cid of Object.keys(candidatesByConnector)) {
         const { connector, candidates, rawCount } = candidatesByConnector[cid];
         // Some connectors (Google) can see duplicate source events; collapse to
@@ -323,6 +354,10 @@ async function runSync(env, { dryRun }) {
         // the calendars (e.g. whether duplicate events live there).
         if (dryRun && connector.dedupe) {
           summary.sample = cands.slice(0, 15).map(c => ({ start: c.startDate, end: c.endDate, type: c.type, label: c.label }));
+        }
+        // How many Google Booked echoes were dropped in favour of a cast row.
+        if (cid === 'performer-google-calendar' && googleSuppressedByCast) {
+          summary.suppressedByCast = googleSuppressedByCast;
         }
         actSummary.connectors[connector.id] = summary;
       }
