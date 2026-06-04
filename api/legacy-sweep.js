@@ -68,8 +68,16 @@ const LEGACY_DESC_SIGNATURE = 'automatically created by stagelink365 calendar sy
 // feedback). So we (a) delete in small parallel batches for speed and (b) stop
 // before the wall and return a JSON summary with `remaining` instead of timing
 // out — the sweep is idempotent, so the caller just re-runs until matched=0.
-const DELETE_CONCURRENCY = 6;        // gentle on Google's write rate limit
-const SOFT_BUDGET_MS     = 50000;    // leave headroom under the 60s maxDuration
+//
+// Google throttles bursty calendar writes (403 rateLimitExceeded). So keep
+// concurrency low, pause briefly between batches, and back off + retry inside
+// deleteEvent() when throttled — turning would-be failures into spread-out
+// successes instead of a wall of 403s. Anything still throttled after the
+// retries just lands in `remaining` for the next run.
+const DELETE_CONCURRENCY  = 3;        // low — Google's write quota is the bottleneck, not latency
+const DELETE_BATCH_PAUSE  = 250;      // ms between batches, to smooth the request rate
+const DELETE_MAX_ATTEMPTS = 5;        // per-event retries on rate-limit (exp backoff: 1s,2s,4s,8s)
+const SOFT_BUDGET_MS      = 50000;    // leave headroom under the 60s maxDuration
 
 // --- Google service account (env GOOGLE_SERVICE_ACCOUNT_KEY) ----------------
 const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar.events';
@@ -164,6 +172,7 @@ async function runSweep(env, calendarId, { apply }) {
         if (r.ok) deleted.push(r.id);
         else deleteErrors.push({ id: r.id, detail: r.detail });
       }
+      if (i + DELETE_CONCURRENCY < eligible.length) await sleep(DELETE_BATCH_PAUSE);
     }
   }
 
@@ -228,13 +237,21 @@ async function listTodayForwardEvents(env, calendarId, today) {
 
 async function deleteEvent(env, calendarId, id, token) {
   const url = `${GCAL_API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(id)}`;
-  const resp = await fetchWithRetry(url, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  // 404/410 = already gone — idempotent, fine.
-  if (!resp.ok && resp.status !== 404 && resp.status !== 410) {
+  for (let attempt = 1; attempt <= DELETE_MAX_ATTEMPTS; attempt++) {
+    const resp = await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    // 404/410 = already gone — idempotent, fine.
+    if (resp.ok || resp.status === 404 || resp.status === 410) return;
     const txt = await resp.text();
+    // Google throttles bursty writes with 403 rateLimitExceeded /
+    // userRateLimitExceeded (and occasionally 429/503). Back off and retry —
+    // these are transient, not a hard failure.
+    const throttled =
+      resp.status === 429 || resp.status === 503 ||
+      (resp.status === 403 && /rateLimitExceeded|userRateLimitExceeded/i.test(txt));
+    if (throttled && attempt < DELETE_MAX_ATTEMPTS) {
+      await sleep(Math.min(1000 * 2 ** (attempt - 1), 8000));
+      continue;
+    }
     throw new Error(`Google delete ${resp.status}: ${txt.slice(0, 200)}`);
   }
 }
