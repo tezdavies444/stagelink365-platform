@@ -8,6 +8,7 @@
     { "path": "/api/calendar-sync", "schedule": "0 */6 * * *" }
   ],
   "functions": {
-    "api/calendar-sync.js": { "maxDuration": 60 }
+    "api/calendar-sync.js": { "maxDuration": 60 },
+    "api/legacy-sweep.js": { "maxDuration": 60 }
   }
 }
