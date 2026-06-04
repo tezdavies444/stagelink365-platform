@@ -387,6 +387,7 @@ async function runSync(env, { dryRun }) {
             updated: plan.update.length,
             deleted: plan.delete.length,
           };
+          if (plan.invalidSkipped) psummary.invalidSkipped = plan.invalidSkipped;
           if (dryRun) {
             psummary.sample = [...plan.create, ...plan.update].slice(0, 15).map(ev => ({
               id: ev.id, summary: ev.summary, start: ev.start.date, end: ev.end.date, colorId: ev.colorId,
@@ -642,7 +643,14 @@ function mapCastEvent(rec, ctx) {
     return null;
   }
 
-  const end = f[CP_CE_FID.endDate] || start;
+  // CLIENT PORTAL is read-only and occasionally carries an End that precedes the
+  // Start (a data-entry slip — e.g. a residency date row whose End was typed as an
+  // earlier day). Start is authoritative here (it drives the Record Label and the
+  // per-event de-dup key), so clamp a malformed End up to Start, yielding a valid
+  // single-day booking instead of an inverted range that would later build an
+  // invalid all-day Google event and poison the outbound push.
+  let end = f[CP_CE_FID.endDate] || start;
+  if (end < start) end = start;
   if (end < ctx.today) return null;   // today-forward only
 
   const venue = String(f[CP_CE_FID.venue] || '').trim();
@@ -825,11 +833,21 @@ async function pushToGoogle(env, profile, hubRows, ctx) {
   // Desired set: hub rows that are (a) Booked/Unavailable, (b) NOT originated
   // from a Google calendar (no echo — Q5), (c) today-forward within the horizon.
   const desired = new Map(); // sl365 id -> Google event resource
+  let invalidSkipped = 0;
   for (const row of hubRows) {
     if (!GCAL_PUSH_TYPES.has(row.type)) continue;
     if (GCAL_ORIGIN_SOURCES.has(row.source)) continue;
     if (!row.startDate) continue;
     const end = row.endDate || row.startDate;
+    // Defensive guard (invariant 1+4 corollary): a malformed hub row whose End
+    // precedes its Start builds an invalid all-day event (end.date <= start.date)
+    // that Google rejects with 400. Because applyGooglePlan() creates BEFORE it
+    // patches/deletes and throws on the first create error, a single such row would
+    // otherwise abort this person's ENTIRE push every run — stranding every other
+    // create and never reaching patch/delete. Skip + count it so one bad row can
+    // never poison the batch. (mapCastEvent now clamps at source; this is the
+    // belt-and-suspenders for any future inverted row from any connector.)
+    if (end < row.startDate) { invalidSkipped++; continue; }
     if (end < today) continue;            // today-forward only
     if (row.startDate >= horizonEnd) continue; // within push horizon
     const id = sl365EventId(row.id);
@@ -840,7 +858,7 @@ async function pushToGoogle(env, profile, hubRows, ctx) {
   // today-forward horizon (we never reconcile past events — leave history alone).
   const existingOurs = await listOwnGoogleEvents(env, profile.googleCalendarId, today, horizonEnd);
 
-  const plan = { create: [], update: [], delete: [], desiredCount: desired.size };
+  const plan = { create: [], update: [], delete: [], desiredCount: desired.size, invalidSkipped };
   for (const [id, ev] of desired) {
     const cur = existingOurs.get(id);
     if (!cur) plan.create.push(ev);
