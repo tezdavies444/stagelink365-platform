@@ -24,6 +24,13 @@
 // events) or anything lacking the description signature. History is left alone
 // (today-forward only). Deletes are idempotent (404/410 tolerated).
 //
+// PACING. A long tour can be hundreds of events — more than the 60s Vercel wall
+// allows to delete serially. So deletes run in small parallel batches and the
+// run self-stops a few seconds before the wall, returning a JSON summary with
+// `deletedCount` + `remaining` (and `stoppedEarly:true`) rather than a bare 504.
+// Because the sweep is idempotent, the caller just re-runs the same ?apply=1 URL
+// until `remaining` is 0 (or a final dry-run shows `matchedCount: 0`).
+//
 // SAFETY MODEL (mirrors the deletion-safety discipline of pushToGoogle):
 //   * Dry-run by DEFAULT. A real delete requires an explicit `?apply=1`.
 //   * `calendarId` is REQUIRED and explicit — there is no "all" / default; the
@@ -54,6 +61,15 @@ const GCAL_OWN_ECHO_RE  = /^\s*SL365\b/i;
 // case-insensitively as a substring; verified verbatim against real events
 // 2026-06-04 ("This event was automatically created by StageLink365 calendar sync.").
 const LEGACY_DESC_SIGNATURE = 'automatically created by stagelink365 calendar sync';
+
+// --- Delete pacing ----------------------------------------------------------
+// A full tour can be hundreds of events; deleting them one-by-one overruns the
+// Vercel 60s function wall (FUNCTION_INVOCATION_TIMEOUT → a bare 504 with no
+// feedback). So we (a) delete in small parallel batches for speed and (b) stop
+// before the wall and return a JSON summary with `remaining` instead of timing
+// out — the sweep is idempotent, so the caller just re-runs until matched=0.
+const DELETE_CONCURRENCY = 6;        // gentle on Google's write rate limit
+const SOFT_BUDGET_MS     = 50000;    // leave headroom under the 60s maxDuration
 
 // --- Google service account (env GOOGLE_SERVICE_ACCOUNT_KEY) ----------------
 const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar.events';
@@ -102,6 +118,7 @@ module.exports = async function handler(req, res) {
 };
 
 async function runSweep(env, calendarId, { apply }) {
+  const startMs = Date.now();
   const ranAt = new Date().toISOString();
   const today = todayInPhoenix();
 
@@ -124,19 +141,28 @@ async function runSweep(env, calendarId, { apply }) {
 
   const deleted = [];
   const deleteErrors = [];
+  let stoppedEarly = false;
   if (apply) {
     const token = await getGoogleAccessToken(env);
-    for (const ev of matched) {
-      // Belt-and-suspenders: re-assert both guards immediately before delete.
+    // Belt-and-suspenders: only events still passing BOTH guards are eligible.
+    const eligible = matched.filter(ev => {
       const summary = (ev.summary || '').trim();
-      if (GCAL_OWN_ECHO_RE.test(summary)) continue;
-      if (!GCAL_CONFIRMED_RE.test(summary)) continue;
-      if (!(ev.description || '').toLowerCase().includes(LEGACY_DESC_SIGNATURE)) continue;
-      try {
-        await deleteEvent(env, calendarId, ev.id, token);
-        deleted.push(ev.id);
-      } catch (err) {
-        deleteErrors.push({ id: ev.id, detail: String((err && err.message) || err) });
+      return !GCAL_OWN_ECHO_RE.test(summary) &&
+        GCAL_CONFIRMED_RE.test(summary) &&
+        (ev.description || '').toLowerCase().includes(LEGACY_DESC_SIGNATURE);
+    });
+    // Delete in small parallel batches; stop before the function wall and hand
+    // back a JSON summary (the caller re-runs the same URL to finish).
+    for (let i = 0; i < eligible.length; i += DELETE_CONCURRENCY) {
+      if (Date.now() - startMs > SOFT_BUDGET_MS) { stoppedEarly = true; break; }
+      const batch = eligible.slice(i, i + DELETE_CONCURRENCY);
+      const results = await Promise.all(batch.map(async (ev) => {
+        try { await deleteEvent(env, calendarId, ev.id, token); return { ok: true, id: ev.id }; }
+        catch (err) { return { ok: false, id: ev.id, detail: String((err && err.message) || err) }; }
+      }));
+      for (const r of results) {
+        if (r.ok) deleted.push(r.id);
+        else deleteErrors.push({ id: r.id, detail: r.detail });
       }
     }
   }
@@ -148,7 +174,11 @@ async function runSweep(env, calendarId, { apply }) {
     created: ev.created || '',
   }));
 
-  return {
+  // Events still on the calendar after this run (errored or not yet reached) —
+  // a re-run of the same ?apply=1 URL clears them. 0 = sweep complete.
+  const remaining = apply ? (matched.length - deleted.length) : matched.length;
+
+  const summary = {
     ok: deleteErrors.length === 0,
     mode: apply ? 'apply' : 'dryRun',
     ranAt,
@@ -158,9 +188,15 @@ async function runSweep(env, calendarId, { apply }) {
     matchedCount: matched.length,
     skipped,
     deletedCount: deleted.length,
+    stoppedEarly,
+    remaining,
     deleteErrors,
     sample,
   };
+  if (apply && remaining > 0) {
+    summary.note = 'Re-run the same ?apply=1 URL to delete the remaining events (idempotent).';
+  }
+  return summary;
 }
 
 // Lists today-forward events for one calendar (GET only). Recurring events are
